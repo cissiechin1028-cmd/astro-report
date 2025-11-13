@@ -248,20 +248,20 @@ def generate_report():
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
     # ------------------ 星盘下方 5 行列表（细一点、往上挪） ------------------
-    c.setFont(font, 9)
+    c.setFont(font, 7.5)
     c.setFillColorRGB(0, 0, 0)
 
     # 男方列表
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
         y = left_y - 45 - i * 11   # 比之前上移一些
-        c.drawString(left_cx - 45, y, line)
+        c.drawString(left_cx - 60, y, line)
 
     # 女方列表
     female_lines = [info["label"] for info in female_planets.values()]
     for i, line in enumerate(female_lines):
         y = right_y - 45 - i * 11
-        c.drawString(right_cx - 20, y, line)
+        c.drawString(right_cx - 40, y, line)
 
     # 不再额外画「総合相性スコア」「太陽・月・上昇の分析」标题
     c.showPage()
