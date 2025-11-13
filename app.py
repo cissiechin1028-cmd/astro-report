@@ -94,7 +94,7 @@ def generate_report():
     c.setFillColorRGB(0, 0, 0)
     couple_text = f"{male_name} さん ＆ {female_name} さん"
     # 390 这个高度是针对你这张封面的视觉位置微调过的，如果要再上/下可以再改一点点
-    c.drawCentredString(PAGE_WIDTH / 2, 480, couple_text)
+    c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
     # 作成日：底部中央
     c.setFont(font, 12)
@@ -122,7 +122,7 @@ def generate_report():
     # 星盘尺寸 + 位置（按你刚才的截图重新调过）
     chart_size = 180         # 直径 200pt，避免撑满
     left_x = 90              # 左边星盘的左上角 X
-    left_y = 350             # 左右共同的 Y（整体上移）
+    left_y = 500             # 左右共同的 Y（整体上移）
     right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
