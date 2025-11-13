@@ -199,105 +199,169 @@ def generate_report():
     draw_full_bg(c, "index.jpg")
     c.showPage()
 
-    # ==============================================================
-    # 3) 基本ホロスコープと総合相性
-    # ==============================================================
+        # ------------------------------------------------------------------
+    # 第 3 页：基本ホロスコープと総合相性
+    # 背景：page_basic.jpg + chart_base.png
+    # 要求：
+    #  1）圆点在大圈和小圈之间的「圆环」里
+    #  2）五行列表左对齐
+    #  3）五行在名字的正下方
+    # ------------------------------------------------------------------
     draw_full_bg(c, "page_basic.jpg")
 
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘位置
+    # ★ 这里保持你之前的星盘位置和大小（如果你有自己改过，就改回你自己的值）
     chart_size = 200
     left_x = 90
     left_y = 520
     right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
+    # 星盘圆心
     left_cx = left_x + chart_size / 2
     left_cy = left_y + chart_size / 2
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    # 背景星盘
+    # 星盘背景
     c.drawImage(chart_img, left_x, left_y,
                 width=chart_size, height=chart_size, mask="auto")
     c.drawImage(chart_img, right_x, right_y,
                 width=chart_size, height=chart_size, mask="auto")
 
-    # 行星角度 + 文本
+    # ---------------- 行星角度（示例，之后会换成你算出来的） ----------------
     male_planets = {
-        "sun":   {"deg": 12.3,   "label": "太陽：牡羊座 12.3°",   "icon": "icon_sun.png"},
-        "moon":  {"deg": 65.4,   "label": "月：双子座 5.4°",     "icon": "icon_moon.png"},
-        "venus": {"deg": 147.8,  "label": "金星：獅子座 17.8°",  "icon": "icon_venus.png"},
-        "mars":  {"deg": 183.2,  "label": "火星：天秤座 3.2°",   "icon": "icon_mars.png"},
-        "asc":   {"deg": 220.1,  "label": "ASC：山羊座 20.1°",  "icon": "icon_asc.png"},
+        "sun":   {"deg": 12.3,  "label": "太陽：牡羊座 12.3°"},
+        "moon":  {"deg": 65.4,  "label": "月：双子座 5.4°"},
+        "venus": {"deg": 147.8, "label": "金星：獅子座 17.8°"},
+        "mars":  {"deg": 183.2, "label": "火星：天秤座 3.2°"},
+        "asc":   {"deg": 220.1, "label": "ASC：山羊座 20.1°"},
     }
 
     female_planets = {
-        "sun":   {"deg": 8.5,    "label": "太陽：蟹座 8.5°",      "icon": "icon_sun.png"},
-        "moon":  {"deg": 150.0,  "label": "月：乙女座 22.0°",    "icon": "icon_moon.png"},
-        "venus": {"deg": 214.6,  "label": "金星：蠍座 14.6°",     "icon": "icon_venus.png"},
-        "mars":  {"deg": 262.9,  "label": "火星：水瓶座 2.9°",    "icon": "icon_mars.png"},
-        "asc":   {"deg": 288.4,  "label": "ASC：魚座 28.4°",    "icon": "icon_asc.png"},
+        "sun":   {"deg": 8.5,    "label": "太陽：蟹座 8.5°"},
+        "moon":  {"deg": 150.0,  "label": "月：乙女座 22.0°"},
+        "venus": {"deg": 214.6,  "label": "金星：蠍座 14.6°"},
+        "mars":  {"deg": 262.9,  "label": "火星：水瓶座 2.9°"},
+        "asc":   {"deg": 288.4,  "label": "ASC：魚座 28.4°"},
     }
 
-    male_color = (0.15, 0.45, 0.9)   # 蓝
-    female_color = (0.9, 0.35, 0.65) # 粉
+    # 男 = 蓝色 / 女 = 粉色（只管点的颜色）
+    male_color = (0.15, 0.45, 0.9)
+    female_color = (0.9, 0.35, 0.65)
 
-    # 男方星盘点
-    for info in male_planets.values():
-        draw_planet_icon(
+    # ------------------------------------------------------------------
+    # 小函数：把圆点画在「大圈和小圈之间的圆环」+ PNG 图标
+    # 这里假设你的图标是：
+    #   1.png → 太陽
+    #   2.png → 月
+    #   3.png → ASC
+    #   4.png → 火星
+    #   5.png → 金星
+    # 且都放在 public/assets 下
+    # ------------------------------------------------------------------
+    def draw_planet_icon_on_ring(c, cx, cy, chart_size, deg, color_rgb, icon_index):
+        # 大概在内外圈之间的比例，可微调：0.40 ~ 0.45 之间
+        ring_ratio = 0.43
+        radius = chart_size * ring_ratio    # 圆点半径
+
+        # 把 0° 放在 12 点方向
+        theta = math.radians(90 - deg)
+
+        px = cx + radius * math.cos(theta)
+        py = cy + radius * math.sin(theta)
+
+        # 小圆点
+        r, g, b = color_rgb
+        c.setFillColorRGB(r, g, b)
+        c.circle(px, py, 2.2, fill=1, stroke=0)
+
+        # PNG 图标（稍微往内侧一点，不要贴到最外圈）
+        icon_name = f"{icon_index}.png"   # 1.png ~ 5.png
+        icon_path = os.path.join(ASSETS_DIR, icon_name)
+        icon_img = ImageReader(icon_path)
+
+        icon_size = 9
+        # 图标位置：从圆点往「圆心方向」推一点，让它落在环里
+        icon_offset = -6    # 负数 = 往圆心方向
+        ix = px + icon_offset * math.cos(theta)
+        iy = py + icon_offset * math.sin(theta)
+
+        c.drawImage(
+            icon_img,
+            ix - icon_size / 2,
+            iy - icon_size / 2,
+            width=icon_size,
+            height=icon_size,
+            mask="auto"
+        )
+
+    # 行星 → 图标编号
+    icon_map = {
+        "sun": 1,   # 太阳
+        "moon": 2,  # 月亮
+        "asc": 3,   # 上升
+        "mars": 4,  # 火星
+        "venus": 5, # 金星
+    }
+
+    # ---------------- 在星盘上画圆点 + 图标（男左女右） ----------------
+    for key, info in male_planets.items():
+        draw_planet_icon_on_ring(
             c,
             left_cx,
             left_cy,
             chart_size,
             info["deg"],
             male_color,
-            info["icon"],
+            icon_map.get(key, 1),
         )
 
-    # 女方星盘点
-    for info in female_planets.values():
-        draw_planet_icon(
+    for key, info in female_planets.items():
+        draw_planet_icon_on_ring(
             c,
             right_cx,
             right_cy,
             chart_size,
             info["deg"],
             female_color,
-            info["icon"],
+            icon_map.get(key, 1),
         )
 
-    # 星盘下方姓名
-    c.setFont(JP_FONT_SANS, 14)
+    # ---------------- 星盘下方姓名（保持你原来的位置） ----------------
+    c.setFont(JP_FONT_SANS if 'JP_FONT_SANS' in globals() else font, 14)
     c.setFillColorRGB(0, 0, 0)
-    c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
+    c.drawCentredString(left_cx,  left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # 星盘下方 5 行列表：改成明朝体 + 左对齐 + 字号小一点
-    c.setFont(JP_FONT_SERIF, 9.5)
+    # ---------------- 五行列表：左对齐 & 在“名字正下方” ----------------
+    # 用明朝体细一点（如果你不想改字体，把 JP_FONT_SERIF 换回 font）
+    list_font = JP_FONT_SERIF if 'JP_FONT_SERIF' in globals() else font
+    c.setFont(list_font, 9)
 
-    # 男方列表（左边）
+    # 男方：名字正下方稍微留一点空隙
     male_lines = [info["label"] for info in male_planets.values()]
-    left_text_x = left_cx - 70   # 左右位置
-    left_text_y_start = left_y - 50
-    line_height = 12             # 行距
+    male_x = left_cx - 70       # 左对齐基准（不要改成 centred）
+    male_y0 = left_y - 65       # 比名字再往下 40pt 左右
+    line_h = 11                 # 行距稍微放开一点
 
     for i, line in enumerate(male_lines):
-        y = left_text_y_start - i * line_height
-        c.drawString(left_text_x, y, line)
+        y = male_y0 - i * line_h
+        c.drawString(male_x, y, line)
 
-    # 女方列表（右边，稍微往右一点）
+    # 女方：同样左对齐 & 名字正下方
     female_lines = [info["label"] for info in female_planets.values()]
-    right_text_x = right_cx - 65
-    right_text_y_start = right_y - 50
+    female_x = right_cx - 70
+    female_y0 = right_y - 65
 
     for i, line in enumerate(female_lines):
-        y = right_text_y_start - i * line_height
-        c.drawString(right_text_x, y, line)
+        y = female_y0 - i * line_h
+        c.drawString(female_x, y, line)
 
     c.showPage()
+
 
     # ==============================================================
     # 4) 性格の違いとコミュニケーション
