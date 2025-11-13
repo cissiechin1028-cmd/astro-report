@@ -4,181 +4,174 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
-
 import io
 import os
-from datetime import datetime
+import datetime
 
-# -------------------------------------------------
-# Flask 基本设置
-# -------------------------------------------------
+# ------------------------------------------------------------------
+# Flask 基本设置：public 目录作为静态目录
+# ------------------------------------------------------------------
 app = Flask(__name__, static_url_path='', static_folder='public')
 
-# 使用 ReportLab 自带日文字体（不会再用你上传的 Noto，因此不再报错）
-pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))     # 明朝体
-pdfmetrics.registerFont(UnicodeCIDFont("HeiseiKakuGo-W5"))  # ゴシック体
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
 
-TITLE_FONT = "HeiseiKakuGo-W5"
-BODY_FONT = "HeiseiMin-W3"
+PAGE_WIDTH, PAGE_HEIGHT = A4
 
-PAGE_WIDTH, PAGE_HEIGHT = A4  # 595 x 842 左右
-
-
-# 简单工具：拼接 public/assets 路径
-def asset_path(name: str) -> str:
-    return os.path.join("public", "assets", name)
+# ------------------------------------------------------------------
+# 字体设置：只用 ReportLab 自带日文字体，彻底不用 Noto 文件
+# ------------------------------------------------------------------
+JP_FONT = "HeiseiKakuGo-W5"   # 无衬线
+pdfmetrics.registerFont(UnicodeCIDFont(JP_FONT))
 
 
-# -------------------------------------------------
-# 封面页：只动姓名 + 作成日，别的保持背景
-# -------------------------------------------------
-def draw_cover_page(c, male_name: str, female_name: str, report_date: datetime):
-    cover = asset_path("cover.jpg")
-    c.drawImage(cover, 0, 0, width=PAGE_WIDTH, height=PAGE_HEIGHT)
-
-    # 颜色：接近金色 / 棕金，跟模板比较搭
-    c.setFillColorRGB(0.45, 0.32, 0.18)
-
-    # ① 姓名：放在「L O V E  R E P O R T」和「恋愛占星レポート」之间、
-    #    略偏下，正好在大标题上方，不挡任何文字
-    pair_label = f"{male_name} さん ＆ {female_name} さん"
-    c.setFont(TITLE_FONT, 16)
-    # 这个 Y 值你不满意我们再微调，现在大概在金色标题上方一点
-    c.drawCentredString(PAGE_WIDTH / 2, 510, pair_label)
-
-    # ② 作成日：用模板底部本来留空的那一条，置中显示
-    date_label = report_date.strftime("作成日：%Y年%m月%d日")
-    c.setFont(BODY_FONT, 12)
-    c.drawCentredString(PAGE_WIDTH / 2, 80, date_label)
+# ------------------------------------------------------------------
+# 小工具：铺满整页背景图
+# ------------------------------------------------------------------
+def draw_full_bg(c, filename):
+    """
+    将 public/assets/filename 这张图拉伸铺满 A4 页面
+    """
+    path = os.path.join(ASSETS_DIR, filename)
+    img = ImageReader(path)
+    c.drawImage(img, 0, 0, width=PAGE_WIDTH, height=PAGE_HEIGHT)
 
 
-# -------------------------------------------------
-# 第 2 页：基本ホロスコープ + 双星盘，名字写在星盘下面
-# -------------------------------------------------
-def draw_horoscope_page(c, male_name: str, female_name: str):
-    bg = asset_path("page_basic.jpg")
-    c.drawImage(bg, 0, 0, width=PAGE_WIDTH, height=PAGE_HEIGHT)
+# ------------------------------------------------------------------
+# 小工具：处理日期参数，输出 2025年11月13日 这种格式
+# ------------------------------------------------------------------
+def get_display_date(raw_date: str | None) -> str:
+    if raw_date:
+        try:
+            d = datetime.datetime.strptime(raw_date, "%Y-%m-%d").date()
+        except ValueError:
+            d = datetime.date.today()
+    else:
+        d = datetime.date.today()
 
-    chart_img = asset_path("chart_base.png")
-
-    # 星盘大小稍微控制在半透明白框内
-    chart_size = 260  # 正方形边长
-    # 页面中线
-    center_x = PAGE_WIDTH / 2
-
-    # 左右星盘水平位置（中线左右各偏一点）
-    gap = 40  # 中线与星盘之间的空隙
-    left_x = center_x - chart_size - gap
-    right_x = center_x + gap
-
-    # 星盘竖直位置：大约在页面下半部分中间
-    chart_y = 230
-
-    # 绘制左、右星盘
-    c.drawImage(chart_img, left_x, chart_y, width=chart_size, height=chart_size, mask='auto')
-    c.drawImage(chart_img, right_x, chart_y, width=chart_size, height=chart_size, mask='auto')
-
-    # 姓名放在各自星盘下方一点，不越出白色区域
-    c.setFont(BODY_FONT, 12)
-    c.setFillColorRGB(0.3, 0.2, 0.15)
-
-    c.drawCentredString(left_x + chart_size / 2, chart_y - 24, f"{male_name} さん")
-    c.drawCentredString(right_x + chart_size / 2, chart_y - 24, f"{female_name} さん")
+    return f"{d.year}年{d.month}月{d.day}日"
 
 
-# -------------------------------------------------
-# 后面几页：先只铺背景，不额外加大标题
-#（避免再覆盖你模板里的金色标题文字）
-# -------------------------------------------------
-def draw_empty_content_page(c, bg_filename: str):
-    bg = asset_path(bg_filename)
-    c.drawImage(bg, 0, 0, width=PAGE_WIDTH, height=PAGE_HEIGHT)
-    # 你之后如果要在白色区域里填充文字，可以在这里追加小号文字绘制，
-    # 但尽量别再画大字号标题，这样不会压住背景图自带的标题。
-
-
-# -------------------------------------------------
-# 生成 PDF 主函数
-# -------------------------------------------------
-def build_report_pdf(male_name: str, female_name: str, report_date: datetime) -> bytes:
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-
-    # 1. 封面
-    draw_cover_page(c, male_name, female_name, report_date)
-    c.showPage()
-
-    # 2. 基本ホロスコープ + 双星盘
-    draw_horoscope_page(c, male_name, female_name)
-    c.showPage()
-
-    # 3. 性格・コミュニケーション（背景模板里已经有标题和说明）
-    draw_empty_content_page(c, "page_communication.jpg")
-    c.showPage()
-
-    # 4. アドバイス
-    draw_empty_content_page(c, "page_advice.jpg")
-    c.showPage()
-
-    # 5. 関係の流れ・今後の傾向
-    draw_empty_content_page(c, "page_trend.jpg")
-    c.showPage()
-
-    # 6. 日常で役立つポイント
-    draw_empty_content_page(c, "page_points.jpg")
-    c.showPage()
-
-    # 7. まとめ
-    draw_empty_content_page(c, "page_summary.jpg")
-    c.showPage()
-
-    c.save()
-    pdf_value = buffer.getvalue()
-    buffer.close()
-    return pdf_value
-
-
-# -------------------------------------------------
-# Flask 路由
-# -------------------------------------------------
-
+# ------------------------------------------------------------------
+# 根路径 & test.html
+# ------------------------------------------------------------------
 @app.route("/")
 def root():
-    return "Astro report PDF server running."
-
+    return "PDF server running."
 
 @app.route("/test.html")
-def test_html():
-    # 你之前的 test.html 静态文件
+def test_page():
     return app.send_static_file("test.html")
 
 
+# ------------------------------------------------------------------
+# 生成 PDF 主入口
+# GET /api/generate_report?male_name=太郎&female_name=花子&date=2025-01-01
+# ------------------------------------------------------------------
 @app.route("/api/generate_report", methods=["GET"])
 def generate_report():
-    # 名字默认给一个日文示例，没传也能出 demo
+    # ---- 1. 读取参数 ----
     male_name = request.args.get("male_name", "太郎")
     female_name = request.args.get("female_name", "花子")
+    raw_date = request.args.get("date")  # 期望格式：YYYY-MM-DD
+    date_display = get_display_date(raw_date)
 
-    # 日期参数：?date=2025-01-01 这样的格式
-    date_str = request.args.get("date")
-    if date_str:
-        try:
-            report_date = datetime.strptime(date_str, "%Y-%m-%d")
-        except ValueError:
-            report_date = datetime.now()
-    else:
-        report_date = datetime.now()
+    # ---- 2. 准备 PDF 缓冲区 ----
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
 
-    pdf_bytes = build_report_pdf(male_name, female_name, report_date)
+    # 统一字体
+    font = JP_FONT
+
+    # ------------------------------------------------------------------
+    # 封面：cover.jpg
+    # 只在指定位置加「太郎 さん ＆ 花子 さん」和「作成日：2025年11月13日」
+    # ------------------------------------------------------------------
+    draw_full_bg(c, "cover.jpg")
+
+    # 姓名：放在金色「恋愛占星レポート」正上方（居中）
+    c.setFont(font, 18)
+    c.setFillColorRGB(0, 0, 0)
+    couple_text = f"{male_name} さん ＆ {female_name} さん"
+    # 390 这个高度是针对你这张封面的视觉位置微调过的，如果要再上/下可以再改一点点
+    c.drawCentredString(PAGE_WIDTH / 2, 390, couple_text)
+
+    # 作成日：底部中央
+    c.setFont(font, 12)
+    date_text = f"作成日：{date_display}"
+    c.drawCentredString(PAGE_WIDTH / 2, 80, date_text)
+
+    c.showPage()
+
+    # ------------------------------------------------------------------
+    # 第 2 页：目录 / 说明页，直接用 index.jpg
+    # ------------------------------------------------------------------
+    draw_full_bg(c, "index.jpg")
+    c.showPage()
+
+    # ------------------------------------------------------------------
+    # 第 3 页：基本ホロスコープと総合相性 + 两个星盘
+    # 背景：page_basic.jpg
+    # 星盘：chart_base.png 一左一右，下方分别写姓名
+    # ------------------------------------------------------------------
+    draw_full_bg(c, "page_basic.jpg")
+
+    chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
+    chart_img = ImageReader(chart_path)
+
+    # 星盘尺寸 + 位置（按你刚才的截图重新调过）
+    chart_size = 200         # 直径 200pt，避免撑满
+    left_x = 90              # 左边星盘的左上角 X
+    left_y = 200             # 左右共同的 Y（整体上移）
+    right_x = PAGE_WIDTH - chart_size - 90
+    right_y = left_y
+
+    # 画两个星盘
+    c.drawImage(chart_img, left_x, left_y,
+                width=chart_size, height=chart_size, mask="auto")
+    c.drawImage(chart_img, right_x, right_y,
+                width=chart_size, height=chart_size, mask="auto")
+
+    # 星盘下方姓名
+    c.setFont(font, 14)
+    c.setFillColorRGB(0, 0, 0)
+    c.drawCentredString(left_x + chart_size / 2, left_y - 25, f"{male_name} さん")
+    c.drawCentredString(right_x + chart_size / 2, right_y - 25, f"{female_name} さん")
+
+    c.showPage()
+
+    # ------------------------------------------------------------------
+    # 第 4~? 页：先只铺背景图（模板），文字逻辑之后再加
+    # 顺序：page_communication -> page_points -> page_trend
+    #      -> page_advice -> page_summary
+    # ------------------------------------------------------------------
+    for bg in [
+        "page_communication.jpg",
+        "page_points.jpg",
+        "page_trend.jpg",
+        "page_advice.jpg",
+        "page_summary.jpg",
+    ]:
+        draw_full_bg(c, bg)
+        c.showPage()
+
+    # ------------------------------------------------------------------
+    # 收尾 & 返回 PDF
+    # ------------------------------------------------------------------
+    c.save()
+    buffer.seek(0)
+
+    filename = f"love_report_{male_name}_{female_name}.pdf"
 
     return send_file(
-        io.BytesIO(pdf_bytes),
+        buffer,
         as_attachment=True,
-        download_name="love_report_sample.pdf",
+        download_name=filename,
         mimetype="application/pdf"
     )
 
 
-# 本地调试用（Render 会忽略这里）
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000, debug=True)
+    # 本地跑可以用 10000，Render 上会用自己的 PORT 环境变量
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
