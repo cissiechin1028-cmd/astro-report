@@ -255,13 +255,13 @@ def generate_report():
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
         y = left_y - 45 - i * 11   # 比之前上移一些
-        c.drawString(left_cx - 50, y, line)
+        c.drawString(left_cx - 30, y, line)
 
     # 女方列表
     female_lines = [info["label"] for info in female_planets.values()]
     for i, line in enumerate(female_lines):
         y = right_y - 45 - i * 11
-        c.drawString(right_cx - 20, y, line)
+        c.drawString(right_cx - 50, y, line)
 
     # 不再额外画「総合相性スコア」「太陽・月・上昇の分析」标题
     c.showPage()
