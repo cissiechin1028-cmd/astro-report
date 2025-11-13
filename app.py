@@ -80,7 +80,7 @@ def draw_planet_icon(
     """
 
     # 根据星盘大小估一个“外圈点的半径”和“内圈图标的半径”
-    r_dot = chart_size * 0.33   # 彩色点：接近黄道外圈
+    r_dot = chart_size * 0.34   # 彩色点：接近黄道外圈
     r_icon = chart_size * 0.28  # 图标：更靠内圈，不挡星座符号
 
     # 彩色小圆点位置（外圈）
