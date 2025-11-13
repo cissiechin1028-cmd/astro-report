@@ -20,10 +20,14 @@ ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
 PAGE_WIDTH, PAGE_HEIGHT = A4
 
 # ------------------------------------------------------------------
-# 字体：用 ReportLab 自带日文字体
+# 字体设置
+#   JP_SANS  : 粗一点的黑体（标题用）
+#   JP_SERIF : 细一点的明朝体（正文、第三页用）
 # ------------------------------------------------------------------
-JP_FONT = "HeiseiKakuGo-W5"
-pdfmetrics.registerFont(UnicodeCIDFont(JP_FONT))
+JP_SANS = "HeiseiKakuGo-W5"
+JP_SERIF = "HeiseiMin-W3"
+pdfmetrics.registerFont(UnicodeCIDFont(JP_SANS))
+pdfmetrics.registerFont(UnicodeCIDFont(JP_SERIF))
 
 
 # ------------------------------------------------------------------
@@ -107,6 +111,42 @@ def draw_planet_icon(
 
 
 # ------------------------------------------------------------------
+# 小工具：文本自动换行（专给第 4 页用）
+# ------------------------------------------------------------------
+def draw_wrapped_block(c, text, x, y_start, wrap_width,
+                       font_name, font_size, line_height):
+    """
+    在 (x, y_start) 开始画一段文字，按字符宽度自动换行。
+    返回最后一行画完后的下一行 y 坐标（方便接着往下画）。
+    """
+    c.setFont(font_name, font_size)
+    line = ""
+    y = y_start
+
+    for ch in text:
+        if ch == "\n":
+            # 手动换行
+            c.drawString(x, y, line)
+            line = ""
+            y -= line_height
+            continue
+
+        new_line = line + ch
+        if pdfmetrics.stringWidth(new_line, font_name, font_size) <= wrap_width:
+            line = new_line
+        else:
+            c.drawString(x, y, line)
+            line = ch
+            y -= line_height
+
+    if line:
+        c.drawString(x, y, line)
+        y -= line_height
+
+    return y
+
+
+# ------------------------------------------------------------------
 # 根路径 & test.html
 # ------------------------------------------------------------------
 @app.route("/")
@@ -134,21 +174,19 @@ def generate_report():
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
-    font = JP_FONT
-
     # ------------------------------------------------------------------
     # 封面：cover.jpg
     # ------------------------------------------------------------------
     draw_full_bg(c, "cover.jpg")
 
-    # 姓名：恋愛占星レポート 正上方
-    c.setFont(font, 18)
+    # 姓名：恋愛占星レポート 正上方  → 还是用黑体
+    c.setFont(JP_SANS, 18)
     c.setFillColorRGB(0.3, 0.3, 0.3)
     couple_text = f"{male_name} さん ＆ {female_name} さん"
     c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
     # 作成日：底部中央
-    c.setFont(font, 12)
+    c.setFont(JP_SANS, 12)
     date_text = f"作成日：{date_display}"
     c.drawCentredString(PAGE_WIDTH / 2, 80, date_text)
 
@@ -168,7 +206,7 @@ def generate_report():
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘尺寸 + 位置（你现在用的那一版）
+    # 星盘尺寸 + 位置（使用你现在这版的坐标）
     chart_size = 200
     left_x = 90
     left_y = 520
@@ -188,7 +226,6 @@ def generate_report():
                 width=chart_size, height=chart_size, mask="auto")
 
     # ------------------ 行星示例数据（角度 + 文字） ------------------
-    # 之后你可以把这些角度和文字换成真实计算结果，只要 key 不变
     male_planets = {
         "sun":   {"deg": 12.3,  "label": "太陽：牡羊座 12.3°"},
         "moon":  {"deg": 65.4,  "label": "月：双子座 5.4°"},
@@ -241,36 +278,103 @@ def generate_report():
             icon_files[key],
         )
 
-    # ------------------ 星盘下方姓名 ------------------
-    c.setFont(font, 14)
+    # ------------------ 星盘下方姓名（用细明朝体） ------------------
+    c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0, 0, 0)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # ------------------ 星盘下方 5 行列表（细一点、往上挪） ------------------
-    c.setFont(font, 8)
+    # ------------------ 星盘下方 5 行列表（用细明朝体，左对齐） ------------------
+    c.setFont(JP_SERIF, 8.5)
     c.setFillColorRGB(0, 0, 0)
 
-    # 男方列表
+    # 男方列表（坐标沿用你这版，只动字体）
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
-        y = left_y - 45 - i * 11   # 比之前上移一些
-        c.drawString(left_cx- 30, y, line)
+        y = left_y - 45 - i * 11
+        c.drawString(left_cx - 30, y, line)
 
-    # 女方列表
+    # 女方列表（同样左对齐，你之前如果有微调，可以在这里改数值）
     female_lines = [info["label"] for info in female_planets.values()]
     for i, line in enumerate(female_lines):
         y = right_y - 45 - i * 11
-        c.drawString(right_cx- 30, y, line)
+        c.drawString(right_cx - 30, y, line)
 
     # 不再额外画「総合相性スコア」「太陽・月・上昇の分析」标题
+    c.showPage()
+
+    # ------------------------------------------------------------------
+    # 第 4 页：性格の違いとコミュニケーション
+    #   背景 page_communication.jpg
+    #   只画正文，不动你原来标题和小标题的位置
+    # ------------------------------------------------------------------
+    draw_full_bg(c, "page_communication.jpg")
+
+    text_x = 130          # 左边起点（跟小标题差不多一条线）
+    wrap_width = 360      # 行宽稍微拉长一点
+    body_font = JP_SERIF
+    body_size = 10
+    line_height = 14
+
+    # ===== 話し方とテンポ =====
+    y = 560  # 段落起始 y，可根据效果再微调
+    body_1 = (
+        "太郎 さんは、自分の気持ちを言葉にするまでに少し時間をかける、"
+        "じっくりタイプです。一方で、花子 さんは、その場で感じたことをすぐに言葉にする、"
+        "テンポの速いタイプです。日常会話では、片方が考えている間にもう一方がどんどん話してしまい、"
+        "「ちゃんと聞いてもらえていない」と感じる場面が出やすくなります。"
+    )
+    summary_1 = (
+        "一言でいうと、二人の話し方は「スピードの違いを理解し合うことで、"
+        "より心地よくつながれるペア」です。"
+    )
+    y = draw_wrapped_block(c, body_1, text_x, y, wrap_width,
+                           body_font, body_size, line_height)
+    y -= line_height  # 空一行
+    draw_wrapped_block(c, summary_1, text_x, y, wrap_width,
+                       body_font, body_size, line_height)
+
+    # ===== 問題への向き合い方 =====
+    y2 = 380
+    body_2 = (
+        "太郎 さんは、問題が起きたときにまず全体を整理してから、落ち着いて対処しようとします。"
+        "花子 さんは、感情の動きに敏感で、まず気持ちを共有したいタイプです。"
+        "同じ出来事でも、片方は「どう解決するか」、もう片方は「どう感じたか」を大事にするため、"
+        "タイミングがずれると、すれ違いが生まれやすくなります。"
+    )
+    summary_2 = (
+        "一言でいうと、二人は「解決志向」と「共感志向」がうまくかみ合うと、"
+        "とても心強いバランス型のペアです。"
+    )
+    y2 = draw_wrapped_block(c, body_2, text_x, y2, wrap_width,
+                            body_font, body_size, line_height)
+    y2 -= line_height
+    draw_wrapped_block(c, summary_2, text_x, y2, wrap_width,
+                       body_font, body_size, line_height)
+
+    # ===== 価値観のズレ =====
+    y3 = 210
+    body_3 = (
+        "太郎 さんは、安定や責任感を重視する一方で、花子 さんは、変化やワクワク感を大切にする傾向があります。"
+        "お金の使い方や休日の過ごし方、将来のイメージなど、小さな違いが積み重なると、"
+        "「なんでわかってくれないの？」と感じる瞬間が出てくるかもしれません。"
+    )
+    summary_3 = (
+        "一言でいうと、二人の価値観は、違いを否定するのではなく、"
+        "「お互いの世界を広げ合うきっかけ」になりうる組み合わせです。"
+    )
+    y3 = draw_wrapped_block(c, body_3, text_x, y3, wrap_width,
+                            body_font, body_size, line_height)
+    y3 -= line_height
+    draw_wrapped_block(c, summary_3, text_x, y3, wrap_width,
+                       body_font, body_size, line_height)
+
     c.showPage()
 
     # ------------------------------------------------------------------
     # 后面几页只铺背景（占位）
     # ------------------------------------------------------------------
     for bg in [
-        "page_communication.jpg",
         "page_points.jpg",
         "page_trend.jpg",
         "page_advice.jpg",
