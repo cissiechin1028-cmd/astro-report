@@ -91,7 +91,7 @@ def generate_report():
 
     # 姓名：放在金色「恋愛占星レポート」正上方（居中）
     c.setFont(font, 18)
-    c.setFillColorRGB(0, 0, 0)
+    c.setFillColorRGB(0.3,0.3,0.3)
     couple_text = f"{male_name} さん ＆ {female_name} さん"
     # 390 这个高度是针对你这张封面的视觉位置微调过的，如果要再上/下可以再改一点点
     c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
