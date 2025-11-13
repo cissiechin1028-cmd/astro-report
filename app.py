@@ -7,6 +7,8 @@ from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 import io
 import os
 import datetime
+import math
+
 
 # ------------------------------------------------------------------
 # Flask 基本设置：public 目录作为静态目录
@@ -18,17 +20,18 @@ ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
 
 PAGE_WIDTH, PAGE_HEIGHT = A4
 
+
 # ------------------------------------------------------------------
 # 字体设置：只用 ReportLab 自带日文字体，彻底不用 Noto 文件
 # ------------------------------------------------------------------
-JP_FONT = "HeiseiKakuGo-W5"   # 無衬线
+JP_FONT = "HeiseiKakuGo-W5"   # 无衬线
 pdfmetrics.registerFont(UnicodeCIDFont(JP_FONT))
 
 
 # ------------------------------------------------------------------
 # 小工具：铺满整页背景图
 # ------------------------------------------------------------------
-def draw_full_bg(c, filename):
+def draw_full_bg(c, filename: str) -> None:
     """
     将 public/assets/filename 这张图拉伸铺满 A4 页面
     """
@@ -38,37 +41,28 @@ def draw_full_bg(c, filename):
 
 
 # ------------------------------------------------------------------
-# 小工具：日文段落换行
+# 小工具：在星盘上画一个行星标记
 # ------------------------------------------------------------------
-def draw_paragraph(c, text, x, y, max_width, line_height, font_name, font_size):
+def draw_planet_marker(c, cx, cy, radius, degree, label, font_name):
     """
-    按 max_width 自动换行，适合日文/无空格文本。
-    返回最后一行绘制完后的 y 坐标，方便继续往下画。
+    在以 (cx, cy) 为圆心、radius 为半径的圆上，根据黄经 degree(0-360) 画一个行星点。
+
+    约定：
+    - 0° 在正上方，度数顺时针增加
+    - degree 建议传入「相对于白羊 0°」的黄经度
     """
-    c.setFont(font_name, font_size)
+    # 0° 在正上（90 - degree），顺时针增加
+    angle = math.radians(90 - degree)
 
-    lines = []
-    for raw_line in text.split("\n"):
-        if not raw_line:
-            # 空行：直接换一行
-            lines.append("")
-            continue
+    px = cx + radius * math.cos(angle)
+    py = cy + radius * math.sin(angle)
 
-        buf = ""
-        for ch in raw_line:
-            w = c.stringWidth(buf + ch, font_name, font_size)
-            if w <= max_width:
-                buf += ch
-            else:
-                lines.append(buf)
-                buf = ch
-        lines.append(buf)
+    # 小圆点
+    c.circle(px, py, 4, stroke=1, fill=1)
 
-    for line in lines:
-        c.drawString(x, y, line)
-        y -= line_height
-
-    return y
+    # 标签文字（在点右侧一点）
+    c.setFont(font_name, 8)
+    c.drawString(px + 6, py + 2, label)
 
 
 # ------------------------------------------------------------------
@@ -118,17 +112,18 @@ def generate_report():
     # 统一字体
     font = JP_FONT
 
-    # ------------------------------------------------------------------
+    # ==============================================================
     # 封面：cover.jpg
     # 只在指定位置加「太郎 さん ＆ 花子 さん」和「作成日：2025年11月13日」
-    # ------------------------------------------------------------------
+    # ==============================================================
+
     draw_full_bg(c, "cover.jpg")
 
     # 姓名：放在金色「恋愛占星レポート」正上方（居中）
     c.setFont(font, 18)
     c.setFillColorRGB(0.3, 0.3, 0.3)
     couple_text = f"{male_name} さん ＆ {female_name} さん"
-    # 这个高度你刚才已经调好，如果想再微调就改这个数值
+    # 420 这个高度已经按你的封面微调过，如需再上/下就改这个值
     c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
     # 作成日：底部中央
@@ -138,221 +133,123 @@ def generate_report():
 
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 第 2 页：目次 / このレポートについて（index.jpg）
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # 第 2 页：目录 / 说明页，直接用 index.jpg（不加任何文字）
+    # ==============================================================
+
     draw_full_bg(c, "index.jpg")
-    c.setFillColorRGB(0, 0, 0)
-
-    # 在 index 背景的文字框内写一段“このレポートの読み方”
-    text_index = (
-        "このレポートは、おふたりの太陽星座・月星座・上昇星座などをもとに、"
-        "性格や感情表現の傾向、コミュニケーションのリズム、"
-        "関係がスムーズになりやすいポイントをまとめたものです。\n\n"
-        "結果は「当たり・外れ」を判断するためではなく、"
-        "お互いを理解するための小さな地図としてお使いください。\n\n"
-        "共感できる部分を大切にしながら、"
-        "ふたりらしいペースで関係を育てていきましょう。"
-    )
-    # 位置稍微往下，避免顶到上面的标题
-    draw_paragraph(
-        c,
-        text_index,
-        x=80,
-        y=620,
-        max_width=PAGE_WIDTH - 160,
-        line_height=18,
-        font_name=font,
-        font_size=11,
-    )
-
     c.showPage()
 
-    # ------------------------------------------------------------------
+    # ==============================================================
     # 第 3 页：基本ホロスコープと総合相性 + 两个星盘
     # 背景：page_basic.jpg
-    # 星盘：chart_base.png 一左一右，下方分别写姓名
-    # ------------------------------------------------------------------
+    # 星盘：chart_base.png 一左一右，下方分别写姓名 + 盘内行星点
+    # ==============================================================
+
     draw_full_bg(c, "page_basic.jpg")
 
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘尺寸 + 位置（你之前已经大致确认过）
-    chart_size = 180         # 直径
+    # 星盘尺寸 + 位置（你刚刚调整好的版本）
+    chart_size = 180         # 星盘直径
     left_x = 90              # 左边星盘的左上角 X
-    left_y = 500             # 左右共同的 Y
+    left_y = 500             # 左右共同的 Y（整体偏上）
     right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
     # 画两个星盘
     c.drawImage(
-        chart_img, left_x, left_y,
-        width=chart_size, height=chart_size, mask="auto"
+        chart_img,
+        left_x,
+        left_y,
+        width=chart_size,
+        height=chart_size,
+        mask="auto"
     )
     c.drawImage(
-        chart_img, right_x, right_y,
-        width=chart_size, height=chart_size, mask="auto"
+        chart_img,
+        right_x,
+        right_y,
+        width=chart_size,
+        height=chart_size,
+        mask="auto"
     )
 
-    # 星盘下方姓名
+    # ===== 读取（或暂时假设）行星度数 =====
+    # 以后你可以从星盘计算逻辑里把真实度数丢进 URL 参数：
+    # 例：&male_sun=123.4&male_moon=210.0 ...
+    def to_deg(param_name, default_deg):
+        v = request.args.get(param_name)
+        if v is None:
+            return default_deg
+        try:
+            return float(v)
+        except ValueError:
+            return default_deg
+
+    # 男性：太阳 / 月 / 上昇点 / 金星 / 火星（先给一组测试默认值）
+    male_planets = [
+        ("太陽", to_deg("male_sun", 10)),
+        ("月",   to_deg("male_moon", 80)),
+        ("ASC",  to_deg("male_asc", 150)),
+        ("金星", to_deg("male_venus", 220)),
+        ("火星", to_deg("male_mars", 300)),
+    ]
+
+    # 女性
+    female_planets = [
+        ("太陽", to_deg("female_sun", 40)),
+        ("月",   to_deg("female_moon", 120)),
+        ("ASC",  to_deg("female_asc", 190)),
+        ("金星", to_deg("female_venus", 260)),
+        ("火星", to_deg("female_mars", 330)),
+    ]
+
+    # 星盘圆心 & 半径
+    left_cx  = left_x  + chart_size / 2
+    left_cy  = left_y  + chart_size / 2
+    right_cx = right_x + chart_size / 2
+    right_cy = right_y + chart_size / 2
+
+    # 让点落在「行星圈」上
+    marker_radius = chart_size * 0.36
+
+    # 男性盘：偏蓝
+    c.setStrokeColorRGB(0.2, 0.3, 0.6)
+    c.setFillColorRGB(0.2, 0.3, 0.6)
+    for label, deg in male_planets:
+        draw_planet_marker(c, left_cx, left_cy, marker_radius, deg, label, font)
+
+    # 女性盘：偏红
+    c.setStrokeColorRGB(0.7, 0.3, 0.4)
+    c.setFillColorRGB(0.7, 0.3, 0.4)
+    for label, deg in female_planets:
+        draw_planet_marker(c, right_cx, right_cy, marker_radius, deg, label, font)
+
+    # 星盘下方姓名（黑色）
     c.setFont(font, 14)
     c.setFillColorRGB(0, 0, 0)
-    c.drawCentredString(left_x + chart_size / 2, left_y - 25, f"{male_name} さん")
-    c.drawCentredString(right_x + chart_size / 2, right_y - 25, f"{female_name} さん")
+    c.drawCentredString(left_cx,  left_y - 25, f"{male_name} さん")
+    c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 第 4 页：性格とコミュニケーションの傾向（page_communication）
-    # ------------------------------------------------------------------
-    draw_full_bg(c, "page_communication.jpg")
-    c.setFillColorRGB(0, 0, 0)
+    # ==============================================================
+    # 第 4~? 页：先只铺背景图（模板），文字逻辑之后再加
+    # 顺序：page_communication -> page_points -> page_trend
+    #      -> page_advice -> page_summary
+    # ==============================================================
 
-    text_comm = (
-        "ここでは、おふたりの性格のベースとコミュニケーションのリズムをまとめています。\n\n"
-        "・話し方やテンポが似ている部分\n"
-        "　→ 会話が自然に弾みやすく、沈黙も心地よく感じられるポイントです。\n\n"
-        "・感じ方や大事にしているものが違う部分\n"
-        "　→ 意見がぶつかりやすいところですが、視野を広げ合えるポイントでもあります。\n\n"
-        "相手の「クセ」を知っておくことで、"
-        "言い方を少し変えたり、タイミングを工夫したりと、"
-        "小さな調整で関係がぐっとラクになります。"
-    )
-
-    draw_paragraph(
-        c,
-        text_comm,
-        x=80,
-        y=640,
-        max_width=PAGE_WIDTH - 160,
-        line_height=18,
-        font_name=font,
-        font_size=11,
-    )
-
-    c.showPage()
-
-    # ------------------------------------------------------------------
-    # 第 5 页：相性の良いところ・すれ違いやすいところ（page_points）
-    # ------------------------------------------------------------------
-    draw_full_bg(c, "page_points.jpg")
-    c.setFillColorRGB(0, 0, 0)
-
-    text_points = (
-        "ここでは、おふたりの相性の「良いところ」と、"
-        "少しだけ意識しておきたい「すれ違いやすいポイント」を整理しています。\n\n"
-        "【相性の良いところ】\n"
-        "・一緒にいてホッとできる場面\n"
-        "・価値観が自然と揃いやすい場面\n"
-        "・相手の得意分野に素直に頼れる場面\n\n"
-        "【すれ違いやすいところ】\n"
-        "・言葉よりも態度で伝えがちな場面\n"
-        "・どちらかが我慢しすぎてしまいがちな場面\n"
-        "・タイミングの感覚がズレやすい場面\n\n"
-        "「合わないところ」をなくすのではなく、"
-        "お互いの違いを前提にした付き合い方を見つけていくことが、このページのテーマです。"
-    )
-
-    draw_paragraph(
-        c,
-        text_points,
-        x=80,
-        y=640,
-        max_width=PAGE_WIDTH - 160,
-        line_height=18,
-        font_name=font,
-        font_size=11,
-    )
-
-    c.showPage()
-
-    # ------------------------------------------------------------------
-    # 第 6 页：関係の流れと今後の傾向（page_trend）
-    # ------------------------------------------------------------------
-    draw_full_bg(c, "page_trend.jpg")
-    c.setFillColorRGB(0, 0, 0)
-
-    text_trend = (
-        "ここでは、おふたりの関係がどのような流れで進みやすいか、"
-        "星の配置から読み取れるリズムをまとめています。\n\n"
-        "・出会いの時期に強調されていたテーマ\n"
-        "・距離が縮まりやすいタイミング\n"
-        "・少し不安定になりやすい時期\n\n"
-        "「今のステージ」を知っておくことで、"
-        "焦らなくてよいことと、"
-        "今だからこそ丁寧に向き合っておきたいポイントが見えてきます。"
-    )
-
-    draw_paragraph(
-        c,
-        text_trend,
-        x=80,
-        y=640,
-        max_width=PAGE_WIDTH - 160,
-        line_height=18,
-        font_name=font,
-        font_size=11,
-    )
-
-    c.showPage()
-
-    # ------------------------------------------------------------------
-    # 第 7 页：日常で役立つアドバイス（page_advice）
-    # ------------------------------------------------------------------
-    draw_full_bg(c, "page_advice.jpg")
-    c.setFillColorRGB(0, 0, 0)
-
-    text_advice = (
-        "ここからは、日常の中で取り入れやすい小さなアクションをお伝えします。\n\n"
-        "・相手が安心しやすい言葉がけ\n"
-        "・ケンカのあとに気持ちを整えるコツ\n"
-        "・忙しい時期でもつながりを保つための工夫\n\n"
-        "難しいことを急に変える必要はありません。"
-        "まずは「今週できそうなこと」を一つだけ選んで試してみてください。"
-    )
-
-    draw_paragraph(
-        c,
-        text_advice,
-        x=80,
-        y=640,
-        max_width=PAGE_WIDTH - 160,
-        line_height=18,
-        font_name=font,
-        font_size=11,
-    )
-
-    c.showPage()
-
-    # ------------------------------------------------------------------
-    # 第 8 页：まとめ（page_summary）
-    # ------------------------------------------------------------------
-    draw_full_bg(c, "page_summary.jpg")
-    c.setFillColorRGB(0, 0, 0)
-
-    text_summary = (
-        "最後に、このレポート全体のまとめです。\n\n"
-        "占いの結果は、ふたりの未来を決めつけるものではなく、"
-        "より心地よい関係をつくるためのヒント集です。\n\n"
-        "お互いの違いを知り、共通点を見つけ、"
-        "ときどき立ち止まりながらも、一緒に進んでいけるかどうかが何より大切です。\n\n"
-        "このレポートが、おふたりのこれからの日々に、"
-        "少しでも安心とあたたかさをもたらすことができれば幸いです。"
-    )
-
-    draw_paragraph(
-        c,
-        text_summary,
-        x=80,
-        y=640,
-        max_width=PAGE_WIDTH - 160,
-        line_height=18,
-        font_name=font,
-        font_size=11,
-    )
-
-    c.showPage()
+    for bg in [
+        "page_communication.jpg",
+        "page_points.jpg",
+        "page_trend.jpg",
+        "page_advice.jpg",
+        "page_summary.jpg",
+    ]:
+        draw_full_bg(c, bg)
+        c.showPage()
 
     # ------------------------------------------------------------------
     # 收尾 & 返回 PDF
