@@ -20,10 +20,12 @@ ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
 PAGE_WIDTH, PAGE_HEIGHT = A4
 
 # ------------------------------------------------------------------
-# 字体设置：只用 ReportLab 自带日文字体
+# 字体设置：日文用 HeiseiKakuGo，图标用 Helvetica
 # ------------------------------------------------------------------
-JP_FONT = "HeiseiKakuGo-W5"   # 无衬线
+JP_FONT = "HeiseiKakuGo-W5"   # 无衬线日文字体
 pdfmetrics.registerFont(UnicodeCIDFont(JP_FONT))
+
+ICON_FONT = "Helvetica"       # 行星符号用西文字体，避免缺字
 
 
 # ------------------------------------------------------------------
@@ -78,10 +80,10 @@ def draw_planet_on_chart(
     degree,
     color_rgb,
     icon_text,
-    font_name,
 ):
-    # 点的半径（离中心的距离，不是圆点大小）
+    # 点的半径（离中心的距离）
     r_point = chart_size * 0.30
+    # 文字比圆点略靠内
     r_label = chart_size * 0.22
 
     # 0° 在 12 点方向，逆时针增加
@@ -97,14 +99,16 @@ def draw_planet_on_chart(
 
     # 图标坐标（略靠内圈）
     lx = center_x + r_label * math.cos(angle_rad)
-    ly = center_y + r_label * math.sin(angle_rad) - 3  # 微调竖直位置
+    ly = center_y + r_label * math.sin(angle_rad) - 2  # 微调竖直位置
 
-    c.setFont(font_name, 9)
+    # 行星图标统一用 Helvetica，避免 ☉☽ 字符缺失
     c.setFillColorRGB(*color_rgb)
-
-    # ASC 比较长，稍微缩小一点
+    base_size = 8
     if icon_text == "ASC":
-        c.setFont(font_name, 7)
+        c.setFont(ICON_FONT, base_size - 1)
+    else:
+        c.setFont(ICON_FONT, base_size)
+
     c.drawCentredString(lx, ly, icon_text)
 
 
@@ -124,8 +128,6 @@ def generate_report():
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
-    font = JP_FONT
-
     # ------------------------------------------------------------------
     # 封面：cover.jpg
     # 只在指定位置加「太郎 さん ＆ 花子 さん」和「作成日：2025年11月13日」
@@ -133,14 +135,13 @@ def generate_report():
     draw_full_bg(c, "cover.jpg")
 
     # 姓名：放在金色「恋愛占星レポート」正上方（居中）
-    c.setFont(font, 18)
+    c.setFont(JP_FONT, 18)
     c.setFillColorRGB(0.3, 0.3, 0.3)
     couple_text = f"{male_name} さん ＆ {female_name} さん"
-    # 这个高度是针对封面图片微调过的，如果要再动可以再调一点
     c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
     # 作成日：底部中央
-    c.setFont(font, 12)
+    c.setFont(JP_FONT, 12)
     date_text = f"作成日：{date_display}"
     c.drawCentredString(PAGE_WIDTH / 2, 80, date_text)
 
@@ -162,8 +163,8 @@ def generate_report():
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘尺寸 + 位置
-    chart_size = 220
+    # 星盘尺寸 + 位置（变小一点）
+    chart_size = 200
     left_x = 80
     left_y = 520
     right_x = PAGE_WIDTH - chart_size - 80
@@ -199,7 +200,6 @@ def generate_report():
 
     # -------------------------------
     # ▼ 示例占星角度（0–360）：以后可换成真实数据
-    #   这里只是为了排版和测试
     # -------------------------------
     male_planets = [
         {"icon": "☉", "deg": 12.3},   # 太陽
@@ -227,7 +227,6 @@ def generate_report():
             p["deg"],
             male_color,
             p["icon"],
-            font,
         )
 
     for p in female_planets:
@@ -239,7 +238,6 @@ def generate_report():
             p["deg"],
             female_color,
             p["icon"],
-            font,
         )
 
     # -------------------------------
@@ -247,27 +245,28 @@ def generate_report():
     # 太阳 / 月 / 金星 / 火星 / 上昇：星座 + 度数
     # -------------------------------
     male_lines = [
-        "☉ 太陽：牡羊座 12.3°",
-        "☽ 月：双子座 5.4°",
-        "♀ 金星：獅子座 17.8°",
-        "♂ 火星：天秤座 3.2°",
-        "ASC 上昇：山羊座 20.1°",
+        "太陽：牡羊座 12.3°",
+        "月：双子座 5.4°",
+        "金星：獅子座 17.8°",
+        "火星：天秤座 3.2°",
+        "上昇：山羊座 20.1°",
     ]
 
     female_lines = [
-        "☉ 太陽：蟹座 8.5°",
-        "☽ 月：乙女座 22.0°",
-        "♀ 金星：蠍座 14.6°",
-        "♂ 火星：水瓶座 2.9°",
-        "ASC 上昇：魚座 28.4°",
+        "太陽：蟹座 8.5°",
+        "月：乙女座 22.0°",
+        "金星：蠍座 14.6°",
+        "火星：水瓶座 2.9°",
+        "上昇：魚座 28.4°",
     ]
 
     # 列表整体的起始 Y（在星盘底部与姓名之间）
-    list_start_y = left_y - 20
-    line_h = 11
+    list_start_y = left_y - 28   # 比之前略往上，避免挤在一起
+    line_h = 13                  # 行距拉大一点
 
-    c.setFont(font, 10)
-    c.setFillColorRGB(0.15, 0.15, 0.15)
+    # 行星列表：字号小一号、深灰色，看起来更细
+    c.setFont(JP_FONT, 9)
+    c.setFillColorRGB(0.25, 0.25, 0.25)
 
     # 左边（男）行星列表：以星盘中心为轴居中
     for i, text in enumerate(male_lines):
@@ -280,14 +279,14 @@ def generate_report():
         c.drawCentredString(right_cx, y, text)
 
     # 姓名排在列表下面
-    name_y = list_start_y - len(male_lines) * line_h - 12
-    c.setFont(font, 14)
+    name_y = list_start_y - len(male_lines) * line_h - 16
+    c.setFont(JP_FONT, 14)
     c.setFillColorRGB(0, 0, 0)
     c.drawCentredString(left_cx, name_y, f"{male_name} さん")
     c.drawCentredString(right_cx, name_y, f"{female_name} さん")
 
-    # 注意：不再额外绘制「総合相性スコア」「太陽・月・上昇の分析」标题，
-    # 这两个已经在背景图里了。
+    # 不再额外绘制「総合相性スコア」「太陽・月・上昇の分析」，
+    # 这两个标题只保留在背景图片里。
     c.showPage()
 
     # ------------------------------------------------------------------
