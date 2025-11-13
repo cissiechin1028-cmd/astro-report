@@ -80,7 +80,7 @@ def draw_planet_icon(
     """
 
     # 根据星盘大小估一个“外圈点的半径”和“内圈图标的半径”
-    r_dot = chart_size * 0.39   # 彩色点：接近黄道外圈
+    r_dot = chart_size * 0.34   # 彩色点：接近黄道外圈
     r_icon = chart_size * 0.28  # 图标：更靠内圈，不挡星座符号
 
     # 彩色小圆点位置（外圈）
@@ -248,20 +248,20 @@ def generate_report():
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
     # ------------------ 星盘下方 5 行列表（细一点、往上挪） ------------------
-    c.setFont(font, 9)
+    c.setFont(font, 8)
     c.setFillColorRGB(0, 0, 0)
 
     # 男方列表
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
         y = left_y - 45 - i * 11   # 比之前上移一些
-        c.drawCentredString(left_cx, y, line)
+        c.drawString(left_cx- 30, y, line)
 
     # 女方列表
     female_lines = [info["label"] for info in female_planets.values()]
     for i, line in enumerate(female_lines):
         y = right_y - 45 - i * 11
-        c.drawCentredString(right_cx, y, line)
+        c.drawString(right_cx- 30, y, line)
 
     # 不再额外画「総合相性スコア」「太陽・月・上昇の分析」标题
     c.showPage()
