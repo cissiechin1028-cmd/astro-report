@@ -4,13 +4,14 @@ from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
+from reportlab.pdfbase.pdfmetrics import stringWidth
 import io
 import os
 import datetime
 import math
 
 # ------------------------------------------------------------------
-# Flask 基本设置：public 目录作为静态目录
+# Flask 基本设置
 # ------------------------------------------------------------------
 app = Flask(__name__, static_url_path='', static_folder='public')
 
@@ -20,14 +21,17 @@ ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
 PAGE_WIDTH, PAGE_HEIGHT = A4
 
 # ------------------------------------------------------------------
-# 字体：用 ReportLab 自带日文字体
+# 字体设置：无衬线 + 明朝体
 # ------------------------------------------------------------------
-JP_FONT = "HeiseiKakuGo-W5"
-pdfmetrics.registerFont(UnicodeCIDFont(JP_FONT))
+JP_FONT_SANS = "HeiseiKakuGo-W5"   # 粗一点的无衬线，用在标题
+JP_FONT_SERIF = "HeiseiMin-W3"     # 细一点的明朝体，用在正文
+
+pdfmetrics.registerFont(UnicodeCIDFont(JP_FONT_SANS))
+pdfmetrics.registerFont(UnicodeCIDFont(JP_FONT_SERIF))
 
 
 # ------------------------------------------------------------------
-# 小工具：铺满整页背景
+# 工具：铺满整页背景
 # ------------------------------------------------------------------
 def draw_full_bg(c, filename):
     path = os.path.join(ASSETS_DIR, filename)
@@ -36,7 +40,7 @@ def draw_full_bg(c, filename):
 
 
 # ------------------------------------------------------------------
-# 小工具：日期格式化 YYYY-MM-DD → 2025年11月13日
+# 工具：日期格式化 YYYY-MM-DD → 2025年11月14日
 # ------------------------------------------------------------------
 def get_display_date(raw_date: str | None) -> str:
     if raw_date:
@@ -50,17 +54,7 @@ def get_display_date(raw_date: str | None) -> str:
 
 
 # ------------------------------------------------------------------
-# 小工具：极坐标 → 直角坐标（0° 在 12 点方向，逆时针）
-# ------------------------------------------------------------------
-def polar_to_xy(cx, cy, radius, angle_deg):
-    theta = math.radians(90 - angle_deg)  # 0° 在上
-    x = cx + radius * math.cos(theta)
-    y = cy + radius * math.sin(theta)
-    return x, y
-
-
-# ------------------------------------------------------------------
-# 小工具：在星盘上画「彩色点 + PNG 图标」
+# 工具：在星盘上画 彩色小圆点 + PNG 图标
 # ------------------------------------------------------------------
 def draw_planet_icon(
     c,
@@ -70,31 +64,33 @@ def draw_planet_icon(
     angle_deg,
     color_rgb,
     icon_filename,
+    ring_ratio=0.47,      # 点所在圆环半径（相对整张星盘）
+    icon_offset=6,        # 图标相对圆点的位移
+    point_radius=2.3,     # 小圆点大小
+    icon_size=9,          # 图标 PNG 显示尺寸
 ):
     """
-    cx, cy      : 星盘中心
-    chart_size  : 整个星盘图片的宽高（正方形）
-    angle_deg   : 行星度数（0°=白羊 0°，在 12 点）
-    color_rgb   : 小圆点颜色 (r, g, b)
-    icon_filename : public/assets 下的 PNG 文件名
+    angle_deg : 行星角度（0° 在白羊 0°，位于 12 点方向，逆时针增加）
     """
 
-    # 根据星盘大小估一个“外圈点的半径”和“内圈图标的半径”
-    r_dot = chart_size * 0.34   # 彩色点：接近黄道外圈
-    r_icon = chart_size * 0.28  # 图标：更靠内圈，不挡星座符号
+    # 0° 在 12 点方向 → 把数学坐标调整一下
+    theta = math.radians(90 - angle_deg)
+    radius = chart_size * ring_ratio
 
-    # 彩色小圆点位置（外圈）
-    px, py = polar_to_xy(cx, cy, r_dot, angle_deg)
+    px = cx + radius * math.cos(theta)
+    py = cy + radius * math.sin(theta)
+
+    # 小圆点
     r, g, b = color_rgb
     c.setFillColorRGB(r, g, b)
-    c.circle(px, py, 2.3, fill=1, stroke=0)
+    c.circle(px, py, point_radius, fill=1, stroke=0)
 
-    # 图标位置（内圈）
-    ix, iy = polar_to_xy(cx, cy, r_icon, angle_deg)
-
+    # 图标 PNG
     icon_path = os.path.join(ASSETS_DIR, icon_filename)
     icon_img = ImageReader(icon_path)
-    icon_size = 11  # PNG 尺寸（可以微调）
+
+    ix = px + icon_offset * math.cos(theta)
+    iy = py + icon_offset * math.sin(theta)
 
     c.drawImage(
         icon_img,
@@ -107,7 +103,54 @@ def draw_planet_icon(
 
 
 # ------------------------------------------------------------------
-# 根路径 & test.html
+# 工具：带自动换行的文本块（明朝体正文用）
+# ------------------------------------------------------------------
+def draw_wrapped_block(
+    c,
+    text,
+    x,
+    y_top,
+    max_width,
+    font_name,
+    font_size,
+    leading=None,
+):
+    """
+    在 (x, y_top) 位置开始画一段多行文字：
+    - 自动按 max_width 换行（按字符宽度）
+    - leading 为行距（不传就用 1.6 倍行高）
+    返回：最后一行画完之后的 y 位置，方便接着往下排版
+    """
+    if leading is None:
+        leading = font_size * 1.6
+
+    c.setFont(font_name, font_size)
+
+    lines = []
+    line = ""
+    for ch in text:
+        if ch == "\n":         # 手动换行
+            lines.append(line)
+            line = ""
+            continue
+        test = line + ch
+        if stringWidth(test, font_name, font_size) <= max_width:
+            line = test
+        else:
+            lines.append(line)
+            line = ch
+    if line:
+        lines.append(line)
+
+    for l in lines:
+        c.drawString(x, y_top, l)
+        y_top -= leading
+
+    return y_top
+
+
+# ------------------------------------------------------------------
+# 路由
 # ------------------------------------------------------------------
 @app.route("/")
 def root():
@@ -130,96 +173,80 @@ def generate_report():
     raw_date = request.args.get("date")
     date_display = get_display_date(raw_date)
 
-    # ---- 2. 准备 PDF 缓冲区 ----
+    # ---- 2. 准备 PDF ----
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
-    font = JP_FONT
-
-    # ------------------------------------------------------------------
-    # 封面：cover.jpg
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # 1) 封面
+    # ==============================================================
     draw_full_bg(c, "cover.jpg")
 
-    # 姓名：恋愛占星レポート 正上方
-    c.setFont(font, 18)
+    c.setFont(JP_FONT_SANS, 18)
     c.setFillColorRGB(0.3, 0.3, 0.3)
     couple_text = f"{male_name} さん ＆ {female_name} さん"
     c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
-    # 作成日：底部中央
-    c.setFont(font, 12)
+    c.setFont(JP_FONT_SANS, 12)
     date_text = f"作成日：{date_display}"
     c.drawCentredString(PAGE_WIDTH / 2, 80, date_text)
 
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 第 2 页：目录页（index.jpg）
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # 2) 目录页
+    # ==============================================================
     draw_full_bg(c, "index.jpg")
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 第 3 页：基本ホロスコープと総合相性
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # 3) 基本ホロスコープと総合相性
+    # ==============================================================
     draw_full_bg(c, "page_basic.jpg")
 
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘尺寸 + 位置（你现在用的那一版）
+    # 星盘位置
     chart_size = 200
     left_x = 90
     left_y = 520
     right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
-    # 星盘中心
     left_cx = left_x + chart_size / 2
     left_cy = left_y + chart_size / 2
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    # 画星盘底图
+    # 背景星盘
     c.drawImage(chart_img, left_x, left_y,
                 width=chart_size, height=chart_size, mask="auto")
     c.drawImage(chart_img, right_x, right_y,
                 width=chart_size, height=chart_size, mask="auto")
 
-    # ------------------ 行星示例数据（角度 + 文字） ------------------
-    # 之后你可以把这些角度和文字换成真实计算结果，只要 key 不变
+    # 行星角度 + 文本
     male_planets = {
-        "sun":   {"deg": 12.3,  "label": "太陽：牡羊座 12.3°"},
-        "moon":  {"deg": 65.4,  "label": "月：双子座 5.4°"},
-        "venus": {"deg": 147.8, "label": "金星：獅子座 17.8°"},
-        "mars":  {"deg": 183.2, "label": "火星：天秤座 3.2°"},
-        "asc":   {"deg": 220.1, "label": "ASC：山羊座 20.1°"},
+        "sun":   {"deg": 12.3,   "label": "太陽：牡羊座 12.3°",   "icon": "icon_sun.png"},
+        "moon":  {"deg": 65.4,   "label": "月：双子座 5.4°",     "icon": "icon_moon.png"},
+        "venus": {"deg": 147.8,  "label": "金星：獅子座 17.8°",  "icon": "icon_venus.png"},
+        "mars":  {"deg": 183.2,  "label": "火星：天秤座 3.2°",   "icon": "icon_mars.png"},
+        "asc":   {"deg": 220.1,  "label": "ASC：山羊座 20.1°",  "icon": "icon_asc.png"},
     }
 
     female_planets = {
-        "sun":   {"deg": 8.5,   "label": "太陽：蟹座 8.5°"},
-        "moon":  {"deg": 150.0, "label": "月：乙女座 22.0°"},
-        "venus": {"deg": 214.6, "label": "金星：蠍座 14.6°"},
-        "mars":  {"deg": 262.9, "label": "火星：水瓶座 2.9°"},
-        "asc":   {"deg": 288.4, "label": "ASC：魚座 28.4°"},
+        "sun":   {"deg": 8.5,    "label": "太陽：蟹座 8.5°",      "icon": "icon_sun.png"},
+        "moon":  {"deg": 150.0,  "label": "月：乙女座 22.0°",    "icon": "icon_moon.png"},
+        "venus": {"deg": 214.6,  "label": "金星：蠍座 14.6°",     "icon": "icon_venus.png"},
+        "mars":  {"deg": 262.9,  "label": "火星：水瓶座 2.9°",    "icon": "icon_mars.png"},
+        "asc":   {"deg": 288.4,  "label": "ASC：魚座 28.4°",    "icon": "icon_asc.png"},
     }
 
-    # 与 key 对应的 PNG 文件名
-    icon_files = {
-        "sun": "icon_sun.png",
-        "moon": "icon_moon.png",
-        "venus": "icon_venus.png",
-        "mars": "icon_mars.png",
-        "asc": "icon_asc.png",
-    }
+    male_color = (0.15, 0.45, 0.9)   # 蓝
+    female_color = (0.9, 0.35, 0.65) # 粉
 
-    # 男 = 蓝色 / 女 = 粉色
-    male_color = (0.15, 0.45, 0.9)
-    female_color = (0.9, 0.35, 0.65)
-
-    # ------------------ 在星盘上画点 + 图标（内圈） ------------------
-    for key, info in male_planets.items():
+    # 男方星盘点
+    for info in male_planets.values():
         draw_planet_icon(
             c,
             left_cx,
@@ -227,10 +254,11 @@ def generate_report():
             chart_size,
             info["deg"],
             male_color,
-            icon_files[key],
+            info["icon"],
         )
 
-    for key, info in female_planets.items():
+    # 女方星盘点
+    for info in female_planets.values():
         draw_planet_icon(
             c,
             right_cx,
@@ -238,75 +266,85 @@ def generate_report():
             chart_size,
             info["deg"],
             female_color,
-            icon_files[key],
+            info["icon"],
         )
 
-    # ------------------ 星盘下方姓名 ------------------
-    c.setFont(font, 14)
+    # 星盘下方姓名
+    c.setFont(JP_FONT_SANS, 14)
     c.setFillColorRGB(0, 0, 0)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # ------------------ 星盘下方 5 行列表（细一点、往上挪） ------------------
-    c.setFont(font, 8)
-    c.setFillColorRGB(0, 0, 0)
+    # 星盘下方 5 行列表：改成明朝体 + 左对齐 + 字号小一点
+    c.setFont(JP_FONT_SERIF, 9.5)
 
-    # 男方列表
+    # 男方列表（左边）
     male_lines = [info["label"] for info in male_planets.values()]
+    left_text_x = left_cx - 70   # 左右位置
+    left_text_y_start = left_y - 50
+    line_height = 12             # 行距
+
     for i, line in enumerate(male_lines):
-        y = left_y - 45 - i * 11   # 比之前上移一些
-        c.drawString(left_cx - 30, y, line)
+        y = left_text_y_start - i * line_height
+        c.drawString(left_text_x, y, line)
 
-    # 女方列表
+    # 女方列表（右边，稍微往右一点）
     female_lines = [info["label"] for info in female_planets.values()]
-    for i, line in enumerate(female_lines):
-        y = right_y - 45 - i * 11
-        c.drawString(right_cx - 30, y, line)
+    right_text_x = right_cx - 65
+    right_text_y_start = right_y - 50
 
-    # 不再额外画「総合相性スコア」「太陽・月・上昇の分析」标题
+    for i, line in enumerate(female_lines):
+        y = right_text_y_start - i * line_height
+        c.drawString(right_text_x, y, line)
+
     c.showPage()
 
-                 # ------------------------------------------------------------------
-    # 第 4 页：性格の違いとコミュニケーション
-    # 背景：page_communication.jpg
-    # 文字：話し方とテンポ / 問題への向き合い方 / 価値観のズレ
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # 4) 性格の違いとコミュニケーション
+    #    全部明朝体 + 自动换行 + 行距拉开
+    # ==============================================================
     draw_full_bg(c, "page_communication.jpg")
 
-    # 固定左边起点（不要动这个 X）
-    text_x = 120          # 你如果之前用的是别的值，就把这里改成你原来的那个值
-    wrap_width = 340      # 每行宽度稍微拉长一点，右边不会那么空
-    body_font_size = 9    # 字号比标题小一号，细一点
+    body_font = JP_FONT_SERIF      # 明朝体
+    body_size = 9.5                # 比之前小一点
+    wrap_width = 360               # 行更长一点，右边不那么空
+    text_x = 110                   # 左边对齐基准
 
-    # --- 話し方とテンポ ---
-    block1 = """太郎さんは、自分の気持ちを言葉にするまでに少し時間をかける、じっくりタイプです。一方で、花子さんは、その場で感じたことをすぐに言葉にしやすい、テンポの速いタイプです。日常会話では、片方が考えている間にもう一方がどんどん話してしまい、「ちゃんと聞いてもらえていない」と感じる場面が生まれやすくなります。
+    # ---- 話し方とテンポ ----
+    block1 = (
+        f"{male_name} さんは、自分の気持ちを言葉にするまでに少し時間をかける、じっくりタイプです。"
+        f"一方で、{female_name} さんは、その場で感じたことをすぐに言葉にする、テンポの速いタイプです。"
+        "日常会話では、片方が考えている間にもう一方がどんどん話してしまい、「ちゃんと聞いてもらえていない」と感じる場面が出やすくなります。\n"
+        "一言でいうと、二人の話し方は、スピードの違いを理解し合うことで、より心地よくつながれるペアです。"
+    )
+    y1 = 515
+    y1_end = draw_wrapped_block(c, block1, text_x, y1, wrap_width, body_font, body_size)
 
-一言でいうと、二人の話し方は、スピードの違いを意識して譲り合うことで、もっと心地よくつながれるペアです。"""
+    # ---- 問題への向き合い方 ----
+    block2 = (
+        f"{male_name} さんは、問題が起きたときにまず全体を整理してから、落ち着いて対処しようとします。"
+        f"{female_name} さんは、感情の動きに敏感で、まず気持ちを共有したいタイプです。"
+        "同じ出来事でも、片方は「どう解決するか」、もう片方は「どう感じたか」を大事にするため、タイミングがずれると、すれ違いが生まれやすくなります。\n"
+        "一言でいうと、二人は「解決志向」と「共感志向」がうまくかみ合うと心強いバランス型のペアです。"
+    )
+    y2_title = y1_end - 40   # 与上一块之间留一点空白
+    y2_end = draw_wrapped_block(c, block2, text_x, y2_title, wrap_width, body_font, body_size)
 
-    # --- 問題への向き合い方 ---
-    block2 = """太郎さんは、問題が起きたときにまず全体を整理してから、落ち着いて対処しようとする傾向があります。花子さんは、感情の動きに敏感で、まず気持ちを共有したいタイプです。同じ出来事でも、片方は「どう解決するか」、もう片方は「どう感じたか」を大事にするため、タイミングがずれると、すれ違いが生まれやすくなります。
-
-一言でいうと、二人は「解決志向」と「共感志向」がうまくかみ合うと、とても心強いバランス型のペアです。"""
-
-    # --- 価値観のズレ ---
-    block3 = """太郎さんは、安定や責任感を重視する一方で、花子さんは、変化やワクワク感を大切にする傾向があります。お金の使い方や休日の過ごし方、将来のイメージなど、小さな違いが重なると「なんでわかってくれないの？」と感じる瞬間が出てくるかもしれません。
-
-一言でいうと、二人の価値観は、違いを否定せずに「お互いの世界を広げ合うきっかけ」にできる組み合わせです。"""
-
-    # 三个段落的起始高度（整体往上挪了一点）
-    y1 = 500   # 話し方とテンポ 下面正文的起点
-    y2 = 345   # 問題への向き合い方 下面正文的起点
-    y3 = 190   # 価値観のズレ 下面正文的起点
-
-    draw_wrapped_block(c, block1, text_x, y1, wrap_width, font, body_font_size)
-    draw_wrapped_block(c, block2, text_x, y2, wrap_width, font, body_font_size)
-    draw_wrapped_block(c, block3, text_x, y3, wrap_width, font, body_font_size)
+    # ---- 価値観のズレ ----
+    block3 = (
+        f"{male_name} さんは、安定や責任感を重視する一方で、"
+        f"{female_name} さんは、変化やワクワク感を大切にする傾向があります。"
+        "お金の使い方や休日の過ごし方、将来のイメージなど、小さな違いが重なると「なんでわかってくれないの？」と感じる瞬間が出てくるかもしれません。\n"
+        "一言でいうと、二人の価値観は、違いを否定せずに「お互いの世界を広げ合うきっかけ」にできる組み合わせです。"
+    )
+    y3_title = y2_end - 40
+    _ = draw_wrapped_block(c, block3, text_x, y3_title, wrap_width, body_font, body_size)
 
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 第 5~8 页：只铺背景图（先占位，不写文字）
-    # ------------------------------------------------------------------
+    # ==============================================================
+    # 5) 之后几页先只铺背景
+    # ==============================================================
     for bg in [
         "page_points.jpg",
         "page_trend.jpg",
@@ -316,23 +354,7 @@ def generate_report():
         draw_full_bg(c, bg)
         c.showPage()
 
-
-    # ------------------------------------------------------------------
-    # 后面几页只铺背景（占位）
-    # ------------------------------------------------------------------
-    for bg in [
-        "page_communication.jpg",
-        "page_points.jpg",
-        "page_trend.jpg",
-        "page_advice.jpg",
-        "page_summary.jpg",
-    ]:
-        draw_full_bg(c, bg)
-        c.showPage()
-
-    # ------------------------------------------------------------------
     # 收尾
-    # ------------------------------------------------------------------
     c.save()
     buffer.seek(0)
 
