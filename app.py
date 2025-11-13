@@ -9,9 +9,9 @@ import os
 import datetime
 import math
 
-# ------------------------------------------------------------------
-# Flask 基本设置：public 目录作为静态目录
-# ------------------------------------------------------------------
+# ---------------------------------------------------
+# Flask + 目录
+# ---------------------------------------------------
 app = Flask(__name__, static_url_path='', static_folder='public')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -19,231 +19,161 @@ ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
 
 PAGE_WIDTH, PAGE_HEIGHT = A4
 
-# ------------------------------------------------------------------
-# 字体设置：日文用 HeiseiKakuGo，图标用 Helvetica
-# ------------------------------------------------------------------
-JP_FONT = "HeiseiKakuGo-W5"   # 无衬线日文字体
+# ---------------------------------------------------
+# 使用 ReportLab 内置日文字体
+# ---------------------------------------------------
+JP_FONT = "HeiseiKakuGo-W5"
 pdfmetrics.registerFont(UnicodeCIDFont(JP_FONT))
 
-ICON_FONT = "Helvetica"       # 行星符号用西文字体，避免缺字
+# ---------------------------------------------------
+# 透明 PNG 行星图标
+# ---------------------------------------------------
+PLANET_ICONS = {
+    "sun":   ImageReader(os.path.join(ASSETS_DIR, "icon_sun.png")),
+    "moon":  ImageReader(os.path.join(ASSETS_DIR, "icon_moon.png")),
+    "asc":   ImageReader(os.path.join(ASSETS_DIR, "icon_asc.png")),
+    "mars":  ImageReader(os.path.join(ASSETS_DIR, "icon_mars.png")),
+    "venus": ImageReader(os.path.join(ASSETS_DIR, "icon_venus.png")),
+}
 
-
-# ------------------------------------------------------------------
-# 小工具：铺满整页背景图
-# ------------------------------------------------------------------
+# ---------------------------------------------------
+# 工具：背景铺满
+# ---------------------------------------------------
 def draw_full_bg(c, filename):
-    """
-    将 public/assets/filename 这张图拉伸铺满 A4 页面
-    """
     path = os.path.join(ASSETS_DIR, filename)
     img = ImageReader(path)
     c.drawImage(img, 0, 0, width=PAGE_WIDTH, height=PAGE_HEIGHT)
 
-
-# ------------------------------------------------------------------
-# 小工具：处理日期参数，输出 2025年11月13日 这种格式
-# ------------------------------------------------------------------
-def get_display_date(raw_date: str | None) -> str:
+# ---------------------------------------------------
+# 日期格式
+# ---------------------------------------------------
+def get_display_date(raw_date):
     if raw_date:
         try:
             d = datetime.datetime.strptime(raw_date, "%Y-%m-%d").date()
-        except ValueError:
+        except:
             d = datetime.date.today()
     else:
         d = datetime.date.today()
-
     return f"{d.year}年{d.month}月{d.day}日"
 
+# ---------------------------------------------------
+# 星盘：画一个行星（彩色圆点 + 图标 PNG）
+# ---------------------------------------------------
+def draw_planet(c, cx, cy, radius, angle_deg, color_rgb, icon_key):
+    rad = math.radians(angle_deg)
+    x = cx + radius * math.cos(rad)
+    y = cy + radius * math.sin(rad)
 
-# ------------------------------------------------------------------
-# 根路径 & test.html
-# ------------------------------------------------------------------
+    # 小圆点
+    dot_r = 4
+    c.setFillColorRGB(*color_rgb)
+    c.circle(x, y, dot_r, fill=1, stroke=0)
+
+    # 图标
+    icon = PLANET_ICONS[icon_key]
+    icon_size = 12
+    c.drawImage(icon, x - icon_size/2, y - icon_size/2,
+                width=icon_size, height=icon_size, mask='auto')
+
+# ---------------------------------------------------
+# 首页
+# ---------------------------------------------------
 @app.route("/")
 def root():
     return "PDF server running."
-
 
 @app.route("/test.html")
 def test_page():
     return app.send_static_file("test.html")
 
-
-# ------------------------------------------------------------------
-# 在星盘上画「彩色圆点 + 行星图标」
-# degree: 0–360，占星角度；白羊 0° 在 12 点方向
-# ------------------------------------------------------------------
-def draw_planet_on_chart(
-    c,
-    center_x,
-    center_y,
-    chart_size,
-    degree,
-    color_rgb,
-    icon_text,
-):
-    # 点的半径（离中心的距离）
-    r_point = chart_size * 0.30
-    # 文字比圆点略靠内
-    r_label = chart_size * 0.22
-
-    # 0° 在 12 点方向，逆时针增加
-    angle_rad = math.radians(90 - degree)
-
-    # 圆点坐标
-    x = center_x + r_point * math.cos(angle_rad)
-    y = center_y + r_point * math.sin(angle_rad)
-
-    # 画小圆点
-    c.setFillColorRGB(*color_rgb)
-    c.circle(x, y, 3, fill=1, stroke=0)
-
-    # 图标坐标（略靠内圈）
-    lx = center_x + r_label * math.cos(angle_rad)
-    ly = center_y + r_label * math.sin(angle_rad) - 2  # 微调竖直位置
-
-    # 行星图标统一用 Helvetica，避免 ☉☽ 字符缺失
-    c.setFillColorRGB(*color_rgb)
-    base_size = 8
-    if icon_text == "ASC":
-        c.setFont(ICON_FONT, base_size - 1)
-    else:
-        c.setFont(ICON_FONT, base_size)
-
-    c.drawCentredString(lx, ly, icon_text)
-
-
-# ------------------------------------------------------------------
-# 生成 PDF 主入口
-# GET /api/generate_report?male_name=太郎&female_name=花子&date=2025-01-01
-# ------------------------------------------------------------------
+# ---------------------------------------------------
+# 主功能：生成 PDF
+# ---------------------------------------------------
 @app.route("/api/generate_report", methods=["GET"])
 def generate_report():
-    # ---- 1. 读取参数 ----
-    male_name = request.args.get("male_name", "太郎")
-    female_name = request.args.get("female_name", "花子")
-    raw_date = request.args.get("date")  # 期望格式：YYYY-MM-DD
-    date_display = get_display_date(raw_date)
+    # 获取参数
+    male = request.args.get("male_name", "太郎")
+    female = request.args.get("female_name", "花子")
+    date_raw = request.args.get("date")
+    date_display = get_display_date(date_raw)
 
-    # ---- 2. 准备 PDF 缓冲区 ----
+    # PDF 缓冲区
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
-    # ------------------------------------------------------------------
-    # 封面：cover.jpg
-    # 只在指定位置加「太郎 さん ＆ 花子 さん」和「作成日：2025年11月13日」
-    # ------------------------------------------------------------------
+    # ---------------------------------------------------
+    # 封面
+    # ---------------------------------------------------
     draw_full_bg(c, "cover.jpg")
 
-    # 姓名：放在金色「恋愛占星レポート」正上方（居中）
     c.setFont(JP_FONT, 18)
     c.setFillColorRGB(0.3, 0.3, 0.3)
-    couple_text = f"{male_name} さん ＆ {female_name} さん"
-    c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
+    c.drawCentredString(PAGE_WIDTH/2, 420, f"{male} さん ＆ {female} さん")
 
-    # 作成日：底部中央
     c.setFont(JP_FONT, 12)
-    date_text = f"作成日：{date_display}"
-    c.drawCentredString(PAGE_WIDTH / 2, 80, date_text)
+    c.drawCentredString(PAGE_WIDTH/2, 80, f"作成日：{date_display}")
 
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 第 2 页：目录 / 说明页，直接用 index.jpg（不加文字）
-    # ------------------------------------------------------------------
+    # ---------------------------------------------------
+    # 目录页（你说不用改内容）
+    # ---------------------------------------------------
     draw_full_bg(c, "index.jpg")
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 第 3 页：基本ホロスコープと総合相性 + 两个星盘
-    # 背景：page_basic.jpg
-    # 星盘：chart_base.png 一左一右，下方分别写姓名和行星列表
-    # ------------------------------------------------------------------
+    # ---------------------------------------------------
+    # 星盘页
+    # ---------------------------------------------------
     draw_full_bg(c, "page_basic.jpg")
 
-    chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
-    chart_img = ImageReader(chart_path)
-
-    # 星盘尺寸 + 位置（变小一点）
-    chart_size = 200
-    left_x = 80
-    left_y = 520
-    right_x = PAGE_WIDTH - chart_size - 80
+    # 星盘底图
+    chart = ImageReader(os.path.join(ASSETS_DIR, "chart_base.png"))
+    chart_size = 180
+    left_x = 90
+    left_y = 500
+    right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
-    # 画两张星盘底图
-    c.drawImage(
-        chart_img,
-        left_x,
-        left_y,
-        width=chart_size,
-        height=chart_size,
-        mask="auto",
-    )
-    c.drawImage(
-        chart_img,
-        right_x,
-        right_y,
-        width=chart_size,
-        height=chart_size,
-        mask="auto",
-    )
+    # 画星盘底图
+    c.drawImage(chart, left_x, left_y, width=chart_size, height=chart_size)
+    c.drawImage(chart, right_x, right_y, width=chart_size, height=chart_size)
 
-    # 星盘中心
-    left_cx = left_x + chart_size / 2
-    left_cy = left_y + chart_size / 2
-    right_cx = right_x + chart_size / 2
-    right_cy = right_y + chart_size / 2
+    # 星盘中心坐标
+    male_cx = left_x + chart_size / 2
+    male_cy = left_y + chart_size / 2
+    female_cx = right_x + chart_size / 2
+    female_cy = right_y + chart_size / 2
 
-    # 男/女两种颜色
-    male_color = (0.15, 0.35, 0.85)   # 蓝
-    female_color = (0.88, 0.30, 0.60) # 粉
+    # 半径（图标放内圈）
+    r_inner = chart_size * 0.33
 
-    # -------------------------------
-    # ▼ 示例占星角度（0–360）：以后可换成真实数据
-    # -------------------------------
-    male_planets = [
-        {"icon": "☉", "deg": 12.3},   # 太陽
-        {"icon": "☽", "deg": 65.4},   # 月
-        {"icon": "♀", "deg": 140.0},  # 金星
-        {"icon": "♂", "deg": 220.0},  # 火星
-        {"icon": "ASC", "deg": 300.0}, # 上升
-    ]
+    # 示例行星角度（以后你可以从数据库输入）
+    male_angles = {
+        "sun": 10, "moon": 85, "venus": 140, "mars": 220, "asc": 300
+    }
+    female_angles = {
+        "sun": 15, "moon": 120, "venus": 210, "mars": 280, "asc": 340
+    }
 
-    female_planets = [
-        {"icon": "☉", "deg": 8.5},
-        {"icon": "☽", "deg": 172.0},
-        {"icon": "♀", "deg": 214.6},
-        {"icon": "♂", "deg": 250.0},
-        {"icon": "ASC", "deg": 328.4},
-    ]
+    # 男=蓝 女=粉
+    male_color = (0.2, 0.4, 0.9)
+    female_color = (0.9, 0.3, 0.6)
 
-    # 在星盘上画「彩色圆点 + 图标」
-    for p in male_planets:
-        draw_planet_on_chart(
-            c,
-            left_cx,
-            left_cy,
-            chart_size,
-            p["deg"],
-            male_color,
-            p["icon"],
-        )
+    # 男方行星
+    for key, angle in male_angles.items():
+        draw_planet(c, male_cx, male_cy, r_inner, angle, male_color, key)
 
-    for p in female_planets:
-        draw_planet_on_chart(
-            c,
-            right_cx,
-            right_cy,
-            chart_size,
-            p["deg"],
-            female_color,
-            p["icon"],
-        )
+    # 女方行星
+    for key, angle in female_angles.items():
+        draw_planet(c, female_cx, female_cy, r_inner, angle, female_color, key)
 
-    # -------------------------------
-    # 星盘下面的行星列表（示例文本）
-    # 太阳 / 月 / 金星 / 火星 / 上昇：星座 + 度数
-    # -------------------------------
+    # ---------------------------------------------------
+    # 下方行星列表（字体细一点、居中）
+    # ---------------------------------------------------
+    c.setFont(JP_FONT, 9)
+    c.setFillColorRGB(0.05, 0.05, 0.05)
+
     male_lines = [
         "太陽：牡羊座 12.3°",
         "月：双子座 5.4°",
@@ -251,7 +181,6 @@ def generate_report():
         "火星：天秤座 3.2°",
         "上昇：山羊座 20.1°",
     ]
-
     female_lines = [
         "太陽：蟹座 8.5°",
         "月：乙女座 22.0°",
@@ -260,40 +189,26 @@ def generate_report():
         "上昇：魚座 28.4°",
     ]
 
-    # 列表整体的起始 Y（在星盘底部与姓名之间）
-    list_start_y = left_y - 28   # 比之前略往上，避免挤在一起
-    line_h = 13                  # 行距拉大一点
+    base_y = 390
+    line_h = 11
 
-    # 行星列表：字号小一号、深灰色，看起来更细
-    c.setFont(JP_FONT, 9)
-    c.setFillColorRGB(0.25, 0.25, 0.25)
+    for i, line in enumerate(male_lines):
+        c.drawCentredString(male_cx, base_y - i * line_h, line)
 
-    # 左边（男）行星列表：以星盘中心为轴居中
-    for i, text in enumerate(male_lines):
-        y = list_start_y - i * line_h
-        c.drawCentredString(left_cx, y, text)
+    for i, line in enumerate(female_lines):
+        c.drawCentredString(female_cx, base_y - i * line_h, line)
 
-    # 右边（女）行星列表：同样居中
-    for i, text in enumerate(female_lines):
-        y = list_start_y - i * line_h
-        c.drawCentredString(right_cx, y, text)
-
-    # 姓名排在列表下面
-    name_y = list_start_y - len(male_lines) * line_h - 16
+    # 星盘下方姓名
     c.setFont(JP_FONT, 14)
     c.setFillColorRGB(0, 0, 0)
-    c.drawCentredString(left_cx, name_y, f"{male_name} さん")
-    c.drawCentredString(right_cx, name_y, f"{female_name} さん")
+    c.drawCentredString(male_cx, left_y - 25, f"{male} さん")
+    c.drawCentredString(female_cx, right_y - 25, f"{female} さん")
 
-    # 不再额外绘制「総合相性スコア」「太陽・月・上昇の分析」，
-    # 这两个标题只保留在背景图片里。
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 第 4~? 页：先只铺背景图（模板），文字逻辑之后再加
-    # 顺序：page_communication -> page_points -> page_trend
-    #      -> page_advice -> page_summary
-    # ------------------------------------------------------------------
+    # ---------------------------------------------------
+    # 后续几页背景（仍然保持空白）
+    # ---------------------------------------------------
     for bg in [
         "page_communication.jpg",
         "page_points.jpg",
@@ -304,23 +219,20 @@ def generate_report():
         draw_full_bg(c, bg)
         c.showPage()
 
-    # ------------------------------------------------------------------
-    # 收尾 & 返回 PDF
-    # ------------------------------------------------------------------
+    # ---------------------------------------------------
+    # 输出 PDF
+    # ---------------------------------------------------
     c.save()
     buffer.seek(0)
 
-    filename = f"love_report_{male_name}_{female_name}.pdf"
+    filename = f"love_report_{male}_{female}.pdf"
+    return send_file(buffer, as_attachment=True,
+                     download_name=filename,
+                     mimetype="application/pdf")
 
-    return send_file(
-        buffer,
-        as_attachment=True,
-        download_name=filename,
-        mimetype="application/pdf",
-    )
-
-
+# ---------------------------------------------------
+# Run
+# ---------------------------------------------------
 if __name__ == "__main__":
-    # 本地跑可以用 10000，Render 上会用自己的 PORT 环境变量
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
