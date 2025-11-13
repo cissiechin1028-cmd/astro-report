@@ -261,7 +261,7 @@ def generate_report():
     female_lines = [info["label"] for info in female_planets.values()]
     for i, line in enumerate(female_lines):
         y = right_y - 45 - i * 11
-        c.drawCentredString(right_cx + 15, y, line)
+        c.drawCentredString(right_cx + 5, y, line)
 
     # 不再额外画「総合相性スコア」「太陽・月・上昇の分析」标题
     c.showPage()
