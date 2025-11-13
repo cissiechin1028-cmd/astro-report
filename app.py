@@ -266,17 +266,17 @@ def generate_report():
     # 不再额外画「総合相性スコア」「太陽・月・上昇の分析」标题
     c.showPage()
 
-           # ------------------------------------------------------------------
+             # ------------------------------------------------------------------
     # 第 4 页：性格の違いとコミュニケーション
     # 背景：page_communication.jpg
-    # 只在 3 个小标题下方填充正文：
-    #  話し方とテンポ
-    #  問題への向き合い方
-    #  価値観のズレ
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_communication.jpg")
 
-    # ===== 1) 文案：手动加入换行 + 中间空一行 =====
+    # 使用更细的日文字体
+    BODY_FONT = "HeiseiMin-W3"
+    pdfmetrics.registerFont(UnicodeCIDFont(BODY_FONT))
+
+    # ===== 文案（手动换行 + 中间空一行） =====
 
     text_tempo = (
         f"{male_name} さんは、自分の気持ちを言葉にするまでに\n"
@@ -287,7 +287,7 @@ def generate_report():
         "もう一方がどんどん話してしまい、\n"
         "「ちゃんと聞いてもらえていない」と\n"
         "感じる場面が出やすくなります。\n"
-        "\n"  # 分析部分和总结之间空一行
+        "\n"
         "一言でいうと、二人の話し方は、\n"
         "スピードの違いを理解し合うことで、\n"
         "より心地よくつながれるペアです。"
@@ -318,29 +318,20 @@ def generate_report():
         "『お互いの世界を広げ合うきっかけ』にできる組み合わせです。"
     )
 
-    # ===== 2) 简单段落绘制函数（保持左对齐） =====
-
-    def draw_paragraph(c, x, y, text, leading=13):
-        c.setFont(font, 10)          # 字体稍小，看起来细一点
-        c.setFillColorRGB(0, 0, 0)
+    # ===== 段落绘制（左对齐 + 行距） =====
+    def draw_paragraph(c, x, y, text, leading=15):
+        c.setFont(BODY_FONT, 11)     # 更细的字体 + 大一号
         txt = c.beginText()
-        txt.setTextOrigin(x, y)      # 左上起点
-        txt.setLeading(leading)      # 行距
+        txt.setTextOrigin(x, y)
+        txt.setLeading(leading)
         for line in text.split("\n"):
             txt.textLine(line)
         c.drawText(txt)
 
-    # ===== 3) 三段文字的位置（整体往上收紧，对齐标题） =====
-    # 这些坐标你可以再微调：x 控左右，y 控上下
-
-    # 「話し方とテンポ」下方正文
-    draw_paragraph(c, 95, 540, text_tempo)
-
-    # 「問題への向き合い方」下方正文
-    draw_paragraph(c, 95, 360, text_problem)
-
-    # 「価値観のズレ」下方正文
-    draw_paragraph(c, 95, 190, text_values)
+    # ===== 段落位置（全部上提 70pt 左右） =====
+    draw_paragraph(c, 95, 600, text_tempo)      # 比原来提高
+    draw_paragraph(c, 95, 415, text_problem)    # 第二段也整体提高
+    draw_paragraph(c, 95, 235, text_values)     # 第三段提高
 
     c.showPage()
 
