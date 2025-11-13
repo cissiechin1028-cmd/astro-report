@@ -1,53 +1,50 @@
 from flask import Flask, send_file, request
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
-import io
-
-# ========  注册日文字体（你上传的那三个）  ========
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-
-pdfmetrics.registerFont(TTFont("NotoSansJP-Regular", "public/assets/NotoSansJP-Regular.otf"))
-pdfmetrics.registerFont(TTFont("NotoSansJP-Medium", "public/assets/NotoSansJP-Medium.otf"))
-pdfmetrics.registerFont(TTFont("NotoSansJP-Bold", "public/assets/NotoSansJP-Bold.otf"))
-
-FONT_REGULAR = "NotoSansJP-Regular"
-FONT_MEDIUM  = "NotoSansJP-Medium"
-FONT_BOLD    = "NotoSansJP-Bold"
-
-# ================================================
+import io
+import os
 
 app = Flask(__name__, static_url_path='', static_folder='public')
 
+# ====== 注册日文字体（必须放在 public/assets 下） ======
+BASE_PATH = os.path.join(app.static_folder, "assets")
 
-# ---- 根路径，避免 Render 显示 404 ----
+FONT_REGULAR = os.path.join(BASE_PATH, "NotoSansJP-Regular.otf")
+FONT_MEDIUM = os.path.join(BASE_PATH, "NotoSansJP-Medium.otf")
+FONT_BOLD = os.path.join(BASE_PATH, "NotoSansJP-Bold.otf")
+
+pdfmetrics.registerFont(TTFont("NotoSansJP", FONT_REGULAR))
+pdfmetrics.registerFont(TTFont("NotoSansJP-Medium", FONT_MEDIUM))
+pdfmetrics.registerFont(TTFont("NotoSansJP-Bold", FONT_BOLD))
+
+# ====== 根路径 ======
 @app.route('/')
 def root():
     return "PDF server running."
 
-
-# ---- 静态文件测试页面 ----
+# ====== 静态 test 页面 ======
 @app.route('/test.html')
 def test_page():
     return app.send_static_file('test.html')
 
-
-# ---- PDF 生成测试（已使用日语字体） ----
+# ====== 生成 PDF ======
 @app.route('/api/generate_report', methods=['GET'])
 def generate_pdf():
-
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=A4)
 
-    # 测试内容
-    p.setFont(FONT_BOLD, 24)
-    p.drawString(80, 780, "恋愛占星レポート")
+    # 使用日本語字体
+    p.setFont("NotoSansJP", 24)
+    p.drawString(100, 780, "PDF 日本語テスト成功！")
+    p.drawString(100, 740, "恋愛占星レポートの日本語も正しく表示できます。")
 
-    p.setFont(FONT_MEDIUM, 18)
-    p.drawString(80, 740, "フォントテスト：日本語は正常に表示されます。")
+    p.setFont("NotoSansJP-Bold", 28)
+    p.drawString(100, 700, "→ これは太字（Bold）です")
 
-    p.setFont(FONT_REGULAR, 14)
-    p.drawString(80, 700, "これは NotoSansJP-Regular を使用した本文テストです。")
+    p.setFont("NotoSansJP-Medium", 20)
+    p.drawString(100, 660, "→ これは Medium（中等太さ）です")
 
     p.showPage()
     p.save()
@@ -57,7 +54,7 @@ def generate_pdf():
         buffer,
         as_attachment=True,
         download_name="test.pdf",
-        mimetype='application/pdf'
+        mimetype="application/pdf"
     )
 
 
