@@ -50,52 +50,42 @@ def get_display_date(raw_date: str | None) -> str:
 
 
 # ------------------------------------------------------------------
-# 工具：在星盘上画小圆点 + 旁边的图标（PNG）
+# 工具：星盘用的极坐标转换 + 在内圈画行星点和符号
 # ------------------------------------------------------------------
-def draw_planet_point(
-    c,
-    center_x,
-    center_y,
-    radius,
-    angle_deg,
-    color_rgb,
-    icon_filename,
-    icon_offset=8,
-    point_radius=2.5,
-):
+def chart_polar(cx, cy, radius, deg):
     """
-    center_x, center_y : 星盘中心
-    radius             : 这一圈的半径
-    angle_deg          : 行星所在角度（0° 在最上方，逆时针）
-    color_rgb          : 小圆点颜色 (r, g, b)
-    icon_filename      : PNG 图标文件名（在 public/assets 下）
-    icon_offset        : 图标相对小圆点向外的偏移量
+    cx, cy : 圆心
+    deg    : 角度（0° 在 12 点方向，顺时针增加）
     """
-    theta = math.radians(90 - angle_deg)  # 把 0° 调整到 12 点方向
-    px = center_x + radius * math.cos(theta)
-    py = center_y + radius * math.sin(theta)
+    rad = math.radians(90 - deg)
+    x = cx + radius * math.cos(rad)
+    y = cy + radius * math.sin(rad)
+    return x, y
+
+
+def draw_planet(c, cx, cy, chart_size, angle_deg, color_rgb, symbol, font_name):
+    """
+    在星盘内圈画一个行星：
+      - 外圈彩色小圆点（位置）
+      - 内圈占星符号（☉☽♀♂ / ASC）
+    都在内圈，不挡外圈星座符号
+    """
+    base_r = chart_size / 2.0
+    # 这两个半径你可以微调：点稍外，符号再往里一点
+    dot_r = base_r * 0.78   # 小圆点
+    text_r = base_r * 0.55  # 符号
 
     # 小圆点
+    x_dot, y_dot = chart_polar(cx, cy, dot_r, angle_deg)
     r, g, b = color_rgb
     c.setFillColorRGB(r, g, b)
-    c.circle(px, py, point_radius, fill=1, stroke=0)
+    c.circle(x_dot, y_dot, 2.2, stroke=0, fill=1)
 
-    # 图标（放在圆点外侧一点，不要遮挡）
-    icon_path = os.path.join(ASSETS_DIR, icon_filename)
-    icon_img = ImageReader(icon_path)
-
-    icon_size = 10  # 图标大小
-    ix = px + icon_offset * math.cos(theta)
-    iy = py + icon_offset * math.sin(theta)
-
-    c.drawImage(
-        icon_img,
-        ix - icon_size / 2,
-        iy - icon_size / 2,
-        width=icon_size,
-        height=icon_size,
-        mask="auto",
-    )
+    # 符号（小一号、细一点）
+    x_txt, y_txt = chart_polar(cx, cy, text_r, angle_deg)
+    c.setFont(font_name, 9)
+    c.setFillColorRGB(r, g, b)
+    c.drawCentredString(x_txt, y_txt - 2, symbol)
 
 
 # ------------------------------------------------------------------
@@ -152,7 +142,7 @@ def generate_report():
     draw_full_bg(c, "index.jpg")
     c.showPage()
 
-        # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # 第 3 页：基本ホロスコープと総合相性
     # 背景：page_basic.jpg + chart_base.png + 行星位置 + 行星リスト
     # ------------------------------------------------------------------
@@ -161,14 +151,14 @@ def generate_report():
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘尺寸 + 位置（恢复成比较合适的大小）
+    # 星盘尺寸 + 位置
     chart_size = 200
     left_x = 90
     left_y = 520
     right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
-    # 计算圆心
+    # 圆心
     left_cx = left_x + chart_size / 2
     left_cy = left_y + chart_size / 2
     right_cx = right_x + chart_size / 2
@@ -180,30 +170,30 @@ def generate_report():
     c.drawImage(chart_img, right_x, right_y,
                 width=chart_size, height=chart_size, mask="auto")
 
-    # ------------  行星角度（示例数据，可以以后换成你真实的） ------------
-    # 这些数值只用来控制“点在星盘上的角度”，跟下面文本显示保持一致就行
-    male_planets = {
-        "sun":   {"deg": 12.3, "label": "太陽：牡羊座 12.3°", "symbol": "☉"},
-        "moon":  {"deg": 65.4, "label": "月：双子座 5.4°",   "symbol": "☽"},
-        "venus": {"deg": 147.8, "label": "金星：獅子座 17.8°", "symbol": "♀"},
-        "mars":  {"deg": 183.2, "label": "火星：天秤座 3.2°",  "symbol": "♂"},
-        "asc":   {"deg": 220.1, "label": "ASC：山羊座 20.1°", "symbol": "ASC"},
-    }
+    # ------------  行星角度（示例数据，将来可以改成真实数据） ------------
+    # 用列表保证顺序：太陽 → 月 → 金星 → 火星 → ASC
+    male_planets = [
+        {"deg": 12.3,  "label": "太陽：牡羊座 12.3°",  "symbol": "☉"},
+        {"deg": 65.4,  "label": "月：双子座 5.4°",    "symbol": "☽"},
+        {"deg": 147.8, "label": "金星：獅子座 17.8°", "symbol": "♀"},
+        {"deg": 183.2, "label": "火星：天秤座 3.2°",  "symbol": "♂"},
+        {"deg": 220.1, "label": "ASC：山羊座 20.1°", "symbol": "ASC"},
+    ]
 
-    female_planets = {
-        "sun":   {"deg": 8.5,  "label": "太陽：蟹座 8.5°",     "symbol": "☉"},
-        "moon":  {"deg": 150,  "label": "月：乙女座 22.0°",   "symbol": "☽"},
-        "venus": {"deg": 214.6,"label": "金星：蠍座 14.6°",    "symbol": "♀"},
-        "mars":  {"deg": 262.9,"label": "火星：水瓶座 2.9°",   "symbol": "♂"},
-        "asc":   {"deg": 288.4,"label": "ASC：魚座 28.4°",   "symbol": "ASC"},
-    }
+    female_planets = [
+        {"deg": 8.5,   "label": "太陽：蟹座 8.5°",     "symbol": "☉"},
+        {"deg": 150.0, "label": "月：乙女座 22.0°",   "symbol": "☽"},
+        {"deg": 214.6, "label": "金星：蠍座 14.6°",    "symbol": "♀"},
+        {"deg": 262.9, "label": "火星：水瓶座 2.9°",   "symbol": "♂"},
+        {"deg": 288.4, "label": "ASC：魚座 28.4°",    "symbol": "ASC"},
+    ]
 
     # 男 = 蓝色 / 女 = 粉色
     male_color = (0.15, 0.45, 0.9)
     female_color = (0.9, 0.35, 0.65)
 
-    # ------------  在星盘内圈画行星点 + 图标 ------------
-    for key, info in male_planets.items():
+    # ------------  在星盘内圈画行星点 + 符号 ------------
+    for info in male_planets:
         draw_planet(
             c,
             left_cx,
@@ -215,7 +205,7 @@ def generate_report():
             font,
         )
 
-    for key, info in female_planets.items():
+    for info in female_planets:
         draw_planet(
             c,
             right_cx,
@@ -234,29 +224,26 @@ def generate_report():
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
     # ------------  星盘下方 5 行列表（往上挪一点、字体变细） ------------
-    # 男方
-    male_lines = [info["label"] for info in male_planets.values()]
-    c.setFont(font, 9)              # 比之前小一号，看起来细一点
+    c.setFont(font, 9)  # 小一号，看起来更细
     c.setFillColorRGB(0, 0, 0)
 
+    # 男方列表
     text = c.beginText()
-    text.setTextOrigin(left_cx - 70, left_y - 55)   # 比刚才位置整体上移一点
-    for line in male_lines:
-        text.textLine(line)
+    text.setTextOrigin(left_cx - 70, left_y - 55)  # 位置你不满意再一起调
+    for info in male_planets:
+        text.textLine(info["label"])
     c.drawText(text)
 
-    # 女方
-    female_lines = [info["label"] for info in female_planets.values()]
+    # 女方列表
     text2 = c.beginText()
     text2.setTextOrigin(right_cx - 70, right_y - 55)
-    for line in female_lines:
-        text2.textLine(line)
+    for info in female_planets:
+        text2.textLine(info["label"])
     c.drawText(text2)
 
-    # 不再额外画「総合相性スコア」「太陽・月・上昇の分析」这两个标题，
-    # 因为底图里已经有了，避免重复
+    # 不再额外画「総合相性スコア」「太陽・月・上昇の分析」标题，
+    # 因为底图中已经有了
     c.showPage()
-
 
     # ------------------------------------------------------------------
     # 后面几页只铺背景（先占位）
