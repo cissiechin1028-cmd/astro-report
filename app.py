@@ -230,9 +230,9 @@ def generate_report():
     # ------------------------------------------------------------------
     draw_full_bg(c, "cover.jpg")
 
-    # 姓名：恋愛占星レポート 正上方
+    # 姓名：恋愛占星レポート 正上方（字体颜色整体调浅一点）
     c.setFont(JP_SANS, 18)
-    c.setFillColorRGB(0.2, 0.2, 0.2)   # 字体整体调浅
+    c.setFillColorRGB(0.2, 0.2, 0.2)
     couple_text = f"{male_name} さん ＆ {female_name} さん"
     c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
@@ -257,7 +257,7 @@ def generate_report():
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘尺寸 + 位置
+    # 星盘尺寸 + 位置（使用你现在这版的坐标）
     chart_size = 200
     left_x = 90
     left_y = 520
@@ -329,13 +329,13 @@ def generate_report():
             icon_files[key],
         )
 
-    # ------------------ 星盘下方姓名 ------------------
+    # ------------------ 星盘下方姓名（用细明朝体） ------------------
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # ------------------ 星盘下方 5 行列表 ------------------
+    # ------------------ 星盘下方 5 行列表（用细明朝体，左对齐） ------------------
     c.setFont(JP_SERIF, 8.5)
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
@@ -357,8 +357,8 @@ def generate_report():
     draw_full_bg(c, "page_communication.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    text_x = 130
-    wrap_width = 360
+    text_x = 130          # 左边起点（跟小标题差不多一条线）
+    wrap_width = 360      # 行宽稍微拉长一点
     body_font = JP_SERIF
     body_size = 12
     line_height = 18
@@ -368,7 +368,7 @@ def generate_report():
     body_1 = (
         "太郎 さんは、自分の気持ちを言葉にするまでに少し時間をかける、"
         "じっくりタイプです。一方で、花子 さんは、その場で感じたことをすぐに言葉にする、"
-        "テンポの速いタイプです。日常会话では、片方が考えている间にもう一方がどんどん话してしまい、"
+        "テンポの速いタイプです。日常会話では、片方が考えている間にもう一方がどんどん話してしまい、"
         "「ちゃんと聞いてもらえていない」と感じる場面が出やすくなります。"
     )
     summary_1 = (
@@ -404,7 +404,7 @@ def generate_report():
     body_3 = (
         "太郎 さんは、安定や責任感を重视する一方で、花子 さんは、変化やワクワク感を大切にする傾向があります。"
         "お金の使い方や休日の过ごし方、将来のイメージなど、小さな違いが積み重なると、"
-        "「なんでわかってくれないの？」と感じる瞬间が出てくるかもしれません。"
+        "「なんでわかってくれないの？」と感じる瞬間が出てくるかもしれません。"
     )
     summary_3 = (
         "一言でいうと、二人の価値観は、違いを否定するのではなく、"
@@ -516,27 +516,32 @@ def generate_report():
                        wrap_width, body_font, body_size, line_height)
 
     # ===== 発展の流れ（中央の表） =====
-    # 把说明文字整体往上挪一点：起点 470 → 480
-    y2 = 480
+    # 整个块往下移一点：起始 y2 比上一部分低一些
+    y2 = 450
     body_flow = (
         "二人の関係は、出会い期・成長期・安定期という流れの中で、"
         "少しずつお互いのペースが見えてくるタイプです。"
     )
+    # 说明文字
     y2 = draw_wrapped_block(c, body_flow, text_x, y2,
                             wrap_width, body_font, body_size, line_height)
-    y2 -= line_height * 0.6  # 说明文字与表头之间留一点空隙
+    # 和表头拉开一点距离
+    y2 -= line_height
 
-    # 表头：段階／特徴
+    # 表头：段階／特徴（这行也要往上挪一点）
     c.setFont(body_font, body_size)
     c.drawString(text_x, y2, "段階")
     c.drawString(text_x + 80, y2, "特徴")
-    y2 -= line_height  # 准备进入第一行数据
 
-    # 线条统一：更细、更浅色，在循环前设置一次
+    # 所有横线：颜色浅一点，线条细一点
     c.setStrokeColorRGB(0.85, 0.85, 0.85)
     c.setLineWidth(0.5)
 
-    # 不再在这里画横线——三条线全部在下面 rows 循环里画
+    # 表头下面的第一条线
+    c.line(text_x, y2 - 4, text_x + wrap_width, y2 - 4)
+
+    # 第 1 行数据的起始 baseline
+    y2 -= line_height
 
     # 各段階の説明（最多 2 行）
     rows = [
@@ -551,16 +556,19 @@ def generate_report():
     max_lines = 2
 
     for label, desc in rows:
+        # 每一行的顶部基准（保证每行高度一致）
+        row_top = y2
+
         # 左侧“段階”
         c.setFont(body_font, body_size)
-        c.drawString(text_x, y2, label)
+        c.drawString(text_x, row_top, label)
 
-        # 右侧“特徴”——限制行数
-        y2 = draw_wrapped_block_limited(
+        # 右侧“特徴”（wrap，但下面我们用固定高度）
+        draw_wrapped_block_limited(
             c,
             desc,
             text_x + 80,         # 特徴文字起点
-            y2,
+            row_top,
             wrap_width - 80,     # 特徴部分行宽
             body_font,
             body_size,
@@ -568,9 +576,14 @@ def generate_report():
             max_lines,
         )
 
-        # 在每一行数据下面画一条线（三条线间距基本一致）
+        # 固定行高：每行占用 max_lines 行的高度
+        y2 = row_top - max_lines * line_height
+
+        # 在该行下画一条线（这样 header 下的线和三条线间距一样）
         c.line(text_x, y2 + 4, text_x + wrap_width, y2 + 4)
-        y2 -= line_height      # 段落之间再留一点空隙
+
+        # 行间再留一点空隙
+        y2 -= line_height
 
     # ===== バランスを保つコツ =====
     y3 = 220
