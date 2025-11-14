@@ -351,7 +351,7 @@ def generate_report():
 
     c.showPage()
 
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
     # 第 4 页：性格の違いとコミュニケーション
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_communication.jpg")
@@ -372,14 +372,14 @@ def generate_report():
         "「ちゃんと聞いてもらえていない」と感じる場面が出やすくなります。"
     )
     summary_1 = (
-        "一言でいうと、二人の話し方は「スピードの違いを理解し合うことで、"
-        "より心地よくつながれるペア」です。"
+        "一言でいうと、二人の話し方は「スピードの違いを理解し合うことで"
+        "心地よくつながれるペア」です。"
     )
     y = draw_wrapped_block(c, body_1, text_x, y, wrap_width,
                            body_font, body_size, line_height)
     y -= line_height
-    draw_wrapped_block(c, summary_1, text_x, y, wrap_width,
-                       body_font, body_size, line_height)
+    draw_wrapped_block_limited(c, summary_1, text_x, y, wrap_width,
+                               body_font, body_size, line_height, 2)
 
     # ===== 問題への向き合い方 =====
     y2 = 434
@@ -390,14 +390,14 @@ def generate_report():
         "タイミングがずれると、すれ違いが生まれやすくなります。"
     )
     summary_2 = (
-        "一言でいうと、二人は「解決志向」と「共感志向」がうまくかみ合うと、"
-        "とても心強いバランス型のペアです。"
+        "一言でいうと、二人は「解決志向」と「共感志向」が支え合う、"
+        "心強いバランス型のペアです。"
     )
     y2 = draw_wrapped_block(c, body_2, text_x, y2, wrap_width,
                             body_font, body_size, line_height)
     y2 -= line_height
-    draw_wrapped_block(c, summary_2, text_x, y2, wrap_width,
-                       body_font, body_size, line_height)
+    draw_wrapped_block_limited(c, summary_2, text_x, y2, wrap_width,
+                               body_font, body_size, line_height, 2)
 
     # ===== 価値観のズレ =====
     y3 = 236
@@ -407,14 +407,14 @@ def generate_report():
         "「なんでわかってくれないの？」と感じる瞬間が出てくるかもしれません。"
     )
     summary_3 = (
-        "一言でいうと、二人の価値観は、違いを否定するのではなく、"
-        "「お互いの世界を広げ合うきっかけ」になりうる組み合わせです。"
+        "一言でいうと、二人の価値観は違いを否定するのではなく、"
+        "「お互いの世界を広げ合うきっかけ」になる組み合わせです。"
     )
     y3 = draw_wrapped_block(c, body_3, text_x, y3, wrap_width,
                             body_font, body_size, line_height)
     y3 -= line_height
-    draw_wrapped_block(c, summary_3, text_x, y3, wrap_width,
-                       body_font, body_size, line_height)
+    draw_wrapped_block_limited(c, summary_3, text_x, y3, wrap_width,
+                               body_font, body_size, line_height, 2)
 
     c.showPage()
 
