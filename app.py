@@ -486,7 +486,7 @@ def generate_report():
 
     c.showPage()
 
-        # ------------------------------------------------------------------
+            # ------------------------------------------------------------------
     # 第 6 页：関係の方向性と今後の傾向
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_trend.jpg")
@@ -526,13 +526,13 @@ def generate_report():
     y2 = draw_wrapped_block(c, body_flow, text_x, y2,
                             wrap_width, body_font, body_size, line_height)
 
-    # 说明与表头距离：原来 line_height*1.2 → 再往上提 6
-    y2 -= line_height * 1.2
-    y2 += 6
+    # ★ 说明文字和整张表格之间的间距
+    #   数字越大，整张表（段階/特徴+三行+三条线）越往下
+    table_top = y2 - line_height * 1.6
 
-    # 表头
+    # 表头：段階／特徴
     c.setFont(body_font, body_size)
-    header_base = y2- 10
+    header_base = table_top
     c.drawString(text_x, header_base, "段階")
     c.drawString(text_x + 80, header_base, "特徴")
 
@@ -540,13 +540,13 @@ def generate_report():
     c.setStrokeColorRGB(0.9, 0.9, 0.9)
     c.setLineWidth(0.4)
 
-    # 第一条横线整体上移 6（随表头一起）
+    # 表头下面的第一条横线
     c.line(text_x, header_base - 4, text_x + wrap_width, header_base - 4)
 
-    # 第 1 行数据 baseline
-    y2 -= line_height
+    # 第 1 行数据 baseline（从表头再往下 1 行）
+    y2 = header_base - line_height
 
-    # ===== 三阶段文字（已改成 2 行以内的新版本）=====
+    # ===== 三阶段文字（最多 2 行）=====
     rows = [
         ("出会い期",
          "最初はお互いの新鮮さが強く、ドキドキや憧れが中心になります。"
