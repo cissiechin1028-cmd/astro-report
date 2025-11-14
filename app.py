@@ -371,11 +371,79 @@ def generate_report():
 
     c.showPage()
 
+        # ------------------------------------------------------------------
+    # 第 5 页：ふたりの強みと課題ポイント
+    #   背景 page_points.jpg
+    #   同じく本文だけを描画（見出しは背景画像に任せる）
+    # ------------------------------------------------------------------
+    draw_full_bg(c, "page_points.jpg")
+
+    text_x = 130          # 左端位置（第4頁と揃える）
+    wrap_width = 360      # 行宽
+    body_font = JP_SERIF
+    body_size = 12
+    line_height = 18
+
+    # ===== ふたりの「いいところ」 =====
+    y = 625
+    body_4 = (
+        "太郎 さんは、相手の立場を考えながら行動できる、落ち着いた安心感のあるタイプです。"
+        "花子 さんは、その場の空気を明るくし、素直な気持ちを伝えられるタイプです。"
+        "二人が一緒にいると、「安心感」と「温かさ」が自然と周りにも伝わり、"
+        "お互いの長所を引き出し合える関係になりやすい組み合わせです。"
+    )
+    summary_4 = (
+        "一言でいうと、二人は「一緒にいるだけで場がやわらぐ、"
+        "周りも巻き込んで温かさを広げていけるペア」です。"
+    )
+    y = draw_wrapped_block(c, body_4, text_x, y, wrap_width,
+                           body_font, body_size, line_height)
+    y -= line_height
+    draw_wrapped_block(c, summary_4, text_x, y, wrap_width,
+                       body_font, body_size, line_height)
+
+    # ===== すれ違いやすいポイント =====
+    y2 = 434
+    body_5 = (
+        "太郎 さんは、物事を決めるときに慎重に考えたいタイプで、"
+        "花子 さんは、流れや直感を大切にして「とりあえずやってみよう」と思うことが多いかもしれません。"
+        "そのため、決断のペースや優先順位がずれると、"
+        "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感じやすくなります。"
+    )
+    summary_5 = (
+        "一言でいうと、二人のすれ違いポイントは「慎重さ」と「フットワークの軽さ」の違いですが、"
+        "そのギャップは視野を広げるきっかけにもなります。"
+    )
+    y2 = draw_wrapped_block(c, body_5, text_x, y2, wrap_width,
+                            body_font, body_size, line_height)
+    y2 -= line_height
+    draw_wrapped_block(c, summary_5, text_x, y2, wrap_width,
+                       body_font, body_size, line_height)
+
+    # ===== 伸ばしていけるポイント =====
+    y3 = 236
+    body_6 = (
+        "太郎 さんの安定感と、花子 さんの柔軟さ・明るさが合わさることで、"
+        "二人は「現実的で無理のないチャレンジ」を積み重ねていけるペアです。"
+        "お互いの考え方を一度言葉にして共有する習慣ができると、"
+        "二人だけのペースや目標が見つかり、将来像もより具体的に描きやすくなります。"
+    )
+    summary_6 = (
+        "一言でいうと、二人の伸ばしていけるポイントは、"
+        "「安心できる土台の上で、新しい一歩を一緒に踏み出していける力」です。"
+    )
+    y3 = draw_wrapped_block(c, body_6, text_x, y3, wrap_width,
+                            body_font, body_size, line_height)
+    y3 -= line_height
+    draw_wrapped_block(c, summary_6, text_x, y3, wrap_width,
+                       body_font, body_size, line_height)
+
+    c.showPage()
+
     # ------------------------------------------------------------------
     # 后面几页只铺背景（占位）
     # ------------------------------------------------------------------
     for bg in [
-        "page_points.jpg",
         "page_trend.jpg",
         "page_advice.jpg",
         "page_summary.jpg",
