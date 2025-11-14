@@ -441,10 +441,118 @@ def generate_report():
     c.showPage()
 
     # ------------------------------------------------------------------
+    # 第 6 页：関係の方向性と今後の傾向
+    #   背景：page_trend.jpg
+    #   上：今の関係ステージ（本文＋まとめ）
+    #   中：発展の流れ（3 行の簡易表）
+    #   下：バランスを保つコツ（本文＋まとめ）
+    # ------------------------------------------------------------------
+    draw_full_bg(c, "page_trend.jpg")
+
+    # 和第4頁同樣的基本設定
+    text_x = 130          # 左邊起點
+    wrap_width = 360      # 行寬
+    body_font = JP_SERIF  # 你前面定義的明朝體
+    body_size = 12
+    line_height = 18
+
+    # ===== 今の関係ステージ =====
+    y = 625
+    body_stage = (
+        "今の二人の関係は、日常の中に安心感がありつつも、"
+        "まだお互いを深く知っていく途中のステージにあります。"
+        "気軽さとドキドキ感が同居している時期ともいえます。"
+    )
+    summary_stage = (
+        "一言でいうと、「落ち着きつつも、まだ伸びしろの多い関係」です。"
+    )
+
+    y = draw_wrapped_block(
+        c, body_stage, text_x, y, wrap_width,
+        body_font, body_size, line_height
+    )
+    y -= line_height  # 空一行
+    draw_wrapped_block(
+        c, summary_stage, text_x, y, wrap_width,
+        body_font, body_size, line_height
+    )
+
+    # ===== 発展の流れ（背景の表をそのまま使う） =====
+    # 左列：出会い期／成長期／安定期
+    # 右列：特徴（簡單說明）
+    col_stage_x = 160      # 「段階」下面
+    col_feature_x = 280    # 「特徴」下面
+    row_y1 = 430           # 出会い期
+    row_gap = 55           # 行間隔
+
+    # 出会い期
+    c.setFont(body_font, 11)
+    c.drawString(col_stage_x, row_y1, "出会い期")
+    feat_1 = (
+        "最初はお互いの新鮮さが強く、ドキドキや憧れが中心になる時期です。"
+        "印象が一気に固まりやすいので、最初のコミュニケーションが大切になります。"
+    )
+    draw_wrapped_block(
+        c, feat_1, col_feature_x, row_y1,
+        260, body_font, 10, 14
+    )
+
+    # 成長期
+    row_y2 = row_y1 - row_gap
+    c.setFont(body_font, 11)
+    c.drawString(col_stage_x, row_y2, "成長期")
+    feat_2 = (
+        "相手の弱さや価値観の違いが見えてきて、"
+        "衝突と理解をくり返しながら関係が深まっていく時期です。"
+    )
+    draw_wrapped_block(
+        c, feat_2, col_feature_x, row_y2,
+        260, body_font, 10, 14
+    )
+
+    # 安定期
+    row_y3 = row_y2 - row_gap
+    c.setFont(body_font, 11)
+    c.drawString(col_stage_x, row_y3, "安定期")
+    feat_3 = (
+        "お互いのペースや距離感がつかめてきて、"
+        "安心感と居心地の良さがベースになる時期です。"
+    )
+    draw_wrapped_block(
+        c, feat_3, col_feature_x, row_y3,
+        260, body_font, 10, 14
+    )
+
+    # ===== バランスを保つコツ =====
+    y_tips = 230
+    tips_body = (
+        "二人が長く心地よく付き合っていくためには、"
+        "どちらか一方のペースに合わせすぎないことがポイントになります。"
+        "ときどき立ち止まって、「今どんな気持ち？」と確認し合う時間を作ると、"
+        "小さなモヤモヤが大きなすれ違いになる前にケアできます。"
+    )
+    tips_summary = (
+        "一言でいうと、「こまめな対話」と「相手のペースへの小さな配慮」が、"
+        "二人のバランスを整えるカギになります。"
+    )
+
+    y_tips = draw_wrapped_block(
+        c, tips_body, text_x, y_tips,
+        wrap_width, body_font, body_size, line_height
+    )
+    y_tips -= line_height
+    draw_wrapped_block(
+        c, tips_summary, text_x, y_tips,
+        wrap_width, body_font, body_size, line_height
+    )
+
+    c.showPage()
+
+    
+    # ------------------------------------------------------------------
     # 后面几页只铺背景（占位）
     # ------------------------------------------------------------------
     for bg in [
-        "page_trend.jpg",
         "page_advice.jpg",
         "page_summary.jpg",
     ]:
