@@ -517,7 +517,7 @@ def generate_report():
 
     # ===== 発展の流れ（中央の表） =====
     # 整个块往下移一点：起始 y2 比上一部分低一些
-    y2 = 450
+    y2 = 460
     body_flow = (
         "二人の関係は、出会い期・成長期・安定期という流れの中で、"
         "少しずつお互いのペースが見えてくるタイプです。"
@@ -530,15 +530,15 @@ def generate_report():
 
     # 表头：段階／特徴（这行也要往上挪一点）
     c.setFont(body_font, body_size)
-    c.drawString(text_x, y2, "段階")
-    c.drawString(text_x + 80, y2, "特徴")
+    c.drawString(text_x, y2+ 10, "段階")
+    c.drawString(text_x + 80, y2+ 10, "特徴")
 
     # 所有横线：颜色浅一点，线条细一点
     c.setStrokeColorRGB(0.85, 0.85, 0.85)
     c.setLineWidth(0.5)
 
     # 表头下面的第一条线
-    c.line(text_x, y2 - 4, text_x + wrap_width, y2 - 4)
+    c.line(text_x, (y2 + 10) - 4, text_x + wrap_width, (y2 + 10) - 4)
 
     # 第 1 行数据的起始 baseline
     y2 -= line_height
