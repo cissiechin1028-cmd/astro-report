@@ -249,7 +249,7 @@ def generate_report():
     draw_full_bg(c, "index.jpg")
     c.showPage()
 
-        # ------------------------------------------------------------------
+          # ------------------------------------------------------------------
     # 第 3 页：基本ホロスコープと総合相性
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_basic.jpg")
@@ -257,8 +257,8 @@ def generate_report():
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘尺寸 + 位置（使用你现在这版的坐标）
-    chart_size = 200
+    # 星盘尺寸 + 位置（整体稍微缩小：200 → 180）
+    chart_size = 180
     left_x = 90
     left_y = 520
     right_x = PAGE_WIDTH - chart_size - 90
@@ -350,95 +350,73 @@ def generate_report():
         c.drawString(right_cx - 30, y, line)
 
     # ------------------------------------------------------------------
-    # 星盘下方：総合相性スコア ＋ 太陽・月・上昇の分析
+    # 星盘下：総合相性スコア ＋ 太陽・月・上昇の分析
     # ------------------------------------------------------------------
-    text_x = 130
-    wrap_width = 360
-    body_font = JP_SERIF
-    body_size = 12
-    line_height = 18
-
-    c.setFont(body_font, body_size)
-    c.setFillColorRGB(0.2, 0.2, 0.2)
+    text_x3 = 130
+    wrap_width3 = 360
+    body_font3 = JP_SERIF
+    body_size3 = 12
+    line_height3 = 18
 
     # ===== 総合相性スコア =====
-    score_y = 330  # 可以视效果微调
-    overall_score = 82  # ★ 这里是总分（0〜100），需要的话你可以自己改数字
-    score_text = f"総合相性スコア：{overall_score} / 100"
-    c.drawString(text_x, score_y, score_text)
+    compat_score = 82  # ★ 先写死一个分数，之后你可以自己换成计算结果
+    c.setFont(JP_SANS, 14)
+    c.drawString(text_x3, 340, f"総合相性スコア： {compat_score} / 100")
 
-    # 不超过两行的总结
-    summary_score = (
-        "安心感とやさしさのバランスがよく、"
-        "長く付き合うほどお互いの良さを引き出し合える相性です。"
+    # 俯瞰式总结（最多 2 行）
+    compat_summary = (
+        "二人の相性は、安心感とほどよい刺激がバランスよく混ざった組み合わせです。"
+        "ゆっくりと関係を育てていくほど、お互いの良さが引き出されやすいタイプといえます。"
     )
-    y_score = score_y - line_height
-    y_score = draw_wrapped_block(
+    draw_wrapped_block_limited(
         c,
-        summary_score,
-        text_x,
-        y_score,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
+        compat_summary,
+        text_x3,
+        340 - line_height3 * 1.4,  # 标题下留一点空隙
+        wrap_width3,
+        body_font3,
+        body_size3,
+        line_height3,
+        max_lines=2,
     )
 
     # ===== 太陽・月・上昇の分析 =====
-    y_analysis = y_score - line_height  # 总结和下面标题之间留一点空隙
-    c.setFont(body_font, body_size)
-    c.drawString(text_x, y_analysis, "太陽・月・上昇の分析")
-    y_analysis -= line_height
+    y_analysis = 250
+    analysis_blocks = [
+        (
+            "太陽（ふたりの価値観）：",
+            "太郎 さんは安定感と責任感を、花子 さんは素直さとあたたかさを大切にするタイプです。"
+            "方向性を共有できると、同じゴールに向かって進みやすくなります。"
+        ),
+        (
+            "月（素の感情と安心ポイント）：",
+            "太郎 さんは落ち着いた空間やペースを守れる関係に安心し、"
+            "花子 さんは気持ちをその場で分かち合えることに心地よさを感じやすい傾向があります。"
+        ),
+        (
+            "ASC（第一印象・ふたりの雰囲気）：",
+            "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
+            "少しずつ素の表情が見えるほど、二人らしい雰囲気が育っていきます。"
+        ),
+    ]
 
-    # 太陽：约两行
-    block_sun = (
-        "太陽：牡羊座の太郎 さんと蟹座の花子 さんは、"
-        "行動力と包容力が補い合う組み合わせです。"
-    )
-    y_analysis = draw_wrapped_block(
-        c,
-        block_sun,
-        text_x,
-        y_analysis,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-    )
-    y_analysis -= line_height * 0.6  # 小间距
+    c.setFont(body_font3, body_size3)
 
-    # 月：约两行
-    block_moon = (
-        "月：双子座と乙女座の月は、言葉で気持ちを共有することが鍵。"
-        "こまめな対話が安心感を深めてくれます。"
-    )
-    y_analysis = draw_wrapped_block(
-        c,
-        block_moon,
-        text_x,
-        y_analysis,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-    )
-    y_analysis -= line_height * 0.6
-
-    # 上昇：约两行
-    block_asc = (
-        "上昇：山羊座と魚座のASCは、慎重さとやさしさが調和するペア。"
-        "時間をかけて信頼を育てていくタイプです。"
-    )
-    y_analysis = draw_wrapped_block(
-        c,
-        block_asc,
-        text_x,
-        y_analysis,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-    )
+    for title, text in analysis_blocks:
+        # 小标题 + 本文合在一起限制两行以内，所以文字要控制在较短长度
+        block_text = title + text
+        y_analysis = draw_wrapped_block_limited(
+            c,
+            block_text,
+            text_x3,
+            y_analysis,
+            wrap_width3,
+            body_font3,
+            body_size3,
+            line_height3,
+            max_lines=2,
+        )
+        y_analysis -= line_height3  # 段落之间空一行
 
     c.showPage()
 
