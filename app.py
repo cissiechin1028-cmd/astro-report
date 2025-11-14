@@ -310,7 +310,7 @@ def generate_report():
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_communication.jpg")
 
-    text_x = 150          # 左边起点（跟小标题差不多一条线）
+    text_x = 130          # 左边起点（跟小标题差不多一条线）
     wrap_width = 360      # 行宽稍微拉长一点
     body_font = JP_SERIF
     body_size = 10
