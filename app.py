@@ -466,122 +466,111 @@ def limit_lines(text, wrap_width, font_name, font_size, max_lines):
     return "\n".join(lines[:max_lines])
 
 
-# ------------------------------------------------------------------
-# 第 6 页：関係の方向性と今後の傾向
-# ------------------------------------------------------------------
-draw_full_bg(c, "page_trend.jpg")
-
-text_x = 130
-wrap_width = 360
-body_font = JP_SERIF
-body_size = 12
-line_height = 18
-
-# ================================
-# 内容（你可以之后替换变量）
-# ================================
-
-# ---- ① 今の関係ステージ ----
-stage_body = (
-    "今の二人の関係は、日常の中に安心感がありつつも、まだお互いを"
-    "深く知っていく途中のステージにあります。気軽さとドキドキ感が"
-    "同居している時期ともいえます。"
-)
-stage_summary = (
-    "一言でいうと、「落ち着きつつも、まだ伸びしろの多い関係」です。"
-)
-
-# ---- ② 発展の流れ（表格内容） ----
-feat_1 = (
-    "最初はお互いの新鮮さが強く、ドキドキや憧れが中心になる時期です。"
-)
-feat_2 = (
-    "相手の弱さや価値観の違いが見えてきて、衝突と理解をくり返しながら"
-    "関係が深まっていく時期です。"
-)
-feat_3 = (
-    "お互いのペースや距離感がわかってきて、安心感と居心地の良さがベースになる時期です。"
-)
-
-# ---- ③ バランスを保つコツ ----
-tips_body = (
-    "二人が長く心地よく付き合っていくためには、どちらか一方のペースに"
-    "合わせすぎないことがポイントになります。ときどき立ち止まって、"
-    "「今どんな気持ち？」と確認をするだけでも、小さなモヤモヤを大きな"
-    "すれ違いにしない前向きなケアができます。"
-)
-tips_summary = (
-    "一言でいうと、「こまめな対話」と「相手のペースへの小さな配慮」が、"
-    "二人のバランスを整えるカギになります。"
-)
-
-# ================================
-# 行数限制（每段最多 3 行）
-# ================================
-feat_1 = limit_lines(feat_1, 260, body_font, 10, 3)
-feat_2 = limit_lines(feat_2, 260, body_font, 10, 3)
-feat_3 = limit_lines(feat_3, 260, body_font, 10, 3)
-
-# ================================
-# ① 今の関係ステージ
-# ================================
-y = 620
-y = draw_wrapped_block(c, stage_body, text_x, y, wrap_width,
-                       body_font, body_size, line_height)
-y -= line_height
-draw_wrapped_block(c, stage_summary, text_x, y, wrap_width,
-                   body_font, body_size, line_height)
-
-# ================================
-# ② 発展の流れ（整体往上 + 往中间移）
-# ================================
-table_x_left = 170          # 左列偏右一些，让整体更居中
-table_x_right = 330         # 特徴列位置
-row_y = 420                 # 表格上移
-
-c.setFont(body_font, 11)
-c.drawString(table_x_left, row_y, "段階")
-c.drawString(table_x_right, row_y, "特徴")
-
-# 出会い期
-row_y -= 28
-c.drawString(table_x_left, row_y, "出会い期")
-draw_wrapped_block(c, feat_1, table_x_right, row_y, 260,
-                   body_font, 10, 14)
-
-# 成長期
-row_y -= 45
-c.drawString(table_x_left, row_y, "成長期")
-draw_wrapped_block(c, feat_2, table_x_right, row_y, 260,
-                   body_font, 10, 14)
-
-# 安定期
-row_y -= 45
-c.drawString(table_x_left, row_y, "安定期")
-draw_wrapped_block(c, feat_3, table_x_right, row_y, 260,
-                   body_font, 10, 14)
-
-# ================================
-# ③ バランスを保つコツ
-# ================================
-y3 = 200
-y3 = draw_wrapped_block(c, tips_body, text_x, y3, wrap_width,
-                        body_font, body_size, line_height)
-y3 -= line_height
-draw_wrapped_block(c, tips_summary, text_x, y3, wrap_width,
-                   body_font, body_size, line_height)
-
-c.showPage()
-
-
-    
-        # ------------------------------------------------------------------
-    # 后面几页只铺背景（占位）
     # ------------------------------------------------------------------
-    for bg in [
-        "page_advice.jpg",
-        "page_summary.jpg",
-    ]:
+    # 第 6 页：関係の方向性と今後の傾向
+    #   背景：page_trend.jpg
+    # ------------------------------------------------------------------
+    draw_full_bg(c, "page_trend.jpg")
+
+    text_x = 130          # 左边起点
+    wrap_width = 360      # 行宽
+    body_font = JP_SERIF  # 明朝体
+    body_size = 12
+    line_height = 18
+
+    # ===== 今の関係ステージ =====
+    y = 620
+    body_stage = (
+        "今の二人の関係は、日常の中に安心感がありつつも、"
+        "まだお互いを深く知っていく途中のステージにあります。"
+        "気軽さとドキドキ感が同居している時期ともいえます。"
+    )
+    summary_stage = (
+        "一言でいうと、「落ち着きつつも、まだ伸びしろの多い関係」です。"
+    )
+
+    y = draw_wrapped_block(c, body_stage, text_x, y,
+                           wrap_width, body_font, body_size, line_height)
+    y -= line_height
+    draw_wrapped_block(c, summary_stage, text_x, y,
+                       wrap_width, body_font, body_size, line_height)
+
+    # ===== 発展の流れ（中央の表） =====
+    # 先在标题下方写一点说明
+    y2 = 470   # 比之前稍微往上提，让整块更居中
+    body_flow = (
+        "二人の関係は、出会い期・成長期・安定期という流れの中で、"
+        "少しずつお互いのペースが見えてくるタイプです。"
+    )
+    y2 = draw_wrapped_block(c, body_flow, text_x, y2,
+                            wrap_width, body_font, body_size, line_height)
+    y2 -= line_height
+
+    # 表头
+    c.setFont(body_font, body_size)
+    c.drawString(text_x, y2, "段階")
+    c.drawString(text_x + 80, y2, "特徴")
+    y2 -= line_height
+    c.line(text_x, y2 + 4, text_x + wrap_width, y2 + 4)
+
+    # 各段階の説明（最多 3 行）
+    rows = [
+        ("出会い期",
+         "最初はお互いの新鮮さが強く、ドキドキや憧れが中心になります。"
+         "印象が一気に固まりやすいので、最初のコミュニケーションが大切になります。"),
+        ("成長期",
+         "相手の弱さや価値観の違いが見えてきて、摩擦と理解をくり返しながら関係を深めていく時期です。"),
+        ("安定期",
+         "お互いのペースや居場所がわかってきて、安心感と居心地の良さがベースになる時期です。"),
+    ]
+    max_lines = 2
+
+    for label, desc in rows:
+        # 左侧“段階”
+        c.setFont(body_font, body_size)
+        c.drawString(text_x, y2, label)
+
+        # 右侧“特徴”——限制行数
+        y2 = draw_wrapped_block_limited(
+            c,
+            desc,
+            text_x + 80,         # 特徴文字的起点
+            y2,
+            wrap_width - 80,     # 特徴部分的行宽
+            body_font,
+            body_size,
+            line_height,
+            max_lines,
+        )
+        # 画下划线
+        c.line(text_x, y2 + 4, text_x + wrap_width, y2 + 4)
+        y2 -= line_height      # 行间空一点
+
+    # ===== バランスを保つコツ =====
+    y3 = 220
+    body_tip = (
+        "二人が長く心地よく付き合っていくためには、"
+        "どちらか一方のペースや考えに寄りかかりすぎないことがポイントになります。"
+        "ときどき立ち止まって、「今どんな気持ち？」と確認し合うことで、"
+        "小さなモヤモヤを大きなすれ違いになる前にケアできます。"
+    )
+    summary_tip = (
+        "一言でいうと、「こまめな対話」と「相手のペースへの小さな配慮」が、"
+        "二人のバランスを整えるカギになります。"
+    )
+
+    y3 = draw_wrapped_block(c, body_tip, text_x, y3,
+                            wrap_width, body_font, body_size, line_height)
+    y3 -= line_height
+    draw_wrapped_block(c, summary_tip, text_x, y3,
+                       wrap_width, body_font, body_size, line_height)
+
+    c.showPage()
+
+    # ------------------------------------------------------------------
+    # 第 7・8 页：只铺背景
+    # ------------------------------------------------------------------
+    for bg in ["page_advice.jpg", "page_summary.jpg"]:
         draw_full_bg(c, bg)
         c.showPage()
 
@@ -598,6 +587,7 @@ c.showPage()
         download_name=filename,
         mimetype="application/pdf",
     )
+
 
 
 # ------------------------------------------------------------------
