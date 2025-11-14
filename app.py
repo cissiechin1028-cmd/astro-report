@@ -313,8 +313,8 @@ def generate_report():
     text_x = 130          # 左边起点（跟小标题差不多一条线）
     wrap_width = 360      # 行宽稍微拉长一点
     body_font = JP_SERIF
-    body_size = 11
-    line_height = 16
+    body_size = 12
+    line_height = 18
 
     # ===== 話し方とテンポ =====
     y = 610  # 段落起始 y，可根据效果再微调
