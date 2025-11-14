@@ -230,9 +230,9 @@ def generate_report():
     # ------------------------------------------------------------------
     draw_full_bg(c, "cover.jpg")
 
-    # 姓名：恋愛占星レポート 正上方  → 还是用黑体
+    # 姓名：恋愛占星レポート 正上方
     c.setFont(JP_SANS, 18)
-    c.setFillColorRGB(0.3, 0.3, 0.3)
+    c.setFillColorRGB(0.2, 0.2, 0.2)   # 字体颜色调浅
     couple_text = f"{male_name} さん ＆ {female_name} さん"
     c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
@@ -257,7 +257,7 @@ def generate_report():
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘尺寸 + 位置（使用你现在这版的坐标）
+    # 星盘尺寸 + 位置
     chart_size = 200
     left_x = 90
     left_y = 520
@@ -329,15 +329,15 @@ def generate_report():
             icon_files[key],
         )
 
-    # ------------------ 星盘下方姓名（用细明朝体） ------------------
+    # ------------------ 星盘下方姓名 ------------------
     c.setFont(JP_SERIF, 14)
-    c.setFillColorRGB(0, 0, 0)
+    c.setFillColorRGB(0.2, 0.2, 0.2)   # 字体颜色调浅
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # ------------------ 星盘下方 5 行列表（用细明朝体，左对齐） ------------------
+    # ------------------ 星盘下方 5 行列表 ------------------
     c.setFont(JP_SERIF, 8.5)
-    c.setFillColorRGB(0, 0, 0)
+    c.setFillColorRGB(0.2, 0.2, 0.2)   # 字体颜色调浅
 
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
@@ -355,9 +355,10 @@ def generate_report():
     # 第 4 页：性格の違いとコミュニケーション
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_communication.jpg")
+    c.setFillColorRGB(0.2, 0.2, 0.2)   # 这一页整体字体颜色
 
-    text_x = 130          # 左边起点（跟小标题差不多一条线）
-    wrap_width = 360      # 行宽稍微拉长一点
+    text_x = 130
+    wrap_width = 360
     body_font = JP_SERIF
     body_size = 12
     line_height = 18
@@ -421,6 +422,7 @@ def generate_report():
     # 第 5 页：ふたりの強みと課題ポイント
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_points.jpg")
+    c.setFillColorRGB(0.2, 0.2, 0.2)   # 这一页整体字体颜色
 
     text_x = 130
     wrap_width = 360
@@ -488,6 +490,7 @@ def generate_report():
     # 第 6 页：関係の方向性と今後の傾向
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_trend.jpg")
+    c.setFillColorRGB(0.2, 0.2, 0.2)   # 这一页整体字体颜色
 
     text_x = 130
     wrap_width = 360
@@ -513,28 +516,27 @@ def generate_report():
                        wrap_width, body_font, body_size, line_height)
 
     # ===== 発展の流れ（中央の表） =====
-    y2 = 470   # 稍微往上提一点
+    y2 = 470
     body_flow = (
         "二人の関係は、出会い期・成長期・安定期という流れの中で、"
         "少しずつお互いのペースが見えてくるタイプです。"
     )
     y2 = draw_wrapped_block(c, body_flow, text_x, y2,
                             wrap_width, body_font, body_size, line_height)
-    y2 -= line_height
 
-        # 表头
+    # 让表头整体往上移一点（比原来少减一些）
+    y2 -= line_height * 0.6
+
+    # 表头「段階」「特徴」
     c.setFont(body_font, body_size)
     c.drawString(text_x, y2, "段階")
     c.drawString(text_x + 80, y2, "特徴")
     y2 -= line_height
 
-    c.setStrokeColorRGB(0.65, 0.65, 0.65)   # ← 横线颜色（淡灰色）
-    c.line(text_x, y2 + 6, text_x + wrap_width, y2 + 6)   # ← 横线位置
-
-
-c.setStrokeColorRGB(0.65, 0.65, 0.65)   # ← 横线颜色（淡灰色）
-c.line(text_x, y2 + 6, text_x + wrap_width, y2 + 6)   # ← 横线位置
-
+    # 线条颜色调浅 & 线条变细
+    c.setStrokeColorRGB(0.85, 0.85, 0.85)
+    c.setLineWidth(0.5)
+    c.line(text_x, y2 + 6, text_x + wrap_width, y2 + 6)
 
     # 各段階の説明（最多 2 行）
     rows = [
@@ -566,9 +568,9 @@ c.line(text_x, y2 + 6, text_x + wrap_width, y2 + 6)   # ← 横线位置
             max_lines,
         )
 
-        # 画下划线
+        # 画下划线（继承上面设置的细线 + 浅色）
         c.line(text_x, y2 + 4, text_x + wrap_width, y2 + 4)
-        y2 -= line_height      # 段落之间空一点
+        y2 -= line_height
 
     # ===== バランスを保つコツ =====
     y3 = 220
