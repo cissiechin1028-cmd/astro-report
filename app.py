@@ -538,7 +538,7 @@ def generate_report():
     c.setLineWidth(0.5)
 
     # 表头下面的第一条线
-    c.line(text_x, (y2 + 10) - 4, text_x + wrap_width, (y2 + 10) - 4)
+    c.line(text_x, (y2 + 8) - 4, text_x + wrap_width, (y2 + 8) - 4)
 
     # 第 1 行数据的起始 baseline
     y2 -= line_height
@@ -586,7 +586,7 @@ def generate_report():
         y2 -= line_height
 
     # ===== バランスを保つコツ =====
-    y3 = 220
+    y3 = 200
     body_tip = (
         "二人が長く心地よく付き合っていくためには、"
         "どちらか一方のペースや考えに寄りかかりすぎないことがポイントになります。"
