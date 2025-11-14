@@ -523,11 +523,14 @@ def generate_report():
     y2 -= line_height
 
     # 表头
-    c.setFont(body_font, body_size)
-    c.drawString(text_x, y2, "段階")
-    c.drawString(text_x + 80, y2, "特徴")
-    y2 -= line_height
-    c.line(text_x, y2 + 4, text_x + wrap_width, y2 + 4)
+c.setFont(body_font, body_size)
+c.drawString(text_x, y2, "段階")
+c.drawString(text_x + 80, y2, "特徴")
+y2 -= line_height
+
+c.setStrokeColorRGB(0.65, 0.65, 0.65)   # ← 横线颜色（淡灰色）
+c.line(text_x, y2 + 6, text_x + wrap_width, y2 + 6)   # ← 横线位置
+
 
     # 各段階の説明（最多 2 行）
     rows = [
