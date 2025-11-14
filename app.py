@@ -111,7 +111,7 @@ def draw_planet_icon(
 
 
 # ------------------------------------------------------------------
-# 小工具：文本自动换行（专给第 4 页用）
+# 小工具：文本自动换行（第 4～6 页通用）
 # ------------------------------------------------------------------
 def draw_wrapped_block(c, text, x, y_start, wrap_width,
                        font_name, font_size, line_height):
@@ -140,6 +140,57 @@ def draw_wrapped_block(c, text, x, y_start, wrap_width,
             y -= line_height
 
     if line:
+        c.drawString(x, y, line)
+        y -= line_height
+
+    return y
+
+
+# ------------------------------------------------------------------
+# 行数限制版：最多画 max_lines 行（第 6 页表格用）
+# ------------------------------------------------------------------
+def draw_wrapped_block_limited(
+    c,
+    text,
+    x,
+    y_start,
+    wrap_width,
+    font_name,
+    font_size,
+    line_height,
+    max_lines,
+):
+    """
+    在 (x, y_start) 开始画一段文字，自动换行，但最多画 max_lines 行。
+    返回最后一行画完后的下一行 y 坐标。
+    """
+    c.setFont(font_name, font_size)
+    line = ""
+    y = y_start
+    lines = 0
+
+    for ch in text:
+        if ch == "\n":
+            c.drawString(x, y, line)
+            line = ""
+            y -= line_height
+            lines += 1
+            if lines >= max_lines:
+                return y
+            continue
+
+        new_line = line + ch
+        if pdfmetrics.stringWidth(new_line, font_name, font_size) <= wrap_width:
+            line = new_line
+        else:
+            c.drawString(x, y, line)
+            line = ch
+            y -= line_height
+            lines += 1
+            if lines >= max_lines:
+                return y
+
+    if line and lines < max_lines:
         c.drawString(x, y, line)
         y -= line_height
 
@@ -288,25 +339,20 @@ def generate_report():
     c.setFont(JP_SERIF, 8.5)
     c.setFillColorRGB(0, 0, 0)
 
-    # 男方列表（坐标沿用你这版，只动字体）
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
         y = left_y - 45 - i * 11
         c.drawString(left_cx - 30, y, line)
 
-    # 女方列表（同样左对齐，你之前如果有微调，可以在这里改数值）
     female_lines = [info["label"] for info in female_planets.values()]
     for i, line in enumerate(female_lines):
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
 
-    # 不再额外画「総合相性スコア」「太陽・月・上昇の分析」标题
     c.showPage()
 
     # ------------------------------------------------------------------
     # 第 4 页：性格の違いとコミュニケーション
-    #   背景 page_communication.jpg
-    #   只画正文，不动你原来标题和小标题的位置
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_communication.jpg")
 
@@ -317,7 +363,7 @@ def generate_report():
     line_height = 18
 
     # ===== 話し方とテンポ =====
-    y = 625  # 段落起始 y，可根据效果再微调
+    y = 625
     body_1 = (
         "太郎 さんは、自分の気持ちを言葉にするまでに少し時間をかける、"
         "じっくりタイプです。一方で、花子 さんは、その場で感じたことをすぐに言葉にする、"
@@ -330,7 +376,7 @@ def generate_report():
     )
     y = draw_wrapped_block(c, body_1, text_x, y, wrap_width,
                            body_font, body_size, line_height)
-    y -= line_height  # 空一行
+    y -= line_height
     draw_wrapped_block(c, summary_1, text_x, y, wrap_width,
                        body_font, body_size, line_height)
 
@@ -355,8 +401,8 @@ def generate_report():
     # ===== 価値観のズレ =====
     y3 = 236
     body_3 = (
-        "太郎 さんは、安定や責任感を重視する一方で、花子 さんは、変化やワクワク感を大切にする傾向があります。"
-        "お金の使い方や休日の過ごし方、将来のイメージなど、小さな違いが積み重なると、"
+        "太郎 さんは、安定や責任感を重视する一方で、花子 さんは、変化やワクワク感を大切にする傾向があります。"
+        "お金の使い方や休日の过ごし方、将来のイメージなど、小さな違いが積み重なると、"
         "「なんでわかってくれないの？」と感じる瞬間が出てくるかもしれません。"
     )
     summary_3 = (
@@ -371,15 +417,13 @@ def generate_report():
 
     c.showPage()
 
-        # ------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # 第 5 页：ふたりの強みと課題ポイント
-    #   背景 page_points.jpg
-    #   同じく本文だけを描画（見出しは背景画像に任せる）
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_points.jpg")
 
-    text_x = 130          # 左端位置（第4頁と揃える）
-    wrap_width = 360      # 行宽
+    text_x = 130
+    wrap_width = 360
     body_font = JP_SERIF
     body_size = 12
     line_height = 18
@@ -441,40 +485,13 @@ def generate_report():
     c.showPage()
 
     # ------------------------------------------------------------------
-# 行数限制工具（按宽度自动换行 + 限制最大行数）
-# ------------------------------------------------------------------
-def limit_lines(text, wrap_width, font_name, font_size, max_lines):
-    from reportlab.pdfbase import pdfmetrics
-    lines = []
-    line = ""
-
-    for ch in text:
-        test_line = line + ch
-        if pdfmetrics.stringWidth(test_line, font_name, font_size) <= wrap_width:
-            line = test_line
-        else:
-            # 换行
-            lines.append(line)
-            if len(lines) == max_lines:
-                return "\n".join(lines)
-            line = ch
-
-    if line:
-        lines.append(line)
-
-    # 截断
-    return "\n".join(lines[:max_lines])
-
-
-    # ------------------------------------------------------------------
     # 第 6 页：関係の方向性と今後の傾向
-    #   背景：page_trend.jpg
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_trend.jpg")
 
-    text_x = 130          # 左边起点
-    wrap_width = 360      # 行宽
-    body_font = JP_SERIF  # 明朝体
+    text_x = 130
+    wrap_width = 360
+    body_font = JP_SERIF
     body_size = 12
     line_height = 18
 
@@ -496,8 +513,7 @@ def limit_lines(text, wrap_width, font_name, font_size, max_lines):
                        wrap_width, body_font, body_size, line_height)
 
     # ===== 発展の流れ（中央の表） =====
-    # 先在标题下方写一点说明
-    y2 = 470   # 比之前稍微往上提，让整块更居中
+    y2 = 470   # 稍微往上提一点
     body_flow = (
         "二人の関係は、出会い期・成長期・安定期という流れの中で、"
         "少しずつお互いのペースが見えてくるタイプです。"
@@ -513,7 +529,7 @@ def limit_lines(text, wrap_width, font_name, font_size, max_lines):
     y2 -= line_height
     c.line(text_x, y2 + 4, text_x + wrap_width, y2 + 4)
 
-    # 各段階の説明（最多 3 行）
+    # 各段階の説明（最多 2 行）
     rows = [
         ("出会い期",
          "最初はお互いの新鮮さが強く、ドキドキや憧れが中心になります。"
@@ -534,17 +550,18 @@ def limit_lines(text, wrap_width, font_name, font_size, max_lines):
         y2 = draw_wrapped_block_limited(
             c,
             desc,
-            text_x + 80,         # 特徴文字的起点
+            text_x + 80,         # 特徴文字起点
             y2,
-            wrap_width - 80,     # 特徴部分的行宽
+            wrap_width - 80,     # 特徴部分行宽
             body_font,
             body_size,
             line_height,
             max_lines,
         )
+
         # 画下划线
         c.line(text_x, y2 + 4, text_x + wrap_width, y2 + 4)
-        y2 -= line_height      # 行间空一点
+        y2 -= line_height      # 段落之间空一点
 
     # ===== バランスを保つコツ =====
     y3 = 220
@@ -589,9 +606,8 @@ def limit_lines(text, wrap_width, font_name, font_size, max_lines):
     )
 
 
-
 # ------------------------------------------------------------------
-# 主程序入口（必须顶格，不能缩进！）
+# 主程序入口（必须顶格）
 # ------------------------------------------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
