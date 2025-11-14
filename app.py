@@ -249,7 +249,7 @@ def generate_report():
     draw_full_bg(c, "index.jpg")
     c.showPage()
 
-    # ------------------------------------------------------------------
+        # ------------------------------------------------------------------
     # 第 3 页：基本ホロスコープと総合相性
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_basic.jpg")
@@ -348,6 +348,97 @@ def generate_report():
     for i, line in enumerate(female_lines):
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
+
+    # ------------------------------------------------------------------
+    # 星盘下方：総合相性スコア ＋ 太陽・月・上昇の分析
+    # ------------------------------------------------------------------
+    text_x = 130
+    wrap_width = 360
+    body_font = JP_SERIF
+    body_size = 12
+    line_height = 18
+
+    c.setFont(body_font, body_size)
+    c.setFillColorRGB(0.2, 0.2, 0.2)
+
+    # ===== 総合相性スコア =====
+    score_y = 330  # 可以视效果微调
+    overall_score = 82  # ★ 这里是总分（0〜100），需要的话你可以自己改数字
+    score_text = f"総合相性スコア：{overall_score} / 100"
+    c.drawString(text_x, score_y, score_text)
+
+    # 不超过两行的总结
+    summary_score = (
+        "安心感とやさしさのバランスがよく、"
+        "長く付き合うほどお互いの良さを引き出し合える相性です。"
+    )
+    y_score = score_y - line_height
+    y_score = draw_wrapped_block(
+        c,
+        summary_score,
+        text_x,
+        y_score,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+    )
+
+    # ===== 太陽・月・上昇の分析 =====
+    y_analysis = y_score - line_height  # 总结和下面标题之间留一点空隙
+    c.setFont(body_font, body_size)
+    c.drawString(text_x, y_analysis, "太陽・月・上昇の分析")
+    y_analysis -= line_height
+
+    # 太陽：约两行
+    block_sun = (
+        "太陽：牡羊座の太郎 さんと蟹座の花子 さんは、"
+        "行動力と包容力が補い合う組み合わせです。"
+    )
+    y_analysis = draw_wrapped_block(
+        c,
+        block_sun,
+        text_x,
+        y_analysis,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+    )
+    y_analysis -= line_height * 0.6  # 小间距
+
+    # 月：约两行
+    block_moon = (
+        "月：双子座と乙女座の月は、言葉で気持ちを共有することが鍵。"
+        "こまめな対話が安心感を深めてくれます。"
+    )
+    y_analysis = draw_wrapped_block(
+        c,
+        block_moon,
+        text_x,
+        y_analysis,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+    )
+    y_analysis -= line_height * 0.6
+
+    # 上昇：约两行
+    block_asc = (
+        "上昇：山羊座と魚座のASCは、慎重さとやさしさが調和するペア。"
+        "時間をかけて信頼を育てていくタイプです。"
+    )
+    y_analysis = draw_wrapped_block(
+        c,
+        block_asc,
+        text_x,
+        y_analysis,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+    )
 
     c.showPage()
 
