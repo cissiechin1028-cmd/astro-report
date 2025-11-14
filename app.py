@@ -530,9 +530,9 @@ def generate_report():
     y2 -= line_height * 1.2
     y2 += 6
 
-    # 表头整体上移 6：原来 header_base = y2+10 → +6
+    # 表头
     c.setFont(body_font, body_size)
-    header_base = y2
+    header_base = y2- 10
     c.drawString(text_x, header_base, "段階")
     c.drawString(text_x + 80, header_base, "特徴")
 
