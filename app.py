@@ -310,7 +310,7 @@ def generate_report():
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_communication.jpg")
 
-    text_x = 80          # 左边起点（跟小标题差不多一条线）
+    text_x = 150          # 左边起点（跟小标题差不多一条线）
     wrap_width = 360      # 行宽稍微拉长一点
     body_font = JP_SERIF
     body_size = 10
@@ -353,7 +353,7 @@ def generate_report():
                        body_font, body_size, line_height)
 
     # ===== 価値観のズレ =====
-    y3 = 240
+    y3 = 220
     body_3 = (
         "太郎 さんは、安定や責任感を重視する一方で、花子 さんは、変化やワクワク感を大切にする傾向があります。"
         "お金の使い方や休日の過ごし方、将来のイメージなど、小さな違いが積み重なると、"
