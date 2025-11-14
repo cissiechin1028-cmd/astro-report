@@ -381,7 +381,7 @@ def generate_report():
     )
 
     # ===== 太陽・月・上昇の分析 =====
-    y_analysis = 250
+    y_analysis = 220
     analysis_blocks = [
         (
             "太陽（ふたりの価値観）：",
