@@ -517,74 +517,71 @@ def generate_report():
                        wrap_width, body_font, body_size, line_height)
 
     # ===== 発展の流れ（中央の表） =====
-    # 整个区块的起点
-    y2 = 460
+    # 整个区块往上移一点：原来 460 → 466
+    y2 = 466
     body_flow = (
         "二人の関係は、出会い期・成長期・安定期という流れの中で、"
         "少しずつお互いのペースが見えてくるタイプです。"
     )
-    # 上面说明文字
     y2 = draw_wrapped_block(c, body_flow, text_x, y2,
                             wrap_width, body_font, body_size, line_height)
-    # 说明和表头之间多留一点空隙
-    y2 -= line_height * 1.2
 
-    # 表头：段階／特徴（整体比原来略往上提一点）
+    # 说明与表头距离：原来 line_height*1.2 → 再往上提 6
+    y2 -= line_height * 1.2
+    y2 += 6
+
+    # 表头整体上移 6：原来 header_base = y2+10 → +6
     c.setFont(body_font, body_size)
-    header_base = y2 + 10
+    header_base = y2 + 10 + 6
     c.drawString(text_x, header_base, "段階")
     c.drawString(text_x + 80, header_base, "特徴")
 
-    # 所有横线：颜色浅一点，线条细一点
+    # 线条颜色 & 粗细（维持你现在的浅灰色）
     c.setStrokeColorRGB(0.9, 0.9, 0.9)
     c.setLineWidth(0.4)
 
-    # 表头下面的第一条线
+    # 第一条横线整体上移 6（随表头一起）
     c.line(text_x, header_base - 4, text_x + wrap_width, header_base - 4)
 
-    # 第 1 行数据的起始 baseline
+    # 第 1 行数据 baseline
     y2 -= line_height
 
-    # 各段階の説明（最多 2 行）
+    # ===== 三阶段文字（已改成 2 行以内的新版本）=====
     rows = [
         ("出会い期",
          "最初はお互いの新鮮さが強く、ドキドキや憧れが中心になります。"
          "第一印象が固まりやすい時期です。"),
+
         ("成長期",
          "相手の弱さや価値観の違いが見えてきて、摩擦と理解をくり返しながら関係を深めていく時期です。"),
+
         ("安定期",
          "お互いのペースや居場所がわかってきて、安心感と居心地の良さがベースになる時期です。"),
     ]
     max_lines = 2
 
     for label, desc in rows:
-        # 每一行的顶部基准，保证行高一致
         row_top = y2
 
-        # 左侧“段階”
         c.setFont(body_font, body_size)
         c.drawString(text_x, row_top, label)
 
-        # 右侧“特徴”（限制最多 2 行）
         draw_wrapped_block_limited(
             c,
             desc,
-            text_x + 80,         # 特徴文字起点
+            text_x + 80,
             row_top,
-            wrap_width - 80,     # 特徴部分行宽
+            wrap_width - 80,
             body_font,
             body_size,
             line_height,
             max_lines,
         )
 
-        # 固定行高：每行占用 max_lines 行的高度
         y2 = row_top - max_lines * line_height
 
-        # 在该行下画一条线（三条线间距一致）
         c.line(text_x, y2 + 4, text_x + wrap_width, y2 + 4)
 
-        # 行间再留一点空隙
         y2 -= line_height
 
     # ===== バランスを保つコツ =====
@@ -596,12 +593,11 @@ def generate_report():
         "小さなモヤモヤを大きなすれ違いになる前にケアできます。"
     )
 
-    # 这里只保留一段正文，不再画「一言でいうと〜」那一段
+    # 只保留一段
     y3 = draw_wrapped_block(c, body_tip, text_x, y3,
                             wrap_width, body_font, body_size, line_height)
 
     c.showPage()
-
 
     # ------------------------------------------------------------------
     # 第 7・8 页：只铺背景
