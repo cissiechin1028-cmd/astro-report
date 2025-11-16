@@ -361,7 +361,7 @@ def generate_report():
     # ===== 総合相性スコア =====
     compat_score = 82  # ★ 先写死一个分数，之后你可以自己换成计算结果
     c.setFont(JP_SANS, 14)
-    c.drawString(text_x3, 340, f"総合相性スコア： {compat_score} / 100")
+    c.drawString(text_x3, 360, f"相性バランス： {compat_score} / 100")
 
     # 俯瞰式总结（最多 2 行）
     compat_summary = (
@@ -372,7 +372,7 @@ def generate_report():
         c,
         compat_summary,
         text_x3,
-        340 - line_height3 * 1.4,  # 标题下留一点空隙
+        360 - line_height3 * 1.4,  # 标题下留一点空隙
         wrap_width3,
         body_font3,
         body_size3,
