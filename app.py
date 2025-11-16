@@ -669,7 +669,7 @@ def generate_report():
 
     c.showPage()
 
-        # ------------------------------------------------------------------
+            # ------------------------------------------------------------------
     # 第 7 页：日常で役立つアドバイス
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_advice.jpg")
@@ -683,11 +683,11 @@ def generate_report():
     col2_width = table_width - col1_width - col_gap  # 右列宽度
 
     body_font = JP_SERIF
-    body_size = 12
-    line_height = 18
+    body_size = 11         # ★ 这一页单独用小一号字体
+    line_height = 16       # ★ 行高也相应调小一点
 
     # 表头位置（下面的内容都以这个为基准往下排）
-    header_y = 540
+    header_y = 560         # ★ 整个表往上提一点
 
     c.setFont(body_font, body_size)
     c.drawString(table_x, header_y, "ふたりのシーン")
@@ -731,13 +731,12 @@ def generate_report():
         ),
     ]
 
-    max_lines = 2  # 每列最多两行
-
     for scene_text, tip_text in advice_rows:
-        row_top = y_row  # 这一行的顶部基准
+        # 这一行的顶部基准
+        row_top = y_row
 
-        # 左列：ふたりのシーン
-        draw_wrapped_block_limited(
+        # 左列：ふたりのシーン（不限行数，自动换行）
+        scene_y = draw_wrapped_block(
             c,
             scene_text,
             table_x,
@@ -746,11 +745,10 @@ def generate_report():
             body_font,
             body_size,
             line_height,
-            max_lines,
         )
 
-        # 右列：うまくいくコツ
-        draw_wrapped_block_limited(
+        # 右列：うまくいくコツ（不限行数，自动换行）
+        tip_y = draw_wrapped_block(
             c,
             tip_text,
             table_x + col1_width + col_gap,
@@ -759,17 +757,16 @@ def generate_report():
             body_font,
             body_size,
             line_height,
-            max_lines,
         )
 
-        # 固定每一行的高度 = max_lines 行
-        y_row = row_top - max_lines * line_height
+        # 这一行实际用到的“最下面的 y”（两列里谁更长就按谁算）
+        row_bottom = min(scene_y, tip_y)
 
-        # 该行下方画一条横线
-        c.line(table_x, y_row + 4, table_x + table_width, y_row + 4)
+        # 该行下方画一条横线（刚好在文字下面一点点）
+        c.line(table_x, row_bottom + 4, table_x + table_width, row_bottom + 4)
 
-        # 行间再留一点空隙
-        y_row -= line_height
+        # 下一行的起点：在横线下面再空一行
+        y_row = row_bottom - line_height
 
     c.showPage()
 
