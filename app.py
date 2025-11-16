@@ -794,50 +794,49 @@ def generate_report():
     c.showPage()
 
 
+        # ------------------------------------------------------------------
+    # 第 8 页：まとめ
     # ------------------------------------------------------------------
-# 第 8 页：まとめ
-# ------------------------------------------------------------------
-draw_full_bg(c, "page_summary.jpg")
+    draw_full_bg(c, "page_summary.jpg")
+    c.setFillColorRGB(0.2, 0.2, 0.2)
 
-c.setFillColorRGB(0.2, 0.2, 0.2)  # 深灰色文字
+    # 标题「まとめ」
+    title_font = JP_SERIF_BOLD
+    title_size = 22
+    c.setFont(title_font, title_size)
+    # 位置可以和前几页标题差不多（你如果之前有统一坐标，也可用同一个）
+    c.drawString(100, 700, "まとめ")
 
-# 标题「まとめ」
-title_font = JP_SERIF_BOLD
-title_size = 20
-c.setFont(title_font, title_size)
-c.drawString(100, 690, "まとめ")   # 你可以调整 690 ↑ 来上下移动标题
+    # 正文设置
+    body_font = JP_SERIF
+    body_size = 13
+    line_height = 22
+    text_x = 100
+    start_y = 540
+    wrap_width = 380
 
-# 正文内容
-summary_text = (
-    "本レポートは、西洋占星術の恋愛ホロスコープ解析と\n"
-    "心理傾向データをもとに作成した内容です。\n\n"
-    "占いの結果は運命を決めるものではなく、\n"
-    "おふたりがより深く理解し合い、\n"
-    "穏やかで優しい気持ちで愛を育むための小さな指針です。"
-)
+    summary_text = (
+        "本レポートは、西洋占星術の恋愛ホロスコープ解析と"
+        "心理傾向データをもとに作成した内容です。"
+        "\n\n"
+        "占いの結果は運命を決めるものではなく、"
+        "おふたりがより深く理解し合い、"
+        "穏やかで優しい気持ちで愛を育むための"
+        "小さな指針です。"
+    )
 
-body_font = JP_SERIF
-body_size = 14
-line_height = 22
+    draw_wrapped_block(
+        c,
+        summary_text,
+        text_x,
+        start_y,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+    )
 
-# 正文绘制起点（你可以调 510 让整体上移或下移）
-start_x = 100
-start_y = 510
-
-draw_wrapped_block(
-    c,
-    summary_text,
-    start_x,
-    start_y,
-    380,           # 正文宽度（不需要动）
-    body_font,
-    body_size,
-    line_height,
-)
-
-c.showPage()
-
-
+    c.showPage()
 
     # ------------------------------------------------------------------
     # 收尾
