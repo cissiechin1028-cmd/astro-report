@@ -687,7 +687,7 @@ def generate_report():
     line_height = 16
 
     # 表头位置（下面的内容都以这个为基准往下排）
-    header_y = 570         # 整个表稍微往上提一点
+    header_y = 600         # 整个表稍微往上提一点
 
     # 表头用稍粗的ゴシック体模拟“粗体”
     c.setFont(JP_SANS, body_size)
