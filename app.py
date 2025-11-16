@@ -687,7 +687,7 @@ def generate_report():
     line_height = 16
 
     # 表头位置（下面的内容都以这个为基准往下排）
-    header_y = 600         # 整个表稍微往上提一点
+    header_y = 580         # 整个表稍微往上提一点
 
     # 表头用稍粗的ゴシック体模拟“粗体”
     c.setFont(JP_SANS, body_size)
@@ -702,7 +702,7 @@ def generate_report():
     c.line(table_x, header_y - 8, table_x + table_width, header_y - 8)
 
     # 第 1 行内容的起点
-    y_row = header_y - line_height
+    y_row = header_y - line_height * 1.8
 
     # 每一行： (左列シーン, 右列うまくいくコツ)
     advice_rows = [
