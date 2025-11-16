@@ -794,66 +794,38 @@ def generate_report():
     c.showPage()
 
 
-           # ------------------------------------------------------------------
-    # 第 8 页：まとめ
     # ------------------------------------------------------------------
-    draw_full_bg(c, "page_summary.jpg")
-    c.setFillColorRGB(0.2, 0.2, 0.2)
+# 第 8 页：まとめ（背景のみ + 正文占位）
+# ------------------------------------------------------------------
+draw_full_bg(c, "page_summary.jpg")
+c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # 标题 & 正文字体（只用你已经有的 JP_SANS / JP_SERIF）
-    title_font = JP_SANS      # 标题用无衬线
-    title_size = 18
-    body_font = JP_SERIF      # 正文用细明朝
-    body_size = 12
-    line_height = 18
+# ---- 正文排版参数 ----
+summary_x = 120               # 左右位置
+summary_y = 630               # 你要求的起始位置（往上移）
+summary_wrap_width = 350      # 文本宽度
+summary_font = JP_SERIF
+summary_font_size = 13
+summary_line_height = 20
 
-    text_x = 130
-    wrap_width = 360
+# ---- 这里放总结正文（占位内容，之后自动替换为生成文案）----
+summary_text = (
+    "【ここに生成された総まとめ文が入ります】"
+)
 
-    # ===== 标题「まとめ」 =====
-    c.setFont(title_font, title_size)
-    # 这个 570 可以根据需要微调上下位置
-    c.drawString(text_x, 570, "まとめ")
+# ---- 渲染正文（自动换行）----
+draw_wrapped_block(
+    c,
+    summary_text,
+    summary_x,
+    summary_y,
+    summary_wrap_width,
+    summary_font,
+    summary_font_size,
+    summary_line_height,
+)
 
-    # ===== 正文（两段） =====
-    body_1 = (
-        "本レポートは、西洋占星術の恋愛ホロスコープ解析と"
-        "心理傾向データをもとに作成した内容です。"
-    )
-
-    body_2 = (
-        "占いの結果は運命を決めるものではなく、"
-        "おふたりがより深く理解し合い、"
-        "穏やかで優しい気持ちで愛を育むための小さな指針です。"
-    )
-
-    c.setFont(body_font, body_size)
-    y = 520
-    y = draw_wrapped_block(
-        c,
-        body_1,
-        text_x,
-        y,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-    )
-
-    y -= line_height  # 段落间留一行空白
-
-    draw_wrapped_block(
-        c,
-        body_2,
-        text_x,
-        y,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-    )
-
-    c.showPage()
+c.showPage()
 
     # ------------------------------------------------------------------
     # 收尾
