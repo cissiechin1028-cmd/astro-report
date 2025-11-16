@@ -669,7 +669,7 @@ def generate_report():
 
     c.showPage()
 
-            # ------------------------------------------------------------------
+              # ------------------------------------------------------------------
     # 第 7 页：日常で役立つアドバイス
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_advice.jpg")
@@ -683,13 +683,14 @@ def generate_report():
     col2_width = table_width - col1_width - col_gap  # 右列宽度
 
     body_font = JP_SERIF
-    body_size = 11         # ★ 这一页单独用小一号字体
-    line_height = 16       # ★ 行高也相应调小一点
+    body_size = 11         # 这一页用小一号字体
+    line_height = 16
 
     # 表头位置（下面的内容都以这个为基准往下排）
-    header_y = 560         # ★ 整个表往上提一点
+    header_y = 570         # 整个表稍微往上提一点
 
-    c.setFont(body_font, body_size)
+    # 表头用稍粗的ゴシック体模拟“粗体”
+    c.setFont(JP_SANS, body_size)
     c.drawString(table_x, header_y, "ふたりのシーン")
     c.drawString(table_x + col1_width + col_gap, header_y, "うまくいくコツ")
 
@@ -697,8 +698,8 @@ def generate_report():
     c.setStrokeColorRGB(0.9, 0.9, 0.9)
     c.setLineWidth(0.4)
 
-    # 表头下面的第一条横线
-    c.line(table_x, header_y - 4, table_x + table_width, header_y - 4)
+    # 表头下面的第一条横线（比之前再往下一点，别贴着表头）
+    c.line(table_x, header_y - 8, table_x + table_width, header_y - 8)
 
     # 第 1 行内容的起点
     y_row = header_y - line_height
@@ -730,6 +731,9 @@ def generate_report():
             "重い話ではなく、「最近ハマっていること教えて？」など、軽いテーマから会話をつなげてみましょう。"
         ),
     ]
+
+    # 表身部分用明朝体
+    c.setFont(body_font, body_size)
 
     for scene_text, tip_text in advice_rows:
         # 这一行的顶部基准
@@ -768,7 +772,27 @@ def generate_report():
         # 下一行的起点：在横线下面再空一行
         y_row = row_bottom - line_height
 
+    # ---- 页面下方补一段小总结，让空白不那么明显 ----
+    summary_text = (
+        "ここに挙げたのはあくまで一例です。"
+        "ふたりらしい言葉やタイミングにアレンジしながら、"
+        "日常の中で少しずつ「話すきっかけ」を増やしていってください。"
+    )
+    # 在最后一条横线下方再留一点空隙后开始写
+    summary_y_start = y_row - line_height
+    draw_wrapped_block(
+        c,
+        summary_text,
+        table_x,
+        summary_y_start,
+        table_width,
+        body_font,
+        body_size,
+        line_height,
+    )
+
     c.showPage()
+
 
     # ------------------------------------------------------------------
     # 第 8 页：まとめ（背景のみ）
