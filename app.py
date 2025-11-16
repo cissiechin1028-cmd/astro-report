@@ -669,12 +669,116 @@ def generate_report():
 
     c.showPage()
 
+        # ------------------------------------------------------------------
+    # 第 7 页：日常で役立つアドバイス
     # ------------------------------------------------------------------
-    # 第 7・8 页：只铺背景
+    draw_full_bg(c, "page_advice.jpg")
+    c.setFillColorRGB(0.2, 0.2, 0.2)
+
+    # 表全体的设置
+    table_x = 130          # 左边起点（跟前几页保持一致）
+    table_width = 360      # 整个表格宽度
+    col1_width = 140       # 左列「ふたりのシーン」宽度
+    col_gap = 20           # 两列之间的间距
+    col2_width = table_width - col1_width - col_gap  # 右列宽度
+
+    body_font = JP_SERIF
+    body_size = 12
+    line_height = 18
+
+    # 表头位置（下面的内容都以这个为基准往下排）
+    header_y = 540
+
+    c.setFont(body_font, body_size)
+    c.drawString(table_x, header_y, "ふたりのシーン")
+    c.drawString(table_x + col1_width + col_gap, header_y, "うまくいくコツ")
+
+    # 横线样式（只画横线，不画竖线，风格跟第 6 页一致）
+    c.setStrokeColorRGB(0.9, 0.9, 0.9)
+    c.setLineWidth(0.4)
+
+    # 表头下面的第一条横线
+    c.line(table_x, header_y - 4, table_x + table_width, header_y - 4)
+
+    # 第 1 行内容的起点
+    y_row = header_y - line_height
+
+    # 每一行： (左列シーン, 右列うまくいくコツ)
+    advice_rows = [
+        (
+            "忙しい平日の夜",
+            "10分だけ携帯を置いて、お互いに「今日いちばん嬉しかったこと」を一つずつ話してみましょう。"
+        ),
+        (
+            "休みの日のデート前",
+            "予定を決める前に「今日はどんな気分？」と聞くひと言だけで、行き先のすれ違いが減りやすくなります。"
+        ),
+        (
+            "気持ちがすれ違ったとき",
+            "どちらが正しいかよりも、「今どう感じた？」を先に聞くと、落ち着いて話し直しやすくなります。"
+        ),
+        (
+            "記念日や特別な日",
+            "完璧を目指しすぎず、「お互いに一つずつ感謝を伝える」くらいのシンプルさが、ちょうどいいバランスです。"
+        ),
+        (
+            "相手が疲れていそうな日",
+            "アドバイスよりも「今日はおつかれさま」と一言ねぎらうだけで、安心感がぐっと高まります。"
+        ),
+        (
+            "なんとなく距離を感じるとき",
+            "重い話ではなく、「最近ハマっていること教えて？」など、軽いテーマから会話をつなげてみましょう。"
+        ),
+    ]
+
+    max_lines = 2  # 每列最多两行
+
+    for scene_text, tip_text in advice_rows:
+        row_top = y_row  # 这一行的顶部基准
+
+        # 左列：ふたりのシーン
+        draw_wrapped_block_limited(
+            c,
+            scene_text,
+            table_x,
+            row_top,
+            col1_width,
+            body_font,
+            body_size,
+            line_height,
+            max_lines,
+        )
+
+        # 右列：うまくいくコツ
+        draw_wrapped_block_limited(
+            c,
+            tip_text,
+            table_x + col1_width + col_gap,
+            row_top,
+            col2_width,
+            body_font,
+            body_size,
+            line_height,
+            max_lines,
+        )
+
+        # 固定每一行的高度 = max_lines 行
+        y_row = row_top - max_lines * line_height
+
+        # 该行下方画一条横线
+        c.line(table_x, y_row + 4, table_x + table_width, y_row + 4)
+
+        # 行间再留一点空隙
+        y_row -= line_height
+
+    c.showPage()
+
     # ------------------------------------------------------------------
-    for bg in ["page_advice.jpg", "page_summary.jpg"]:
-        draw_full_bg(c, bg)
-        c.showPage()
+    # 第 8 页：まとめ（背景のみ）
+    # ------------------------------------------------------------------
+    draw_full_bg(c, "page_summary.jpg")
+    c.showPage()
+
 
     # ------------------------------------------------------------------
     # 收尾
