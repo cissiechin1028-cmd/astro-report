@@ -794,42 +794,59 @@ def generate_report():
     c.showPage()
 
 
-        # ------------------------------------------------------------------
+           # ------------------------------------------------------------------
     # 第 8 页：まとめ
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_summary.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # 标题「まとめ」
-    title_font = JP_SERIF_BOLD
-    title_size = 22
+    # 标题 & 正文字体（只用你已经有的 JP_SANS / JP_SERIF）
+    title_font = JP_SANS      # 标题用无衬线
+    title_size = 18
+    body_font = JP_SERIF      # 正文用细明朝
+    body_size = 12
+    line_height = 18
+
+    text_x = 130
+    wrap_width = 360
+
+    # ===== 标题「まとめ」 =====
     c.setFont(title_font, title_size)
-    # 位置可以和前几页标题差不多（你如果之前有统一坐标，也可用同一个）
-    c.drawString(100, 700, "まとめ")
+    # 这个 570 可以根据需要微调上下位置
+    c.drawString(text_x, 570, "まとめ")
 
-    # 正文设置
-    body_font = JP_SERIF
-    body_size = 13
-    line_height = 22
-    text_x = 100
-    start_y = 540
-    wrap_width = 380
-
-    summary_text = (
+    # ===== 正文（两段） =====
+    body_1 = (
         "本レポートは、西洋占星術の恋愛ホロスコープ解析と"
         "心理傾向データをもとに作成した内容です。"
-        "\n\n"
+    )
+
+    body_2 = (
         "占いの結果は運命を決めるものではなく、"
         "おふたりがより深く理解し合い、"
-        "穏やかで優しい気持ちで愛を育むための"
-        "小さな指針です。"
+        "穏やかで優しい気持ちで愛を育むための小さな指針です。"
     )
+
+    c.setFont(body_font, body_size)
+    y = 520
+    y = draw_wrapped_block(
+        c,
+        body_1,
+        text_x,
+        y,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+    )
+
+    y -= line_height  # 段落间留一行空白
 
     draw_wrapped_block(
         c,
-        summary_text,
+        body_2,
         text_x,
-        start_y,
+        y,
         wrap_width,
         body_font,
         body_size,
