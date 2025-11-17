@@ -800,7 +800,7 @@ def generate_report():
 
     # ---- 正文排版参数 ----
     summary_x = 120               # 左右位置
-    summary_y = 630               # 你要求的起始位置（往上移）
+    summary_y = 680               # 你要求的起始位置（往上移）
     summary_wrap_width = 350      # 文本宽度
     summary_font = JP_SERIF
     summary_font_size = 13
