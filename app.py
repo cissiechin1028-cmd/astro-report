@@ -688,10 +688,12 @@ def generate_report():
     # 表头位置（下面的内容都以这个为基准往下排）
     header_y = 680         # 整个表稍微往上提一点
 
-    # 表头用稍粗的ゴシック体模拟“粗体”
-    c.setFont(JP_SANS, body_size)
+    # 表头：用ゴシック体 + 大一号字号，来当「粗体」
+    header_font_size = body_size + 2   # 比正文大 2pt，更显眼
+    c.setFont(JP_SANS, header_font_size)
     c.drawString(table_x, header_y, "ふたりのシーン")
     c.drawString(table_x + col1_width + col_gap, header_y, "うまくいくコツ")
+
 
     # 横线样式（只画横线，不画竖线，风格跟第 6 页一致）
     c.setStrokeColorRGB(0.9, 0.9, 0.9)
