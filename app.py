@@ -249,15 +249,58 @@ def generate_report():
     draw_full_bg(c, "index.jpg")
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 第 3 页：基本ホロスコープと総合相性
-    # ------------------------------------------------------------------
+   # ------------------------------------------------------------------
+# 第 3 页：基本ホロスコープと総合相性
+# ------------------------------------------------------------------
+
+def build_planet_block(core: dict) -> dict:
+    """core = {sun:{lon,name_ja}, moon:{...}, venus:{...}, mars:{...}, asc:{...}}"""
+    def fmt(label_ja: str, d: dict) -> str:
+        return f"{label_ja}：{d['name_ja']} {d['lon']:.1f}°"
+
+    return {
+        "sun": {
+            "deg": core["sun"]["lon"],
+            "label": fmt("太陽", core["sun"]),
+        },
+        "moon": {
+            "deg": core["moon"]["lon"],
+            "label": fmt("月", core["moon"]),
+        },
+        "venus": {
+            "deg": core["venus"]["lon"],
+            "label": fmt("金星", core["venus"]),
+        },
+        "mars": {
+            "deg": core["mars"]["lon"],
+            "label": fmt("火星", core["mars"]),
+        },
+        "asc": {
+            "deg": core["asc"]["lon"],
+            "label": fmt("ASC", core["asc"]),
+        },
+    }
+
+
+def draw_page3_basic_and_synastry(
+    c,
+    male_name: str,
+    female_name: str,
+    male_core: dict,
+    female_core: dict,
+    compat_score: int,
+    compat_summary: str,
+    sun_text: str,
+    moon_text: str,
+    asc_text: str,
+):
+    # 背景
     draw_full_bg(c, "page_basic.jpg")
 
+    # 星盘底图
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘尺寸 + 位置（整体稍微缩小：200 → 180）
     chart_size = 180
     left_x = 90
     left_y = 520
@@ -276,24 +319,11 @@ def generate_report():
     c.drawImage(chart_img, right_x, right_y,
                 width=chart_size, height=chart_size, mask="auto")
 
-    # ------------------ 行星示例数据（角度 + 文字） ------------------
-    male_planets = {
-        "sun":   {"deg": 12.3,  "label": "太陽：牡羊座 12.3°"},
-        "moon":  {"deg": 65.4,  "label": "月：双子座 5.4°"},
-        "venus": {"deg": 147.8, "label": "金星：獅子座 17.8°"},
-        "mars":  {"deg": 183.2, "label": "火星：天秤座 3.2°"},
-        "asc":   {"deg": 220.1, "label": "ASC：山羊座 20.1°"},
-    }
+    # ------------------ 行星数据（根据计算结果） ------------------
+    male_planets = build_planet_block(male_core)
+    female_planets = build_planet_block(female_core)
 
-    female_planets = {
-        "sun":   {"deg": 8.5,   "label": "太陽：蟹座 8.5°"},
-        "moon":  {"deg": 150.0, "label": "月：乙女座 22.0°"},
-        "venus": {"deg": 214.6, "label": "金星：蠍座 14.6°"},
-        "mars":  {"deg": 262.9, "label": "火星：水瓶座 2.9°"},
-        "asc":   {"deg": 288.4, "label": "ASC：魚座 28.4°"},
-    }
-
-    # 与 key 对应的 PNG 文件名
+    # 与 key 对应的 PNG 文件名（按你仓库里的名字改）
     icon_files = {
         "sun": "icon_sun.png",
         "moon": "icon_moon.png",
@@ -302,7 +332,7 @@ def generate_report():
         "asc": "icon_asc.png",
     }
 
-    # 男 = 蓝色 / 女 = 粉色
+    # 男 = 蓝色 / 女 = 粉色（用于 draw_planet_icon 里的描边或小圆点）
     male_color = (0.15, 0.45, 0.9)
     female_color = (0.9, 0.35, 0.65)
 
@@ -329,13 +359,13 @@ def generate_report():
             icon_files[key],
         )
 
-    # ------------------ 星盘下方姓名（用细明朝体） ------------------
+    # ------------------ 星盘下方姓名 ------------------
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # ------------------ 星盘下方 5 行列表（用细明朝体，左对齐） ------------------
+    # ------------------ 星盘下方 5 行列表 ------------------
     c.setFont(JP_SERIF, 8.5)
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
@@ -359,20 +389,16 @@ def generate_report():
     line_height3 = 18
 
     # ===== 総合相性スコア =====
-    compat_score = 82  # ★ 先写死一个分数，之后你可以自己换成计算结果
     c.setFont(JP_SANS, 12)
+    c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawString(text_x3, 350, f"相性バランス： {compat_score} / 100")
 
     # 俯瞰式总结（最多 2 行）
-    compat_summary = (
-        "二人の相性は、安心感とほどよい刺激がバランスよく混ざった組み合わせです。"
-        "ゆっくりと関係を育てていくほど、お互いの良さが引き出されやすいタイプといえます。"
-    )
     draw_wrapped_block_limited(
         c,
         compat_summary,
         text_x3,
-        350 - line_height3 * 1.4,  # 标题下留一点空隙
+        350 - line_height3 * 1.4,
         wrap_width3,
         body_font3,
         body_size3,
@@ -382,29 +408,11 @@ def generate_report():
 
     # ===== 太陽・月・上昇の分析 =====
     y_analysis = 220
-    analysis_blocks = [
-        (
-            "太陽（ふたりの価値観）：",
-            "太郎 さんは安定感と責任感を、花子 さんは素直さとあたたかさを大切にするタイプです。"
-            "方向性を共有できると、同じゴールに向かって進みやすくなります。"
-        ),
-        (
-            "月（素の感情と安心ポイント）：",
-            "太郎 さんは落ち着いた空間やペースを守れる関係に安心し、"
-            "花子 さんは気持ちをその場で分かち合えることに心地よさを感じやすい傾向があります。"
-        ),
-        (
-            "ASC（第一印象・ふたりの雰囲気）：",
-            "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
-            "少しずつ素の表情が見えるほど、二人らしい雰囲気が育っていきます。"
-        ),
-    ]
-
     c.setFont(body_font3, body_size3)
+    c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    for title, text in analysis_blocks:
-        # 小标题 + 本文合在一起限制两行以内，所以文字要控制在较短长度
-        block_text = title + text
+    # 这里 sun_text / moon_text / asc_text 本身已经带有小标题
+    for block_text in (sun_text, moon_text, asc_text):
         y_analysis = draw_wrapped_block_limited(
             c,
             block_text,
@@ -418,7 +426,10 @@ def generate_report():
         )
         y_analysis -= line_height3  # 段落之间空一行
 
+    # 页码（从第3页开始）
+    draw_page_number(c, 3)
     c.showPage()
+
 
     # ------------------------------------------------------------------
     # 第 4 页：性格の違いとコミュニケーション
