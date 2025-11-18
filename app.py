@@ -8,7 +8,6 @@ import io
 import os
 import datetime
 import math
-import json
 
 # ------------------------------------------------------------------
 # 基本設定
@@ -119,75 +118,10 @@ def draw_planet_icon(c, cx, cy, chart_size, degree, rgb, icon_filename):
 
 
 # ------------------------------------------------------------------
-# Token 設定（3 回まで + 管理者は無制限）
-# ------------------------------------------------------------------
-
-TOKEN_FILE = os.path.join(BASE_DIR, "token_usage.json")
-ADMIN_TOKEN = "Lumina_admin"  # あなた専用の無制限トークン
-
-
-def load_token_usage():
-    if not os.path.exists(TOKEN_FILE):
-        return {}
-    try:
-        with open(TOKEN_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        return {}
-
-
-def save_token_usage(data):
-    with open(TOKEN_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f)
-
-
-def token_remaining(token):
-    data = load_token_usage()
-    used = data.get(token, 0)
-    return max(0, 3 - used)
-
-
-def register_token_use(token):
-    if not token or token == ADMIN_TOKEN:
-        return
-    data = load_token_usage()
-    data[token] = data.get(token, 0) + 1
-    save_token_usage(data)
-
-
-def check_token_limit(token):
-    if not token:
-        return None
-    if token == ADMIN_TOKEN:
-        return None
-    remaining = token_remaining(token)
-    if remaining <= 0:
-        return (
-            False,
-            "このリンクはすでに3回ご利用済みです。新しいご注文でお申し込みください。",
-        )
-    register_token_use(token)
-    return None
-
-
-# ------------------------------------------------------------------
-# 生成 PDF 主入口
+# 生成 PDF 主入口（★ ここは token 制限いっさいナシ）
 # ------------------------------------------------------------------
 @app.route("/api/generate_report", methods=["GET"])
 def generate_report():
-    # ---- 0. token 限制检查（附带安全气囊）----
-    token = request.args.get("token", "").strip()
-
-    try:
-        limit_error = check_token_limit(token)
-    except Exception as e:
-        print("[TOKEN ERROR]", e)
-        limit_error = None  # token 部分出错不影响 PDF 生成
-
-    if isinstance(limit_error, tuple):
-        ok, msg = limit_error
-        return msg, 400  # 返回日文提示给用户
-
     # ---- 1. 读取参数 ----
     male_name = request.args.get("male_name", "太郎")
     female_name = request.args.get("female_name", "花子")
@@ -400,8 +334,8 @@ def generate_report():
     draw_full_bg(c, "page_communication.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    text_x = 130          # 左边起点（跟小标题差不多一条线）
-    wrap_width = 360      # 行宽稍微拉长一点
+    text_x = 130
+    wrap_width = 360
     body_font = JP_SERIF
     body_size = 12
     line_height = 18
@@ -501,7 +435,7 @@ def generate_report():
     )
     summary_5 = (
         "一言でいうと、二人のすれ違いは「慎重さ」と「フットワークの軽さ」の差ですが、"
-        "そのギャップは视野を広げるヒントにもなります。"
+        "そのギャップは视野を广げるヒントにもなります。"
     )
     y2 = draw_wrapped_block(c, body_5, text_x, y2, wrap_width,
                             body_font, body_size, line_height)
@@ -533,7 +467,6 @@ def generate_report():
     # 第 6 页：関係の方向性と今後の傾向
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_trend.jpg")
-    # 整页文字颜色稍微调浅一点
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
     text_x = 130
@@ -560,7 +493,6 @@ def generate_report():
                        wrap_width, body_font, body_size, line_height)
 
     # ===== 発展の流れ（中央の表） =====
-    # 整个区块往上移一点：原来 460 → 466
     y2 = 466
     body_flow = (
         "二人の関係は、出会い期・成長期・安定期という流れの中で、"
@@ -569,27 +501,20 @@ def generate_report():
     y2 = draw_wrapped_block(c, body_flow, text_x, y2,
                             wrap_width, body_font, body_size, line_height)
 
-    # ★ 说明文字和整张表格之间的间距
-    #   数字越大，整张表（段階/特徴+三行+三条线）越往下
     table_top = y2 - line_height * 1.6
 
-    # 表头：段階／特徴
     c.setFont(body_font, body_size)
     header_base = table_top
     c.drawString(text_x, header_base, "段階")
     c.drawString(text_x + 80, header_base, "特徴")
 
-    # 线条颜色 & 粗细（维持你现在的浅灰色）
     c.setStrokeColorRGB(0.9, 0.9, 0.9)
     c.setLineWidth(0.4)
 
-    # 表头下面的第一条横线
     c.line(text_x, header_base - 4, text_x + wrap_width, header_base - 4)
 
-    # 第 1 行数据 baseline（从表头再往下 1 行）
     y2 = header_base - line_height
 
-    # ===== 三阶段文字（最多 2 行）=====
     rows = [
         ("出会い期",
          "最初はお互いの新鮮さが強く、ドキドキや憧れが中心になります。"
@@ -636,7 +561,6 @@ def generate_report():
         "小さなモヤモヤを大きなすれ違いになる前にケアできます。"
     )
 
-    # 只保留一段
     y3 = draw_wrapped_block(c, body_tip, text_x, y3,
                             wrap_width, body_font, body_size, line_height)
 
@@ -648,37 +572,30 @@ def generate_report():
     draw_full_bg(c, "page_advice.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # 表全体的设置
-    table_x = 130          # 左边起点（跟前几页保持一致）
-    table_width = 360      # 整个表格宽度
-    col1_width = 140       # 左列「ふたりのシーン」宽度
-    col_gap = 20           # 两列之间的间距
-    col2_width = table_width - col1_width - col_gap  # 右列宽度
+    table_x = 130
+    table_width = 360
+    col1_width = 140
+    col_gap = 20
+    col2_width = table_width - col1_width - col_gap
 
     body_font = JP_SERIF
-    body_size = 11         # 这一页用小一号字体
+    body_size = 11
     line_height = 16
 
-    # 表头位置（下面的内容都以这个为基准往下排）
-    header_y = 680         # 整个表稍微往上提一点
+    header_y = 680
 
-    # 表头：用ゴシック体 + 大一号字号，来当「粗体」
-    header_font_size = body_size + 2   # 比正文大 2pt，更显眼
+    header_font_size = body_size + 2
     c.setFont(JP_SANS, header_font_size)
     c.drawString(table_x, header_y, "ふたりのシーン")
     c.drawString(table_x + col1_width + col_gap, header_y, "うまくいくコツ")
 
-    # 横线样式（只画横线，不画竖线，风格跟第 6 页一致）
     c.setStrokeColorRGB(0.9, 0.9, 0.9)
     c.setLineWidth(0.4)
 
-    # 表头下面的第一条横线（比之前再往下一点，别贴着表头）
     c.line(table_x, header_y - 8, table_x + table_width, header_y - 8)
 
-    # 第 1 行内容的起点
     y_row = header_y - line_height * 1.8
 
-    # 每一行： (左列シーン, 右列うまくいくコツ)
     advice_rows = [
         (
             "忙しい平日の夜",
@@ -706,14 +623,11 @@ def generate_report():
         ),
     ]
 
-    # 表身部分用明朝体
     c.setFont(body_font, body_size)
 
     for scene_text, tip_text in advice_rows:
-        # 这一行的顶部基准
         row_top = y_row
 
-        # 左列：ふたりのシーン（不限行数，自动换行）
         scene_y = draw_wrapped_block(
             c,
             scene_text,
@@ -725,7 +639,6 @@ def generate_report():
             line_height,
         )
 
-        # 右列：うまくいくコツ（不限行数，自动换行）
         tip_y = draw_wrapped_block(
             c,
             tip_text,
@@ -737,22 +650,17 @@ def generate_report():
             line_height,
         )
 
-        # 这一行实际用到的“最下面的 y”（两列里谁更长就按谁算）
         row_bottom = min(scene_y, tip_y)
 
-        # 该行下方画一条横线（刚好在文字下面一点点）
         c.line(table_x, row_bottom + 4, table_x + table_width, row_bottom + 4)
 
-        # 下一行的起点：在横线下面再空一行
         y_row = row_bottom - line_height
 
-    # ---- 页面下方补一段小总结，让空白不那么明显 ----
     summary_text = (
         "ここに挙げたのはあくまで一例です。"
         "ふたりらしい言葉やタイミングにアレンジしながら、"
         "日常の中で少しずつ「話すきっかけ」を増やしていってください。"
     )
-    # 在最后一条横线下方再留一点空隙后开始写
     summary_y_start = y_row - line_height
     draw_wrapped_block(
         c,
@@ -773,20 +681,17 @@ def generate_report():
     draw_full_bg(c, "page_summary.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # ---- 正文排版参数 ----
-    summary_x = 120               # 左右位置
-    summary_y = 680               # 起始位置
-    summary_wrap_width = 350      # 文本宽度
+    summary_x = 120
+    summary_y = 680
+    summary_wrap_width = 350
     summary_font = JP_SERIF
     summary_font_size = 13
     summary_line_height = 20
 
-    # ---- 这里放总结正文（占位内容，之后自动替换为生成文案）----
     summary_text = (
         "【ここに生成された総まとめ文が入ります】"
     )
 
-    # ---- 渲染正文（自动换行）----
     draw_wrapped_block(
         c,
         summary_text,
@@ -800,7 +705,7 @@ def generate_report():
 
     c.showPage()
 
-   # -------------- 收尾（这段一定要在最后）--------------
+    # -------------- 收尾（这段一定要在最后）--------------
     c.save()
     buffer.seek(0)
 
