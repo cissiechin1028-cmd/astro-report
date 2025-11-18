@@ -9,6 +9,28 @@ import os
 import datetime
 import math
 
+import json
+
+# Token 使用次数记录文件
+TOKEN_FILE = "token_usage.json"
+
+def load_token_usage():
+    if not os.path.exists(TOKEN_FILE):
+        return {}
+    with open(TOKEN_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_token_usage(data):
+    with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+
+def token_remaining(token):
+    data = load_token_usage()
+    count = data.get(token, 0)
+    # 最多 3 次
+    return max(0, 3 - count)
+
+
 # ------------------------------------------------------------------
 # Flask 基本设置：public 目录作为静态目录
 # ------------------------------------------------------------------
