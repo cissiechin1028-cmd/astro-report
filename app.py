@@ -542,9 +542,16 @@ def draw_page4_communication(
     c.showPage()
 
 
-    # ------------------------------------------------------------------
-    # 第 5 页：ふたりの強みと課題ポイント
-    # ------------------------------------------------------------------
+  # ------------------------------------------------------------------
+# 第 5 页：相性の良い点・すれ違いやすい点
+# ------------------------------------------------------------------
+
+def draw_page5_points(
+    c,
+    good_text, good_summary,
+    gap_text, gap_summary,
+    hint_text, hint_summary,
+):
     draw_full_bg(c, "page_points.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
@@ -554,61 +561,94 @@ def draw_page4_communication(
     body_size = 12
     line_height = 18
 
-    # ===== ふたりの「いいところ」 =====
+    # ----------------------------------------------------------
+    # ① 相性の良いところ
+    # ----------------------------------------------------------
     y = 625
-    body_4 = (
-        "太郎 さんは、相手の立場を考えながら行動できる、落ち着いた安心感のあるタイプです。"
-        "花子 さんは、その場の空気を明るくし、素直な気持ちを伝えられるタイプです。"
-        "二人が一緒にいると、「安心感」と「温かさ」が自然と周りにも伝わり、"
-        "お互いの长所を引き出し合える関係になりやすい组合せです。"
+    y = draw_wrapped_block(
+        c,
+        good_text,          # ★ 正文（约 7 行）
+        text_x,
+        y,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
     )
-    summary_4 = (
-        "一言でいうと、二人は「一緒にいるだけで場がやわらぎ、"
-        "温かさが自然と伝わっていくペア」です。"
-    )
-    y = draw_wrapped_block(c, body_4, text_x, y, wrap_width,
-                           body_font, body_size, line_height)
     y -= line_height
-    draw_wrapped_block(c, summary_4, text_x, y, wrap_width,
-                       body_font, body_size, line_height)
 
-    # ===== すれ違いやすいポイント =====
+    draw_wrapped_block_limited(
+        c,
+        good_summary,       # ★ 一言でいうと（1 行）
+        text_x,
+        y,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=1,
+    )
+
+    # ----------------------------------------------------------
+    # ② すれ違いやすいところ
+    # ----------------------------------------------------------
     y2 = 434
-    body_5 = (
-        "太郎 さんは、物事を決めるときに慎重に考えたいタイプで、"
-        "花子 さんは、流れや直感を大切にして「とりあえずやってみよう」と思うことが多いかもしれません。"
-        "そのため、決断のペースや優先順位がずれると、"
-        "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感じやすくなります。"
+    y2 = draw_wrapped_block(
+        c,
+        gap_text,           # ★ 正文
+        text_x,
+        y2,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
     )
-    summary_5 = (
-        "一言でいうと、二人のすれ違いは「慎重さ」と「フットワークの軽さ」の差ですが、"
-        "そのギャップは视野を広げるヒントにもなります。"
-    )
-    y2 = draw_wrapped_block(c, body_5, text_x, y2, wrap_width,
-                            body_font, body_size, line_height)
     y2 -= line_height
-    draw_wrapped_block(c, summary_5, text_x, y2, wrap_width,
-                       body_font, body_size, line_height)
 
-    # ===== 伸ばしていけるポイント =====
+    draw_wrapped_block_limited(
+        c,
+        gap_summary,        # ★ 一言でいうと
+        text_x,
+        y2,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=1,
+    )
+
+    # ----------------------------------------------------------
+    # ③ 関係をスムーズにするヒント
+    # ----------------------------------------------------------
     y3 = 236
-    body_6 = (
-        "太郎 さんの安定感と、花子 さんの柔軟さ・明るさが合わさることで、"
-        "二人は「現実的で無理のないチャレンジ」を积み重ねていけるペアです。"
-        "お互いの考え方を一度言葉にして共有する習惯ができると、"
-        "二人だけのペースや目标が见つかり、将来像もより具体的に描きやすくなります。"
+    y3 = draw_wrapped_block(
+        c,
+        hint_text,          # ★ 正文
+        text_x,
+        y3,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
     )
-    summary_6 = (
-        "一言でいうと、二人の伸ばしていけるポイントは「安心できる土台の上で、"
-        "新しい一歩を一緒に踏み出せる力」です。"
-    )
-    y3 = draw_wrapped_block(c, body_6, text_x, y3, wrap_width,
-                            body_font, body_size, line_height)
     y3 -= line_height
-    draw_wrapped_block(c, summary_6, text_x, y3, wrap_width,
-                       body_font, body_size, line_height)
 
+    draw_wrapped_block_limited(
+        c,
+        hint_summary,       # ★ 一言でいうと
+        text_x,
+        y3,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=1,
+    )
+
+    # 页码（第 5 页）
+    draw_page_number(c, 5)
     c.showPage()
+
 
     # ------------------------------------------------------------------
     # 第 6 页：関係の方向性と今後の傾向
