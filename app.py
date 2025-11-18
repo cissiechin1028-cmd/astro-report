@@ -8,87 +8,62 @@ import io
 import os
 import datetime
 import math
+
 import json
 
-# ------------------------------------------------------------------
-# 路径 & 全局常量
-# ------------------------------------------------------------------
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
-PAGE_WIDTH, PAGE_HEIGHT = A4
+# -------------------------------
+# Token 设置（3次限制 + 管理员无限）
+# 使用内存计数，不再写文件
+# -------------------------------
 
-# ------------------------------------------------------------------
-# Token 设置（3 次限制 + 管理员无限）
-# ------------------------------------------------------------------
+# 管理员 token（你自己无限次）
+ADMIN_TOKEN = "Lumina_admin"   # 注意大小写必须和你的测试链接一致
 
-# 保存 token 使用次数的 json 文件（放在项目根目录）
-TOKEN_FILE = os.path.join(BASE_DIR, "token_usage.json")
+# 普通用户最多次数
+TOKEN_MAX = 3
 
-# 管理员专用 token（你自己用，不限制次数）
-ADMIN_TOKEN = "Lumina_admin"
+# 内存里的计数字典
+TOKEN_USES = {}
 
 
-def load_token_usage():
-    """读取 token 使用数据"""
-    if not os.path.exists(TOKEN_FILE):
-        return {}
-    try:
-        with open(TOKEN_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except json.JSONDecodeError:
-        return {}
+def token_remaining(token: str) -> int:
+    """返回 token 还能用几次（0~TOKEN_MAX）"""
+    used = TOKEN_USES.get(token, 0)
+    return max(0, TOKEN_MAX - used)
 
 
-def save_token_usage(data):
-    """保存 token 使用数据"""
-    with open(TOKEN_FILE, "w", encoding="utf-8") as f:
-        json.dump(data, f)
-
-
-def token_remaining(token):
-    """
-    返回 token 剩余次数（0~3）
-    同一 token 最多允许使用 3 次
-    """
-    data = load_token_usage()
-    used = data.get(token, 0)
-    return max(0, 3 - used)
-
-
-def register_token_use(token):
-    """给 token +1 次（管理员除外）"""
+def register_token_use(token: str) -> None:
+    """记录 token 使用 1 次（管理员或空 token 不计数）"""
     if not token:
         return
     if token == ADMIN_TOKEN:
-        return  # 管理员无限使用，不计数
-    data = load_token_usage()
-    data[token] = data.get(token, 0) + 1
-    save_token_usage(data)
+        return  # 管理员无限使用
+    TOKEN_USES[token] = TOKEN_USES.get(token, 0) + 1
 
 
-def check_token_limit(token):
+def check_token_limit(token: str):
     """
-    检查 token 是否超过限制。
-    返回:
-      None → 可以继续
-      (False, "错误信息") → 已超过次数
+    检查 token 是否超过限制
+    返回 None = 允许
+    返回 (False, msg) = 超过 3 次
     """
-    # 没有 token（比如你本地临时测试）→ 不限制
     if not token:
         return None
 
-    # 管理员 token → 无限使用
     if token == ADMIN_TOKEN:
-        return None
+        return None  # 管理员无限
 
-    # 普通客户：检查剩余次数
     remaining = token_remaining(token)
     if remaining <= 0:
         return (False, "このリンクはすでに3回ご利用済みです。新しいご注文でお申し込みください。")
 
-    # 未超限 → 登记 +1 次
     register_token_use(token)
+
+    # 调试日志（可保留）
+    print(f"[TOKEN DEBUG] token={token}, used={TOKEN_USES.get(token)}")
+
     return None
+
 
 
 # ------------------------------------------------------------------
