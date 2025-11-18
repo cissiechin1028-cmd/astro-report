@@ -8,18 +8,25 @@ import io
 import os
 import datetime
 import math
-
 import json
 
-# -------------------------------
-#  Token 设置（3次限制 + 管理员无限）
-# -------------------------------
+# ------------------------------------------------------------------
+# 路径 & 全局常量
+# ------------------------------------------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
+PAGE_WIDTH, PAGE_HEIGHT = A4
 
-# 保存 token 使用次数的 json 文件
-TOKEN_FILE = "token_usage.json"
+# ------------------------------------------------------------------
+# Token 设置（3 次限制 + 管理员无限）
+# ------------------------------------------------------------------
+
+# 保存 token 使用次数的 json 文件（放在项目根目录）
+TOKEN_FILE = os.path.join(BASE_DIR, "token_usage.json")
 
 # 管理员专用 token（你自己用，不限制次数）
-ADMIN_TOKEN = "LUMINA_ADMIN_2025"
+ADMIN_TOKEN = "Lumina_admin"
+
 
 def load_token_usage():
     """读取 token 使用数据"""
@@ -31,10 +38,12 @@ def load_token_usage():
     except json.JSONDecodeError:
         return {}
 
+
 def save_token_usage(data):
     """保存 token 使用数据"""
     with open(TOKEN_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f)
+
 
 def token_remaining(token):
     """
@@ -45,13 +54,17 @@ def token_remaining(token):
     used = data.get(token, 0)
     return max(0, 3 - used)
 
+
 def register_token_use(token):
     """给 token +1 次（管理员除外）"""
+    if not token:
+        return
     if token == ADMIN_TOKEN:
-        return  # 管理员无限使用
+        return  # 管理员无限使用，不计数
     data = load_token_usage()
     data[token] = data.get(token, 0) + 1
     save_token_usage(data)
+
 
 def check_token_limit(token):
     """
@@ -60,12 +73,12 @@ def check_token_limit(token):
       None → 可以继续
       (False, "错误信息") → 已超过次数
     """
+    # 没有 token（比如你本地临时测试）→ 不限制
     if not token:
-        # 没有 token（例如你自己测试）→ 不限制
         return None
 
+    # 管理员 token → 无限使用
     if token == ADMIN_TOKEN:
-        # 管理员 token → 无限使用
         return None
 
     # 普通客户：检查剩余次数
@@ -81,12 +94,7 @@ def check_token_limit(token):
 # ------------------------------------------------------------------
 # Flask 基本设置：public 目录作为静态目录
 # ------------------------------------------------------------------
-app = Flask(__name__, static_url_path='', static_folder='public')
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
-
-PAGE_WIDTH, PAGE_HEIGHT = A4
+app = Flask(__name__, static_url_path="", static_folder="public")
 
 # ------------------------------------------------------------------
 # 字体设置
@@ -284,13 +292,13 @@ def test_page():
 # ------------------------------------------------------------------
 @app.route("/api/generate_report", methods=["GET"])
 def generate_report():
-
-    # ---- 0. token 限制检查 ----
-    token = request.args.get("token")
-    result = check_token_limit(token)
-    if result:
-        ok, msg = result
-        return msg, 400
+    # ---- 0. 先检查 token 限制 ----
+    token = request.args.get("token", "").strip()
+    limit_error = check_token_limit(token)
+    if isinstance(limit_error, tuple):
+        # 已超过 3 次
+        ok, msg = limit_error
+        return {"ok": False, "error": msg}, 400
 
     # ---- 1. 读取参数 ----
     male_name = request.args.get("male_name", "太郎")
@@ -480,7 +488,6 @@ def generate_report():
     c.setFont(body_font3, body_size3)
 
     for title, text in analysis_blocks:
-        # 小标题 + 本文合在一起限制两行以内，所以文字要控制在较短长度
         block_text = title + text
         y_analysis = draw_wrapped_block_limited(
             c,
@@ -514,7 +521,7 @@ def generate_report():
     body_1 = (
         "太郎 さんは、自分の気持ちを言葉にするまでに少し時間をかける、"
         "じっくりタイプです。一方で、花子 さんは、その場で感じたことをすぐに言葉にする、"
-        "テンポの速いタイプです。日常会话では、片方が考えている间にもう一方がどんどん话してしまい、"
+        "テンポの速いタイプです。日常会话では、片方が考えている间にもう一方がどんどん話してしまい、"
         "「ちゃんと聞いてもらえていない」と感觉る场面が出やすくなります。"
     )
     summary_1 = (
@@ -599,8 +606,8 @@ def generate_report():
     body_5 = (
         "太郎 さんは、物事を決めるときに慎重に考えたいタイプで、"
         "花子 さんは、流れや直感を大切にして「とりあえずやってみよう」と思うことが多いかもしれません。"
-        "そのため、決断のペースや优先順位がずれると、"
-        "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感觉やすくなります。"
+        "そのため、決断のペースや優先順位がずれると、"
+        "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感じやすくなります。"
     )
     summary_5 = (
         "一言でいうと、二人のすれ違いは「慎重さ」と「フットワークの軽さ」の差ですが、"
@@ -617,7 +624,7 @@ def generate_report():
     body_6 = (
         "太郎 さんの安定感と、花子 さんの柔軟さ・明るさが合わさることで、"
         "二人は「現実的で無理のないチャレンジ」を积み重ねていけるペアです。"
-        "お互いの考え方を一度言葉にして共有する习惯ができると、"
+        "お互いの考え方を一度言葉にして共有する習惯ができると、"
         "二人だけのペースや目标が见つかり、将来像もより具体的に描きやすくなります。"
     )
     summary_6 = (
@@ -771,7 +778,6 @@ def generate_report():
     c.drawString(table_x, header_y, "ふたりのシーン")
     c.drawString(table_x + col1_width + col_gap, header_y, "うまくいくコツ")
 
-
     # 横线样式（只画横线，不画竖线，风格跟第 6 页一致）
     c.setStrokeColorRGB(0.9, 0.9, 0.9)
     c.setLineWidth(0.4)
@@ -879,7 +885,7 @@ def generate_report():
 
     # ---- 正文排版参数 ----
     summary_x = 120               # 左右位置
-    summary_y = 680               # 你要求的起始位置（往上移）
+    summary_y = 680               # 起始位置
     summary_wrap_width = 350      # 文本宽度
     summary_font = JP_SERIF
     summary_font_size = 13
@@ -932,7 +938,6 @@ def tally_webhook():
     先确认能不能打通，再决定要不要在这里直接生成 PDF / 发邮件。
     """
     data = request.get_json(silent=True) or request.form.to_dict() or {}
-    # 线上可以改成写 log 文件，这里先简单 print
     print("Tally webhook payload:", data)
     return {"status": "ok"}
 
