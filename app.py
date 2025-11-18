@@ -11,24 +11,71 @@ import math
 
 import json
 
-# Token 使用次数记录文件
+# -------------------------------
+#  Token 设置（3次限制 + 管理员无限）
+# -------------------------------
+
+# 保存 token 使用次数的 json 文件
 TOKEN_FILE = "token_usage.json"
 
+# 管理员专用 token（你自己用，不限制次数）
+ADMIN_TOKEN = "LUMINA_ADMIN_2025"
+
 def load_token_usage():
+    """读取 token 使用数据"""
     if not os.path.exists(TOKEN_FILE):
         return {}
-    with open(TOKEN_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+    try:
+        with open(TOKEN_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        return {}
 
 def save_token_usage(data):
+    """保存 token 使用数据"""
     with open(TOKEN_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f)
 
 def token_remaining(token):
+    """
+    返回 token 剩余次数（0~3）
+    同一 token 最多允许使用 3 次
+    """
     data = load_token_usage()
-    count = data.get(token, 0)
-    # 最多 3 次
-    return max(0, 3 - count)
+    used = data.get(token, 0)
+    return max(0, 3 - used)
+
+def register_token_use(token):
+    """给 token +1 次（管理员除外）"""
+    if token == ADMIN_TOKEN:
+        return  # 管理员无限使用
+    data = load_token_usage()
+    data[token] = data.get(token, 0) + 1
+    save_token_usage(data)
+
+def check_token_limit(token):
+    """
+    检查 token 是否超过限制。
+    返回:
+      None → 可以继续
+      (False, "错误信息") → 已超过次数
+    """
+    if not token:
+        # 没有 token（例如你自己测试）→ 不限制
+        return None
+
+    if token == ADMIN_TOKEN:
+        # 管理员 token → 无限使用
+        return None
+
+    # 普通客户：检查剩余次数
+    remaining = token_remaining(token)
+    if remaining <= 0:
+        return (False, "このリンクはすでに3回ご利用済みです。新しいご注文でお申し込みください。")
+
+    # 未超限 → 登记 +1 次
+    register_token_use(token)
+    return None
 
 
 # ------------------------------------------------------------------
@@ -237,6 +284,14 @@ def test_page():
 # ------------------------------------------------------------------
 @app.route("/api/generate_report", methods=["GET"])
 def generate_report():
+
+    # ---- 0. token 限制检查 ----
+    token = request.args.get("token")
+    result = check_token_limit(token)
+    if result:
+        ok, msg = result
+        return msg, 400
+
     # ---- 1. 读取参数 ----
     male_name = request.args.get("male_name", "太郎")
     female_name = request.args.get("female_name", "花子")
@@ -459,7 +514,7 @@ def generate_report():
     body_1 = (
         "太郎 さんは、自分の気持ちを言葉にするまでに少し時間をかける、"
         "じっくりタイプです。一方で、花子 さんは、その場で感じたことをすぐに言葉にする、"
-        "テンポの速いタイプです。日常会话では、片方が考えている间にもう一方がどんどん話してしまい、"
+        "テンポの速いタイプです。日常会话では、片方が考えている间にもう一方がどんどん话してしまい、"
         "「ちゃんと聞いてもらえていない」と感觉る场面が出やすくなります。"
     )
     summary_1 = (
@@ -544,8 +599,8 @@ def generate_report():
     body_5 = (
         "太郎 さんは、物事を決めるときに慎重に考えたいタイプで、"
         "花子 さんは、流れや直感を大切にして「とりあえずやってみよう」と思うことが多いかもしれません。"
-        "そのため、決断のペースや優先順位がずれると、"
-        "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感じやすくなります。"
+        "そのため、決断のペースや优先順位がずれると、"
+        "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感觉やすくなります。"
     )
     summary_5 = (
         "一言でいうと、二人のすれ違いは「慎重さ」と「フットワークの軽さ」の差ですが、"
@@ -562,7 +617,7 @@ def generate_report():
     body_6 = (
         "太郎 さんの安定感と、花子 さんの柔軟さ・明るさが合わさることで、"
         "二人は「現実的で無理のないチャレンジ」を积み重ねていけるペアです。"
-        "お互いの考え方を一度言葉にして共有する習惯ができると、"
+        "お互いの考え方を一度言葉にして共有する习惯ができると、"
         "二人だけのペースや目标が见つかり、将来像もより具体的に描きやすくなります。"
     )
     summary_6 = (
