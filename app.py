@@ -650,11 +650,13 @@ def draw_page5_points(
     c.showPage()
 
 
-    # ------------------------------------------------------------------
-    # 第 6 页：関係の方向性と今後の傾向
-    # ------------------------------------------------------------------
+   # ------------------------------------------------------------------
+# 第 6 页：関係の方向性と今後の傾向（新版 4 ブロック固定文面）
+# ------------------------------------------------------------------
+
+def draw_page6_trend(c):
+    # 背景
     draw_full_bg(c, "page_trend.jpg")
-    # 整页文字颜色稍微调浅一点
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
     text_x = 130
@@ -663,105 +665,160 @@ def draw_page5_points(
     body_size = 12
     line_height = 18
 
-    # ===== 今の関係ステージ =====
+    # ----------------------------------------------------------
+    # ① 二人の関係テーマ
+    # ----------------------------------------------------------
     y = 620
-    body_stage = (
-        "今の二人の関係は、日常の中に安心感がありつつも、"
-        "まだお互いを深く知っていく途中のステージにあります。"
-        "気軽さとドキドキ感が同居している時期ともいえます。"
+    body_theme = (
+        "二人の関係は、「安心感」と「前進力」のどちらも大切にしながら、"
+        "自然とバランスを探っていくタイプです。お互いの価値観が重なる部分も多く、"
+        "ふたりで決めたい方向や大切にしたい軸が比較的似ているため、"
+        "関係が安定しやすい傾向があります。違いが出る場面でも、"
+        "最終的には同じゴールに向かいやすい組み合わせです。"
     )
-    summary_stage = (
-        "一言でいうと、「落ち着きつつも、まだ伸びしろの多い関係」です。"
+    summary_theme = (
+        "一言でいうと、「土台がしっかりしていて、成長しやすいテーマ」です。"
     )
 
-    y = draw_wrapped_block(c, body_stage, text_x, y,
-                           wrap_width, body_font, body_size, line_height)
+    y = draw_wrapped_block(
+        c,
+        body_theme,
+        text_x,
+        y,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+    )
     y -= line_height
-    draw_wrapped_block(c, summary_stage, text_x, y,
-                       wrap_width, body_font, body_size, line_height)
-
-    # ===== 発展の流れ（中央の表） =====
-    # 整个区块往上移一点：原来 460 → 466
-    y2 = 466
-    body_flow = (
-        "二人の関係は、出会い期・成長期・安定期という流れの中で、"
-        "少しずつお互いのペースが見えてくるタイプです。"
-    )
-    y2 = draw_wrapped_block(c, body_flow, text_x, y2,
-                            wrap_width, body_font, body_size, line_height)
-
-    # ★ 说明文字和整张表格之间的间距
-    #   数字越大，整张表（段階/特徴+三行+三条线）越往下
-    table_top = y2 - line_height * 1.6
-
-    # 表头：段階／特徴
-    c.setFont(body_font, body_size)
-    header_base = table_top
-    c.drawString(text_x, header_base, "段階")
-    c.drawString(text_x + 80, header_base, "特徴")
-
-    # 线条颜色 & 粗细（维持你现在的浅灰色）
-    c.setStrokeColorRGB(0.9, 0.9, 0.9)
-    c.setLineWidth(0.4)
-
-    # 表头下面的第一条横线
-    c.line(text_x, header_base - 4, text_x + wrap_width, header_base - 4)
-
-    # 第 1 行数据 baseline（从表头再往下 1 行）
-    y2 = header_base - line_height
-
-    # ===== 三阶段文字（最多 2 行）=====
-    rows = [
-        ("出会い期",
-         "最初はお互いの新鮮さが強く、ドキドキや憧れが中心になります。"
-         "第一印象が固まりやすい時期です。"),
-
-        ("成長期",
-         "相手の弱さや価値観の違いが見えてきて、摩擦と理解をくり返しながら関係を深めていく時期です。"),
-
-        ("安定期",
-         "お互いのペースや居場所がわかってきて、安心感と居心地の良さがベースになる時期です。"),
-    ]
-    max_lines = 2
-
-    for label, desc in rows:
-        row_top = y2
-
-        c.setFont(body_font, body_size)
-        c.drawString(text_x, row_top, label)
-
-        draw_wrapped_block_limited(
-            c,
-            desc,
-            text_x + 80,
-            row_top,
-            wrap_width - 80,
-            body_font,
-            body_size,
-            line_height,
-            max_lines,
-        )
-
-        y2 = row_top - max_lines * line_height
-
-        c.line(text_x, y2 + 4, text_x + wrap_width, y2 + 4)
-
-        y2 -= line_height
-
-    # ===== バランスを保つコツ =====
-    y3 = 170
-    body_tip = (
-        "二人が長く心地よく付き合っていくためには、"
-        "どちらか一方のペースや考えに寄りかかりすぎないことがポイントになります。"
-        "ときどき立ち止まって、「今どんな気持ち？」と確認し合うことで、"
-        "小さなモヤモヤを大きなすれ違いになる前にケアできます。"
+    draw_wrapped_block_limited(
+        c,
+        summary_theme,
+        text_x,
+        y,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=1,
     )
 
-    # 只保留一段
-    y3 = draw_wrapped_block(c, body_tip, text_x, y3,
-                            wrap_width, body_font, body_size, line_height)
+    # ----------------------------------------------------------
+    # ② 感情の流れ・深まり方
+    # ----------------------------------------------------------
+    y2 = 460
+    body_emotion = (
+        "ふたりの感情の深まり方は、最初はゆっくりですが、一度安心感を得ると"
+        "急に距離が縮まるタイプです。相手の気持ちを丁寧に受け取ることで、"
+        "自然と信頼が積み重なり、日常の会話から親密さが育っていきます。"
+        "繊細さを共有できるほど心が開きやすく、温度差が小さくなる傾向があります。"
+    )
+    summary_emotion = (
+        "一言でいうと、「ゆっくり始まり、深くつながる流れ」です。"
+    )
 
+    y2 = draw_wrapped_block(
+        c,
+        body_emotion,
+        text_x,
+        y2,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+    )
+    y2 -= line_height
+    draw_wrapped_block_limited(
+        c,
+        summary_emotion,
+        text_x,
+        y2,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=1,
+    )
+
+    # ----------------------------------------------------------
+    # ③ 二人が築いていくスタイル
+    # ----------------------------------------------------------
+    y3 = 300
+    body_style = (
+        "このペアは、片方が雰囲気をつくり、もう片方が行動を整えるような、"
+        "自然と役割分担が生まれるスタイルになりやすい組み合わせです。"
+        "生活のペースや会話のリズムが合いやすく、無理のない形で"
+        "居心地の良い関係を形にしていけます。気持ちのケアと現実的な対応が"
+        "どちらも過不足なく混ざり、毎日が穏やかに整いやすい傾向があります。"
+    )
+    summary_style = (
+        "一言でいうと、「調和しながら一緒に形を作る関係」です。"
+    )
+
+    y3 = draw_wrapped_block(
+        c,
+        body_style,
+        text_x,
+        y3,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+    )
+    y3 -= line_height
+    draw_wrapped_block_limited(
+        c,
+        summary_style,
+        text_x,
+        y3,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=1,
+    )
+
+    # ----------------------------------------------------------
+    # ④ 今後 1〜2 年の関係傾向
+    # ----------------------------------------------------------
+    y4 = 145
+    body_future = (
+        "今後1〜2年のふたりは、安心できる土台の上に少しずつ新しい挑戦を"
+        "重ねていく時期に入ります。環境の変化にも強く、協力しながら進むことで"
+        "関係がより安定し、方向性が明確になっていきます。大きな転機よりも、"
+        "日常の中での積み重ねが関係の深さを形づくる流れです。"
+    )
+    summary_future = (
+        "一言でいうと、「安定の中に、小さな前進が続く時期」です。"
+    )
+
+    y4 = draw_wrapped_block(
+        c,
+        body_future,
+        text_x,
+        y4,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+    )
+    y4 -= line_height
+    draw_wrapped_block_limited(
+        c,
+        summary_future,
+        text_x,
+        y4,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=1,
+    )
+
+    # 页码
+    draw_page_number(c, 6)
     c.showPage()
+
 
     # ------------------------------------------------------------------
     # 第 7 页：日常で役立つアドバイス
