@@ -742,6 +742,101 @@ def draw_page6_trend(c):
     draw_page_number(c, 6)
     c.showPage()
 
+# ------------------------------------------------------------------
+# 第 7 页：日常で役立つアドバイス（变量版）
+# ------------------------------------------------------------------
+def draw_page7_advice(c, advice_rows, footer_text):
+    """
+    advice_rows: [(scene_text, tip_text), ...]  左列 + 右列 的列表
+    footer_text: 最下方那段 2 行以内的小总结
+    """
+    draw_full_bg(c, "page_advice.jpg")
+    c.setFillColorRGB(0.2, 0.2, 0.2)
+
+    # 表整体设置（保持你现在的版式不变）
+    table_x = 130
+    table_width = 360
+    col1_width = 140
+    col_gap = 20
+    col2_width = table_width - col1_width - col_gap
+
+    body_font = JP_SERIF
+    body_size = 11
+    line_height = 16
+
+    header_y = 680
+
+    # 表头（粗体效果：用黑体 + 稍大字号）
+    header_font_size = body_size + 2
+    c.setFont(JP_SANS, header_font_size)
+    c.drawString(table_x, header_y, "ふたりのシーン")
+    c.drawString(table_x + col1_width + col_gap, header_y, "うまくいくコツ")
+
+    # 横线
+    c.setStrokeColorRGB(0.9, 0.9, 0.9)
+    c.setLineWidth(0.4)
+    c.line(table_x, header_y - 8, table_x + table_width, header_y - 8)
+
+    # 内容行起始位置
+    y_row = header_y - line_height * 1.8
+
+    # 正文用明朝体
+    c.setFont(body_font, body_size)
+
+    for scene_text, tip_text in advice_rows:
+        # 每一行顶部基准
+        row_top = y_row
+
+        # 左列：ふたりのシーン
+        scene_y = draw_wrapped_block(
+            c,
+            scene_text,
+            table_x,
+            row_top,
+            col1_width,
+            body_font,
+            body_size,
+            line_height,
+        )
+
+        # 右列：うまくいくコツ
+        tip_y = draw_wrapped_block(
+            c,
+            tip_text,
+            table_x + col1_width + col_gap,
+            row_top,
+            col2_width,
+            body_font,
+            body_size,
+            line_height,
+        )
+
+        # 这一行实际用到的最下面的 y
+        row_bottom = min(scene_y, tip_y)
+
+        # 该行下方横线
+        c.line(table_x, row_bottom + 4, table_x + table_width, row_bottom + 4)
+
+        # 下一行起点：再空一行
+        y_row = row_bottom - line_height
+
+    # 表下面的小总结
+    summary_y_start = y_row - line_height
+    draw_wrapped_block(
+        c,
+        footer_text,
+        table_x,
+        summary_y_start,
+        table_width,
+        body_font,
+        body_size,
+        line_height,
+    )
+
+    # 页码（第 7 页）
+    draw_page_number(c, 7)
+    c.showPage()
+
 
 # ==============================================================
 #                    生成 PDF 主入口
