@@ -9,47 +9,58 @@ import os
 import datetime
 import math
 
+# ------------------------------------------------------------------
+# Token 设置（3 次限制 + 管理员无限）
+# ------------------------------------------------------------------
+
 import json
 
-# -------------------------------
-# Token 设置（3次限制 + 管理员无限）
-# 使用内存计数，不再写文件
-# -------------------------------
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+TOKEN_FILE = os.path.join(BASE_DIR, "token_usage.json")
 
-# 管理员 token（你自己无限次）
-ADMIN_TOKEN = "Lumina_admin"   # 注意大小写必须和你的测试链接一致
-
-# 普通用户最多次数
-TOKEN_MAX = 3
-
-# 内存里的计数字典
-TOKEN_USES = {}
+# 管理员 token（你自己无限使用）
+ADMIN_TOKEN = "Lumina_admin"
 
 
-def token_remaining(token: str) -> int:
-    """返回 token 还能用几次（0~TOKEN_MAX）"""
-    used = TOKEN_USES.get(token, 0)
-    return max(0, TOKEN_MAX - used)
+def load_token_usage():
+    """读取 token 使用次数"""
+    if not os.path.exists(TOKEN_FILE):
+        return {}
+    try:
+        with open(TOKEN_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        return {}
 
 
-def register_token_use(token: str) -> None:
-    """记录 token 使用 1 次（管理员或空 token 不计数）"""
+def save_token_usage(data):
+    """保存 token 使用次数"""
+    with open(TOKEN_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f)
+
+
+def token_remaining(token):
+    """剩余可用次数 0~3"""
+    data = load_token_usage()
+    used = data.get(token, 0)
+    return max(0, 3 - used)
+
+
+def register_token_use(token):
+    """记录 token 使用（管理员不记录）"""
     if not token:
         return
     if token == ADMIN_TOKEN:
-        return  # 管理员无限使用
-    TOKEN_USES[token] = TOKEN_USES.get(token, 0) + 1
+        return
+    data = load_token_usage()
+    data[token] = data.get(token, 0) + 1
+    save_token_usage(data)
 
 
-def check_token_limit(token: str):
-    """
-    检查 token 是否超过限制
-    返回 None = 允许
-    返回 (False, msg) = 超过 3 次
-    """
+def check_token_limit(token):
+    """检查 token 是否可用"""
     if not token:
-        return None
-
+        return None  # 本地测试允许无限用
     if token == ADMIN_TOKEN:
         return None  # 管理员无限
 
@@ -58,208 +69,7 @@ def check_token_limit(token: str):
         return (False, "このリンクはすでに3回ご利用済みです。新しいご注文でお申し込みください。")
 
     register_token_use(token)
-
-    # 调试日志（可保留）
-    print(f"[TOKEN DEBUG] token={token}, used={TOKEN_USES.get(token)}")
-
     return None
-
-
-
-# ------------------------------------------------------------------
-# Flask 基本设置：public 目录作为静态目录
-# ------------------------------------------------------------------
-app = Flask(__name__, static_url_path="", static_folder="public")
-
-# ------------------------------------------------------------------
-# 字体设置
-#   JP_SANS  : 粗一点的黑体（标题用）
-#   JP_SERIF : 细一点的明朝体（正文、第三页用）
-# ------------------------------------------------------------------
-JP_SANS = "HeiseiKakuGo-W5"
-JP_SERIF = "HeiseiMin-W3"
-pdfmetrics.registerFont(UnicodeCIDFont(JP_SANS))
-pdfmetrics.registerFont(UnicodeCIDFont(JP_SERIF))
-
-
-# ------------------------------------------------------------------
-# 小工具：铺满整页背景
-# ------------------------------------------------------------------
-def draw_full_bg(c, filename):
-    path = os.path.join(ASSETS_DIR, filename)
-    img = ImageReader(path)
-    c.drawImage(img, 0, 0, width=PAGE_WIDTH, height=PAGE_HEIGHT)
-
-
-# ------------------------------------------------------------------
-# 小工具：日期格式化 YYYY-MM-DD → 2025年11月13日
-# ------------------------------------------------------------------
-def get_display_date(raw_date: str | None) -> str:
-    if raw_date:
-        try:
-            d = datetime.datetime.strptime(raw_date, "%Y-%m-%d").date()
-        except ValueError:
-            d = datetime.date.today()
-    else:
-        d = datetime.date.today()
-    return f"{d.year}年{d.month}月{d.day}日"
-
-
-# ------------------------------------------------------------------
-# 小工具：极坐标 → 直角坐标（0° 在 12 点方向，逆时针）
-# ------------------------------------------------------------------
-def polar_to_xy(cx, cy, radius, angle_deg):
-    theta = math.radians(90 - angle_deg)  # 0° 在上
-    x = cx + radius * math.cos(theta)
-    y = cy + radius * math.sin(theta)
-    return x, y
-
-
-# ------------------------------------------------------------------
-# 小工具：在星盘上画「彩色点 + PNG 图标」
-# ------------------------------------------------------------------
-def draw_planet_icon(
-    c,
-    cx,
-    cy,
-    chart_size,
-    angle_deg,
-    color_rgb,
-    icon_filename,
-):
-    """
-    cx, cy      : 星盘中心
-    chart_size  : 整个星盘图片的宽高（正方形）
-    angle_deg   : 行星度数（0°=白羊 0°，在 12 点）
-    color_rgb   : 小圆点颜色 (r, g, b)
-    icon_filename : public/assets 下的 PNG 文件名
-    """
-
-    # 根据星盘大小估一个“外圈点的半径”和“内圈图标的半径”
-    r_dot = chart_size * 0.34   # 彩色点：接近黄道外圈
-    r_icon = chart_size * 0.28  # 图标：更靠内圈，不挡星座符号
-
-    # 彩色小圆点位置（外圈）
-    px, py = polar_to_xy(cx, cy, r_dot, angle_deg)
-    r, g, b = color_rgb
-    c.setFillColorRGB(r, g, b)
-    c.circle(px, py, 2.3, fill=1, stroke=0)
-
-    # 图标位置（内圈）
-    ix, iy = polar_to_xy(cx, cy, r_icon, angle_deg)
-
-    icon_path = os.path.join(ASSETS_DIR, icon_filename)
-    icon_img = ImageReader(icon_path)
-    icon_size = 11  # PNG 尺寸（可以微调）
-
-    c.drawImage(
-        icon_img,
-        ix - icon_size / 2,
-        iy - icon_size / 2,
-        width=icon_size,
-        height=icon_size,
-        mask="auto",
-    )
-
-
-# ------------------------------------------------------------------
-# 小工具：文本自动换行（第 4～6 页通用）
-# ------------------------------------------------------------------
-def draw_wrapped_block(c, text, x, y_start, wrap_width,
-                       font_name, font_size, line_height):
-    """
-    在 (x, y_start) 开始画一段文字，按字符宽度自动换行。
-    返回最后一行画完后的下一行 y 坐标（方便接着往下画）。
-    """
-    c.setFont(font_name, font_size)
-    line = ""
-    y = y_start
-
-    for ch in text:
-        if ch == "\n":
-            # 手动换行
-            c.drawString(x, y, line)
-            line = ""
-            y -= line_height
-            continue
-
-        new_line = line + ch
-        if pdfmetrics.stringWidth(new_line, font_name, font_size) <= wrap_width:
-            line = new_line
-        else:
-            c.drawString(x, y, line)
-            line = ch
-            y -= line_height
-
-    if line:
-        c.drawString(x, y, line)
-        y -= line_height
-
-    return y
-
-
-# ------------------------------------------------------------------
-# 行数限制版：最多画 max_lines 行（第 6 页表格用）
-# ------------------------------------------------------------------
-def draw_wrapped_block_limited(
-    c,
-    text,
-    x,
-    y_start,
-    wrap_width,
-    font_name,
-    font_size,
-    line_height,
-    max_lines,
-):
-    """
-    在 (x, y_start) 开始画一段文字，自动换行，但最多画 max_lines 行。
-    返回最后一行画完后的下一行 y 坐标。
-    """
-    c.setFont(font_name, font_size)
-    line = ""
-    y = y_start
-    lines = 0
-
-    for ch in text:
-        if ch == "\n":
-            c.drawString(x, y, line)
-            line = ""
-            y -= line_height
-            lines += 1
-            if lines >= max_lines:
-                return y
-            continue
-
-        new_line = line + ch
-        if pdfmetrics.stringWidth(new_line, font_name, font_size) <= wrap_width:
-            line = new_line
-        else:
-            c.drawString(x, y, line)
-            line = ch
-            y -= line_height
-            lines += 1
-            if lines >= max_lines:
-                return y
-
-    if line and lines < max_lines:
-        c.drawString(x, y, line)
-        y -= line_height
-
-    return y
-
-
-# ------------------------------------------------------------------
-# 根路径 & test.html
-# ------------------------------------------------------------------
-@app.route("/")
-def root():
-    return "PDF server running."
-
-
-@app.route("/test.html")
-def test_page():
-    return app.send_static_file("test.html")
 
 
 # ------------------------------------------------------------------
@@ -267,13 +77,18 @@ def test_page():
 # ------------------------------------------------------------------
 @app.route("/api/generate_report", methods=["GET"])
 def generate_report():
-    # ---- 0. 先检查 token 限制 ----
+    # ---- 0. token 限制检查（附带安全气囊）----
     token = request.args.get("token", "").strip()
-    limit_error = check_token_limit(token)
+
+    try:
+        limit_error = check_token_limit(token)
+    except Exception as e:
+        print("[TOKEN ERROR]", e)
+        limit_error = None  # token 部分出错不影响 PDF 生成
+
     if isinstance(limit_error, tuple):
-        # 已超过 3 次
         ok, msg = limit_error
-        return {"ok": False, "error": msg}, 400
+        return msg, 400  # 返回日文提示给用户
 
     # ---- 1. 读取参数 ----
     male_name = request.args.get("male_name", "太郎")
@@ -281,9 +96,13 @@ def generate_report():
     raw_date = request.args.get("date")
     date_display = get_display_date(raw_date)
 
-    # ---- 2. 准备 PDF 缓冲区 ----
+    # ---- 2. PDF 缓冲区 ----
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
+
+    # ！！下面开始保持你自己的 PDF 生成代码，不要动！！
+    # -----------------------------------------------------------
+
 
     # ------------------------------------------------------------------
     # 封面：cover.jpg
