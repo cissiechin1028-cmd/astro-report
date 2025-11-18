@@ -431,72 +431,116 @@ def draw_page3_basic_and_synastry(
     c.showPage()
 
 
-    # ------------------------------------------------------------------
-    # 第 4 页：性格の違いとコミュニケーション
-    # ------------------------------------------------------------------
+   # ------------------------------------------------------------------
+# 第 4 页：性格の違いとコミュニケーション（自动生成版）
+# ------------------------------------------------------------------
+
+def draw_page4_communication(
+    c,
+    talk_text, talk_summary,
+    problem_text, problem_summary,
+    values_text, values_summary,
+):
     draw_full_bg(c, "page_communication.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    text_x = 130          # 左边起点（跟小标题差不多一条线）
-    wrap_width = 360      # 行宽稍微拉长一点
+    text_x = 130
+    wrap_width = 360
     body_font = JP_SERIF
     body_size = 12
     line_height = 18
 
-    # ===== 話し方とテンポ =====
+    # ----------------------------------------------------------
+    # ① 話し方とテンポ
+    # ----------------------------------------------------------
     y = 625
-    body_1 = (
-        "太郎 さんは、自分の気持ちを言葉にするまでに少し時間をかける、"
-        "じっくりタイプです。一方で、花子 さんは、その場で感じたことをすぐに言葉にする、"
-        "テンポの速いタイプです。日常会话では、片方が考えている间にもう一方がどんどん話してしまい、"
-        "「ちゃんと聞いてもらえていない」と感觉る场面が出やすくなります。"
+
+    y = draw_wrapped_block(
+        c,
+        talk_text,        # ★ 正文（约 6～7 行）
+        text_x,
+        y,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height
     )
-    summary_1 = (
-        "一言でいうと、二人の話し方は「スピードの違いを理解し合うことで"
-        "心地よくつながれるペア」です。"
-    )
-    y = draw_wrapped_block(c, body_1, text_x, y, wrap_width,
-                           body_font, body_size, line_height)
     y -= line_height
-    draw_wrapped_block_limited(c, summary_1, text_x, y, wrap_width,
-                               body_font, body_size, line_height, 2)
 
-    # ===== 問題への向き合い方 =====
+    draw_wrapped_block_limited(
+        c,
+        talk_summary,      # ★ 一言でいうと（1 行）
+        text_x,
+        y,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=1
+    )
+
+    # ----------------------------------------------------------
+    # ② 問題への向き合い方
+    # ----------------------------------------------------------
     y2 = 434
-    body_2 = (
-        "太郎 さんは、問題が起きたときにまず全体を整理してから、落ち着いて対処しようとします。"
-        "花子 さんは、感情の動きに敏感で、まず気持ちを共有したいタイプです。"
-        "同じ出来事でも、片方は「どう解決するか」、もう片方は「どう感觉たか」を大事にするため、"
-        "タイミングがずれると、すれ違いが生まれやすくなります。"
+
+    y2 = draw_wrapped_block(
+        c,
+        problem_text,      # ★ 正文
+        text_x,
+        y2,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height
     )
-    summary_2 = (
-        "一言でいうと、二人は「解決志向」と「共感志向」が支え合う、"
-        "心強いバランス型のペアです。"
-    )
-    y2 = draw_wrapped_block(c, body_2, text_x, y2, wrap_width,
-                            body_font, body_size, line_height)
     y2 -= line_height
-    draw_wrapped_block_limited(c, summary_2, text_x, y2, wrap_width,
-                               body_font, body_size, line_height, 2)
 
-    # ===== 価値観のズレ =====
+    draw_wrapped_block_limited(
+        c,
+        problem_summary,   # ★ 一言でいうと
+        text_x,
+        y2,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=1
+    )
+
+    # ----------------------------------------------------------
+    # ③ 価値観のズレ
+    # ----------------------------------------------------------
     y3 = 236
-    body_3 = (
-        "太郎 さんは、安定や責任感を重视する一方で、花子 さんは、変化やワクワク感を大切にする傾向があります。"
-        "お金の使い方や休日の过ごし方、将来のイメージなど、小さな違いが积み重なると、"
-        "「なんでわかってくれないの？」と感觉る瞬间が出てくるかもしれません。"
-    )
-    summary_3 = (
-        "一言でいうと、二人の価値観は違いを否定するのではなく、"
-        "「お互いの世界を広げ合うきっかけ」になる组合せです。"
-    )
-    y3 = draw_wrapped_block(c, body_3, text_x, y3, wrap_width,
-                            body_font, body_size, line_height)
-    y3 -= line_height
-    draw_wrapped_block_limited(c, summary_3, text_x, y3, wrap_width,
-                               body_font, body_size, line_height, 2)
 
+    y3 = draw_wrapped_block(
+        c,
+        values_text,       # ★ 正文
+        text_x,
+        y3,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height
+    )
+    y3 -= line_height
+
+    draw_wrapped_block_limited(
+        c,
+        values_summary,    # ★ 一言でいうと
+        text_x,
+        y3,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=1
+    )
+
+    # 页码（第 4 页）
+    draw_page_number(c, 4)
     c.showPage()
+
 
     # ------------------------------------------------------------------
     # 第 5 页：ふたりの強みと課題ポイント
