@@ -111,7 +111,7 @@ def draw_planet_icon(
 
 
 # ------------------------------------------------------------------
-# 小工具：文本自动换行（第 4～6 页通用）
+# 小工具：文本自动换行
 # ------------------------------------------------------------------
 def draw_wrapped_block(c, text, x, y_start, wrap_width,
                        font_name, font_size, line_height):
@@ -147,7 +147,7 @@ def draw_wrapped_block(c, text, x, y_start, wrap_width,
 
 
 # ------------------------------------------------------------------
-# 行数限制版：最多画 max_lines 行（第 6 页表格用）
+# 行数限制版：最多画 max_lines 行
 # ------------------------------------------------------------------
 def draw_wrapped_block_limited(
     c,
@@ -198,6 +198,15 @@ def draw_wrapped_block_limited(
 
 
 # ------------------------------------------------------------------
+# 小工具：页码（从第 3 页开始用）
+# ------------------------------------------------------------------
+def draw_page_number(c, page_num: int):
+    c.setFont(JP_SANS, 10)
+    c.setFillColorRGB(0.6, 0.6, 0.6)
+    c.drawCentredString(PAGE_WIDTH / 2, 40, str(page_num))
+
+
+# ------------------------------------------------------------------
 # 根路径 & test.html
 # ------------------------------------------------------------------
 @app.route("/")
@@ -210,49 +219,13 @@ def test_page():
     return app.send_static_file("test.html")
 
 
+# ==============================================================
+#           第 3〜6 页：页面绘制函数（你已有的）
+# ==============================================================
+
 # ------------------------------------------------------------------
-# 生成 PDF 主入口
-# ------------------------------------------------------------------
-@app.route("/api/generate_report", methods=["GET"])
-def generate_report():
-    # ---- 1. 读取参数 ----
-    male_name = request.args.get("male_name", "太郎")
-    female_name = request.args.get("female_name", "花子")
-    raw_date = request.args.get("date")
-    date_display = get_display_date(raw_date)
-
-    # ---- 2. 准备 PDF 缓冲区 ----
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-
-    # ------------------------------------------------------------------
-    # 封面：cover.jpg
-    # ------------------------------------------------------------------
-    draw_full_bg(c, "cover.jpg")
-
-    # 姓名：恋愛占星レポート 正上方（字体颜色整体调浅一点）
-    c.setFont(JP_SANS, 18)
-    c.setFillColorRGB(0.2, 0.2, 0.2)
-    couple_text = f"{male_name} さん ＆ {female_name} さん"
-    c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
-
-    # 作成日：底部中央
-    c.setFont(JP_SANS, 12)
-    date_text = f"作成日：{date_display}"
-    c.drawCentredString(PAGE_WIDTH / 2, 80, date_text)
-
-    c.showPage()
-
-    # ------------------------------------------------------------------
-    # 第 2 页：目录页（index.jpg）
-    # ------------------------------------------------------------------
-    draw_full_bg(c, "index.jpg")
-    c.showPage()
-
-   # ------------------------------------------------------------------
 # 第 3 页：基本ホロスコープと総合相性
 # ------------------------------------------------------------------
-
 def build_planet_block(core: dict) -> dict:
     """core = {sun:{lon,name_ja}, moon:{...}, venus:{...}, mars:{...}, asc:{...}}"""
     def fmt(label_ja: str, d: dict) -> str:
@@ -323,7 +296,7 @@ def draw_page3_basic_and_synastry(
     male_planets = build_planet_block(male_core)
     female_planets = build_planet_block(female_core)
 
-    # 与 key 对应的 PNG 文件名（按你仓库里的名字改）
+    # 与 key 对应的 PNG 文件名
     icon_files = {
         "sun": "icon_sun.png",
         "moon": "icon_moon.png",
@@ -332,11 +305,11 @@ def draw_page3_basic_and_synastry(
         "asc": "icon_asc.png",
     }
 
-    # 男 = 蓝色 / 女 = 粉色（用于 draw_planet_icon 里的描边或小圆点）
+    # 男 = 蓝色 / 女 = 粉色
     male_color = (0.15, 0.45, 0.9)
     female_color = (0.9, 0.35, 0.65)
 
-    # ------------------ 在星盘上画点 + 图标（内圈） ------------------
+    # 在星盘上画点 + 图标
     for key, info in male_planets.items():
         draw_planet_icon(
             c,
@@ -359,16 +332,14 @@ def draw_page3_basic_and_synastry(
             icon_files[key],
         )
 
-    # ------------------ 星盘下方姓名 ------------------
+    # 星盘下方姓名
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # ------------------ 星盘下方 5 行列表 ------------------
+    # 星盘下方 5 行列表
     c.setFont(JP_SERIF, 8.5)
-    c.setFillColorRGB(0.2, 0.2, 0.2)
-
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
         y = left_y - 45 - i * 11
@@ -379,16 +350,14 @@ def draw_page3_basic_and_synastry(
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
 
-    # ------------------------------------------------------------------
     # 星盘下：総合相性スコア ＋ 太陽・月・上昇の分析
-    # ------------------------------------------------------------------
     text_x3 = 130
     wrap_width3 = 360
     body_font3 = JP_SERIF
     body_size3 = 12
     line_height3 = 18
 
-    # ===== 総合相性スコア =====
+    # 相性スコア
     c.setFont(JP_SANS, 12)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawString(text_x3, 350, f"相性バランス： {compat_score} / 100")
@@ -406,12 +375,9 @@ def draw_page3_basic_and_synastry(
         max_lines=2,
     )
 
-    # ===== 太陽・月・上昇の分析 =====
+    # 太陽・月・上昇の分析（3 段，各 2 行以内）
     y_analysis = 220
     c.setFont(body_font3, body_size3)
-    c.setFillColorRGB(0.2, 0.2, 0.2)
-
-    # 这里 sun_text / moon_text / asc_text 本身已经带有小标题
     for block_text in (sun_text, moon_text, asc_text):
         y_analysis = draw_wrapped_block_limited(
             c,
@@ -424,17 +390,16 @@ def draw_page3_basic_and_synastry(
             line_height3,
             max_lines=2,
         )
-        y_analysis -= line_height3  # 段落之间空一行
+        y_analysis -= line_height3
 
-    # 页码（从第3页开始）
+    # 页码
     draw_page_number(c, 3)
     c.showPage()
 
 
-   # ------------------------------------------------------------------
-# 第 4 页：性格の違いとコミュニケーション（自动生成版）
 # ------------------------------------------------------------------
-
+# 第 4 页：性格の違いとコミュニケーション
+# ------------------------------------------------------------------
 def draw_page4_communication(
     c,
     talk_text, talk_summary,
@@ -450,14 +415,11 @@ def draw_page4_communication(
     body_size = 12
     line_height = 18
 
-    # ----------------------------------------------------------
-    # ① 話し方とテンポ
-    # ----------------------------------------------------------
+    # 話し方とテンポ
     y = 625
-
     y = draw_wrapped_block(
         c,
-        talk_text,        # ★ 正文（约 6～7 行）
+        talk_text,
         text_x,
         y,
         wrap_width,
@@ -466,10 +428,9 @@ def draw_page4_communication(
         line_height
     )
     y -= line_height
-
     draw_wrapped_block_limited(
         c,
-        talk_summary,      # ★ 一言でいうと（1 行）
+        talk_summary,
         text_x,
         y,
         wrap_width,
@@ -479,14 +440,11 @@ def draw_page4_communication(
         max_lines=1
     )
 
-    # ----------------------------------------------------------
-    # ② 問題への向き合い方
-    # ----------------------------------------------------------
+    # 問題への向き合い方
     y2 = 434
-
     y2 = draw_wrapped_block(
         c,
-        problem_text,      # ★ 正文
+        problem_text,
         text_x,
         y2,
         wrap_width,
@@ -495,10 +453,9 @@ def draw_page4_communication(
         line_height
     )
     y2 -= line_height
-
     draw_wrapped_block_limited(
         c,
-        problem_summary,   # ★ 一言でいうと
+        problem_summary,
         text_x,
         y2,
         wrap_width,
@@ -508,14 +465,11 @@ def draw_page4_communication(
         max_lines=1
     )
 
-    # ----------------------------------------------------------
-    # ③ 価値観のズレ
-    # ----------------------------------------------------------
+    # 価値観のズレ
     y3 = 236
-
     y3 = draw_wrapped_block(
         c,
-        values_text,       # ★ 正文
+        values_text,
         text_x,
         y3,
         wrap_width,
@@ -524,10 +478,9 @@ def draw_page4_communication(
         line_height
     )
     y3 -= line_height
-
     draw_wrapped_block_limited(
         c,
-        values_summary,    # ★ 一言でいうと
+        values_summary,
         text_x,
         y3,
         wrap_width,
@@ -537,15 +490,13 @@ def draw_page4_communication(
         max_lines=1
     )
 
-    # 页码（第 4 页）
     draw_page_number(c, 4)
     c.showPage()
 
 
-  # ------------------------------------------------------------------
+# ------------------------------------------------------------------
 # 第 5 页：相性の良い点・すれ違いやすい点
 # ------------------------------------------------------------------
-
 def draw_page5_points(
     c,
     good_text, good_summary,
@@ -561,13 +512,11 @@ def draw_page5_points(
     body_size = 12
     line_height = 18
 
-    # ----------------------------------------------------------
-    # ① 相性の良いところ
-    # ----------------------------------------------------------
+    # 相性の良いところ
     y = 625
     y = draw_wrapped_block(
         c,
-        good_text,          # ★ 正文（约 7 行）
+        good_text,
         text_x,
         y,
         wrap_width,
@@ -576,10 +525,9 @@ def draw_page5_points(
         line_height,
     )
     y -= line_height
-
     draw_wrapped_block_limited(
         c,
-        good_summary,       # ★ 一言でいうと（1 行）
+        good_summary,
         text_x,
         y,
         wrap_width,
@@ -589,13 +537,11 @@ def draw_page5_points(
         max_lines=1,
     )
 
-    # ----------------------------------------------------------
-    # ② すれ違いやすいところ
-    # ----------------------------------------------------------
+    # すれ違いやすいところ
     y2 = 434
     y2 = draw_wrapped_block(
         c,
-        gap_text,           # ★ 正文
+        gap_text,
         text_x,
         y2,
         wrap_width,
@@ -604,10 +550,9 @@ def draw_page5_points(
         line_height,
     )
     y2 -= line_height
-
     draw_wrapped_block_limited(
         c,
-        gap_summary,        # ★ 一言でいうと
+        gap_summary,
         text_x,
         y2,
         wrap_width,
@@ -617,13 +562,11 @@ def draw_page5_points(
         max_lines=1,
     )
 
-    # ----------------------------------------------------------
-    # ③ 関係をスムーズにするヒント
-    # ----------------------------------------------------------
+    # 関係をスムーズにするヒント
     y3 = 236
     y3 = draw_wrapped_block(
         c,
-        hint_text,          # ★ 正文
+        hint_text,
         text_x,
         y3,
         wrap_width,
@@ -632,10 +575,9 @@ def draw_page5_points(
         line_height,
     )
     y3 -= line_height
-
     draw_wrapped_block_limited(
         c,
-        hint_summary,       # ★ 一言でいうと
+        hint_summary,
         text_x,
         y3,
         wrap_width,
@@ -645,17 +587,14 @@ def draw_page5_points(
         max_lines=1,
     )
 
-    # 页码（第 5 页）
     draw_page_number(c, 5)
     c.showPage()
 
 
-   # ------------------------------------------------------------------
+# ------------------------------------------------------------------
 # 第 6 页：関係の方向性と今後の傾向（新版 4 ブロック固定文面）
 # ------------------------------------------------------------------
-
 def draw_page6_trend(c):
-    # 背景
     draw_full_bg(c, "page_trend.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
@@ -665,9 +604,7 @@ def draw_page6_trend(c):
     body_size = 12
     line_height = 18
 
-    # ----------------------------------------------------------
     # ① 二人の関係テーマ
-    # ----------------------------------------------------------
     y = 620
     body_theme = (
         "二人の関係は、「安心感」と「前進力」のどちらも大切にしながら、"
@@ -703,9 +640,7 @@ def draw_page6_trend(c):
         max_lines=1,
     )
 
-    # ----------------------------------------------------------
     # ② 感情の流れ・深まり方
-    # ----------------------------------------------------------
     y2 = 460
     body_emotion = (
         "ふたりの感情の深まり方は、最初はゆっくりですが、一度安心感を得ると"
@@ -740,9 +675,7 @@ def draw_page6_trend(c):
         max_lines=1,
     )
 
-    # ----------------------------------------------------------
     # ③ 二人が築いていくスタイル
-    # ----------------------------------------------------------
     y3 = 300
     body_style = (
         "このペアは、片方が雰囲気をつくり、もう片方が行動を整えるような、"
@@ -778,9 +711,7 @@ def draw_page6_trend(c):
         max_lines=1,
     )
 
-    # ----------------------------------------------------------
     # ④ 今後 1〜2 年の関係傾向
-    # ----------------------------------------------------------
     y4 = 145
     body_future = (
         "今後1〜2年のふたりは、安心できる土台の上に少しずつ新しい挑戦を"
@@ -815,49 +746,207 @@ def draw_page6_trend(c):
         max_lines=1,
     )
 
-    # 页码
     draw_page_number(c, 6)
     c.showPage()
 
 
+# ==============================================================
+#                    生成 PDF 主入口
+# ==============================================================
+
+@app.route("/api/generate_report", methods=["GET"])
+def generate_report():
+    # ---- 1. 读取参数（现在先用 query 测试）----
+    male_name = request.args.get("male_name", "太郎")
+    female_name = request.args.get("female_name", "花子")
+    raw_date = request.args.get("date")
+    date_display = get_display_date(raw_date)
+
+    # ---- 2. 准备 PDF 缓冲区 ----
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+
     # ------------------------------------------------------------------
-    # 第 7 页：日常で役立つアドバイス
+    # PAGE 1：封面
+    # ------------------------------------------------------------------
+    draw_full_bg(c, "cover.jpg")
+
+    c.setFont(JP_SANS, 18)
+    c.setFillColorRGB(0.2, 0.2, 0.2)
+    couple_text = f"{male_name} さん ＆ {female_name} さん"
+    c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
+
+    c.setFont(JP_SANS, 12)
+    date_text = f"作成日：{date_display}"
+    c.drawCentredString(PAGE_WIDTH / 2, 80, date_text)
+
+    c.showPage()
+
+    # ------------------------------------------------------------------
+    # PAGE 2：このレポートについて（背景固定，不生成内容）
+    # ------------------------------------------------------------------
+    draw_full_bg(c, "index.jpg")
+    c.showPage()
+
+    # ------------------------------------------------------------------
+    # PAGE 3：基本ホロスコープと総合相性
+    # 现在先用写死示例数据，之后你再换成真实计算结果
+    # ------------------------------------------------------------------
+    sample_male_core = {
+        "sun":   {"lon": 12.3, "name_ja": "牡羊座"},
+        "moon":  {"lon": 65.4, "name_ja": "双子座"},
+        "venus": {"lon": 147.8, "name_ja": "獅子座"},
+        "mars":  {"lon": 183.2, "name_ja": "天秤座"},
+        "asc":   {"lon": 220.1, "name_ja": "山羊座"},
+    }
+    sample_female_core = {
+        "sun":   {"lon": 8.5,  "name_ja": "蟹座"},
+        "moon":  {"lon": 150.0, "name_ja": "乙女座"},
+        "venus": {"lon": 214.6, "name_ja": "蠍座"},
+        "mars":  {"lon": 262.9, "name_ja": "水瓶座"},
+        "asc":   {"lon": 288.4, "name_ja": "魚座"},
+    }
+    compat_score = 82
+    compat_summary = (
+        "二人の相性は、安心感とほどよい刺激がバランスよく混ざった組み合わせです。"
+        "ゆっくりと関係を育てていくほど、お互いの良さが引き出されやすいタイプといえます。"
+    )
+    sun_text = (
+        "太陽（ふたりの価値観）："
+        "太郎 さんは安定感と責任感を、花子 さんは素直さとあたたかさを大切にするタイプです。"
+    )
+    moon_text = (
+        "月（素の感情と安心ポイント）："
+        "太郎 さんは落ち着いた空間やペースを守れる関係に安心し、"
+        "花子 さんは気持ちをその場で分かち合えることに心地よさを感じやすい傾向があります。"
+    )
+    asc_text = (
+        "ASC（第一印象・ふたりの雰囲気）："
+        "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
+        "少しずつ素の表情が見えるほど、二人らしい雰囲気が育っていきます。"
+    )
+
+    draw_page3_basic_and_synastry(
+        c,
+        male_name,
+        female_name,
+        sample_male_core,
+        sample_female_core,
+        compat_score,
+        compat_summary,
+        sun_text,
+        moon_text,
+        asc_text,
+    )
+
+    # ------------------------------------------------------------------
+    # PAGE 4：性格の違いとコミュニケーション（先用你原来的固定文案）
+    # ------------------------------------------------------------------
+    talk_text = (
+        "太郎 さんは、自分の気持ちを言葉にするまでに少し時間をかける、"
+        "じっくりタイプです。一方で、花子 さんは、その場で感じたことをすぐに言葉にする、"
+        "テンポの速いタイプです。日常会話では、片方が考えている間にもう一方がどんどん話してしまい、"
+        "「ちゃんと聞いてもらえていない」と感じる場面が出やすくなります。"
+    )
+    talk_summary = (
+        "一言でいうと、二人の話し方は「スピードの違いを理解し合うことで心地よくつながれるペア」です。"
+    )
+    problem_text = (
+        "太郎 さんは、問題が起きたときにまず全体を整理してから、落ち着いて対処しようとします。"
+        "花子 さんは、感情の動きに敏感で、まず気持ちを共有したいタイプです。"
+        "同じ出来事でも、片方は「どう解決するか」、もう片方は「どう感じたか」を大事にするため、"
+        "タイミングがずれると、すれ違いが生まれやすくなります。"
+    )
+    problem_summary = (
+        "一言でいうと、二人は「解決志向」と「共感志向」が支え合う、心強いバランス型のペアです。"
+    )
+    values_text = (
+        "太郎 さんは、安定や責任感を重視する一方で、花子 さんは、変化やワクワク感を大切にする傾向があります。"
+        "お金の使い方や休日の過ごし方、将来のイメージなど、小さな違いが積み重なると、"
+        "「なんでわかってくれないの？」と感じる瞬間が出てくるかもしれません。"
+    )
+    values_summary = (
+        "一言でいうと、二人の価値観は違いを否定するのではなく、「お互いの世界を広げ合うきっかけ」になる組み合わせです。"
+    )
+
+    draw_page4_communication(
+        c,
+        talk_text, talk_summary,
+        problem_text, problem_summary,
+        values_text, values_summary,
+    )
+
+    # ------------------------------------------------------------------
+    # PAGE 5：相性の良い点・すれ違いやすい点（同样先用原来的固定文案）
+    # ------------------------------------------------------------------
+    good_text = (
+        "太郎 さんは、相手の立場を考えながら行動できる、落ち着いた安心感のあるタイプです。"
+        "花子 さんは、その場の空気を明るくし、素直な気持ちを伝えられるタイプです。"
+        "二人が一緒にいると、「安心感」と「温かさ」が自然と周りにも伝わり、"
+        "お互いの長所を引き出し合える関係になりやすい組み合わせです。"
+    )
+    good_summary = (
+        "一言でいうと、二人は「一緒にいるだけで場がやわらぎ、温かさが自然と伝わっていくペア」です。"
+    )
+    gap_text = (
+        "太郎 さんは、物事を決めるときに慎重に考えたいタイプで、"
+        "花子 さんは、流れや直感を大切にして「とりあえずやってみよう」と思うことが多いかもしれません。"
+        "そのため、決断のペースや優先順位がずれると、"
+        "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感じやすくなります。"
+    )
+    gap_summary = (
+        "一言でいうと、二人のすれ違いは「慎重さ」と「フットワークの軽さ」の差ですが、そのギャップは視野を広げるヒントにもなります。"
+    )
+    hint_text = (
+        "太郎 さんの安定感と、花子 さんの柔軟さ・明るさが合わさることで、"
+        "二人は「現実的で無理のないチャレンジ」を積み重ねていけるペアです。"
+        "お互いの考え方を一度言葉にして共有する習慣ができると、"
+        "二人だけのペースや目標が見つかり、将来像もより具体的に描きやすくなります。"
+    )
+    hint_summary = (
+        "一言でいうと、二人の伸ばしていけるポイントは「安心できる土台の上で、新しい一歩を一緒に踏み出せる力」です。"
+    )
+
+    draw_page5_points(
+        c,
+        good_text, good_summary,
+        gap_text, gap_summary,
+        hint_text, hint_summary,
+    )
+
+    # ------------------------------------------------------------------
+    # PAGE 6：関係の方向性と今後の傾向（新版）
+    # ------------------------------------------------------------------
+    draw_page6_trend(c)
+
+    # ------------------------------------------------------------------
+    # PAGE 7：日常で役立つアドバイス（完全按照你给的写死版）
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_advice.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # 表全体的设置
-    table_x = 130          # 左边起点（跟前几页保持一致）
-    table_width = 360      # 整个表格宽度
-    col1_width = 140       # 左列「ふたりのシーン」宽度
-    col_gap = 20           # 两列之间的间距
-    col2_width = table_width - col1_width - col_gap  # 右列宽度
+    table_x = 130
+    table_width = 360
+    col1_width = 140
+    col_gap = 20
+    col2_width = table_width - col1_width - col_gap
 
     body_font = JP_SERIF
-    body_size = 11         # 这一页用小一号字体
+    body_size = 11
     line_height = 16
 
-    # 表头位置（下面的内容都以这个为基准往下排）
-    header_y = 680         # 整个表稍微往上提一点
-
-    # 表头：用ゴシック体 + 大一号字号，来当「粗体」
-    header_font_size = body_size + 2   # 比正文大 2pt，更显眼
+    header_y = 680
+    header_font_size = body_size + 2
     c.setFont(JP_SANS, header_font_size)
     c.drawString(table_x, header_y, "ふたりのシーン")
     c.drawString(table_x + col1_width + col_gap, header_y, "うまくいくコツ")
 
-
-    # 横线样式（只画横线，不画竖线，风格跟第 6 页一致）
     c.setStrokeColorRGB(0.9, 0.9, 0.9)
     c.setLineWidth(0.4)
-
-    # 表头下面的第一条横线（比之前再往下一点，别贴着表头）
     c.line(table_x, header_y - 8, table_x + table_width, header_y - 8)
 
-    # 第 1 行内容的起点
     y_row = header_y - line_height * 1.8
 
-    # 每一行： (左列シーン, 右列うまくいくコツ)
     advice_rows = [
         (
             "忙しい平日の夜",
@@ -885,14 +974,11 @@ def draw_page6_trend(c):
         ),
     ]
 
-    # 表身部分用明朝体
     c.setFont(body_font, body_size)
 
     for scene_text, tip_text in advice_rows:
-        # 这一行的顶部基准
         row_top = y_row
 
-        # 左列：ふたりのシーン（不限行数，自动换行）
         scene_y = draw_wrapped_block(
             c,
             scene_text,
@@ -903,8 +989,6 @@ def draw_page6_trend(c):
             body_size,
             line_height,
         )
-
-        # 右列：うまくいくコツ（不限行数，自动换行）
         tip_y = draw_wrapped_block(
             c,
             tip_text,
@@ -915,27 +999,19 @@ def draw_page6_trend(c):
             body_size,
             line_height,
         )
-
-        # 这一行实际用到的“最下面的 y”（两列里谁更长就按谁算）
         row_bottom = min(scene_y, tip_y)
-
-        # 该行下方画一条横线（刚好在文字下面一点点）
         c.line(table_x, row_bottom + 4, table_x + table_width, row_bottom + 4)
-
-        # 下一行的起点：在横线下面再空一行
         y_row = row_bottom - line_height
 
-    # ---- 页面下方补一段小总结，让空白不那么明显 ----
-    summary_text = (
+    summary_text_7 = (
         "ここに挙げたのはあくまで一例です。"
         "ふたりらしい言葉やタイミングにアレンジしながら、"
         "日常の中で少しずつ「話すきっかけ」を増やしていってください。"
     )
-    # 在最后一条横线下方再留一点空隙后开始写
     summary_y_start = y_row - line_height
     draw_wrapped_block(
         c,
-        summary_text,
+        summary_text_7,
         table_x,
         summary_y_start,
         table_width,
@@ -944,31 +1020,27 @@ def draw_page6_trend(c):
         line_height,
     )
 
+    draw_page_number(c, 7)
     c.showPage()
 
     # ------------------------------------------------------------------
-    # 第 8 页：まとめ（背景のみ + 正文占位）
+    # PAGE 8：まとめ
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_summary.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # ---- 正文排版参数 ----
-    summary_x = 120               # 左右位置
-    summary_y = 680               # 你要求的起始位置（往上移）
-    summary_wrap_width = 350      # 文本宽度
+    summary_x = 120
+    summary_y = 680
+    summary_wrap_width = 350
     summary_font = JP_SERIF
     summary_font_size = 13
     summary_line_height = 20
 
-    # ---- 这里放总结正文（占位内容，之后自动替换为生成文案）----
-    summary_text = (
-        "【ここに生成された総まとめ文が入ります】"
-    )
+    summary_text_8 = "【ここに生成された総まとめ文が入ります】"
 
-    # ---- 渲染正文（自动换行）----
     draw_wrapped_block(
         c,
-        summary_text,
+        summary_text_8,
         summary_x,
         summary_y,
         summary_wrap_width,
@@ -977,10 +1049,11 @@ def draw_page6_trend(c):
         summary_line_height,
     )
 
+    draw_page_number(c, 8)
     c.showPage()
 
     # ------------------------------------------------------------------
-    # 收尾
+    # 收尾：保存并返回 PDF
     # ------------------------------------------------------------------
     c.save()
     buffer.seek(0)
@@ -999,21 +1072,13 @@ def draw_page6_trend(c):
 # ------------------------------------------------------------------
 @app.route("/tally_webhook", methods=["POST"])
 def tally_webhook():
-    """
-    Tally 里 Webhook URL 填：
-      https://你的域名/tally_webhook
-
-    现在只是把收到的东西打印出来并返回 ok，
-    先确认能不能打通，再决定要不要在这里直接生成 PDF / 发邮件。
-    """
     data = request.get_json(silent=True) or request.form.to_dict() or {}
-    # 线上可以改成写 log 文件，这里先简单 print
     print("Tally webhook payload:", data)
     return {"status": "ok"}
 
 
 # ------------------------------------------------------------------
-# 主程序入口（必须顶格）
+# 主程序入口
 # ------------------------------------------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
