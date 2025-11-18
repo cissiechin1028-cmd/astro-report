@@ -8,22 +8,125 @@ import io
 import os
 import datetime
 import math
-
-# ------------------------------------------------------------------
-# Token 设置（3 次限制 + 管理员无限）
-# ------------------------------------------------------------------
-
 import json
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TOKEN_FILE = os.path.join(BASE_DIR, "token_usage.json")
+# ------------------------------------------------------------------
+# 基本設定
+# ------------------------------------------------------------------
 
-# 管理员 token（你自己无限使用）
-ADMIN_TOKEN = "Lumina_admin"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
+PAGE_WIDTH, PAGE_HEIGHT = A4
+
+# フォント登録（日本語）
+pdfmetrics.registerFont(UnicodeCIDFont("HeiseiKakuGo-W5"))  # ゴシック
+pdfmetrics.registerFont(UnicodeCIDFont("HeiseiMin-W3"))     # 明朝
+
+JP_SANS = "HeiseiKakuGo-W5"
+JP_SERIF = "HeiseiMin-W3"
+
+# Flask アプリ本体
+app = Flask(__name__, static_url_path="", static_folder="public")
+
+# ------------------------------------------------------------------
+# 共通ユーティリティ
+# ------------------------------------------------------------------
+
+def get_display_date(raw_date: str | None) -> str:
+    """Tally から来た YYYY-MM-DD を 'YYYY年M月D日' に変換"""
+    if not raw_date:
+        today = datetime.date.today()
+        return f"{today.year}年{today.month}月{today.day}日"
+    try:
+        y, m, d = map(int, raw_date.split("-"))
+        dt = datetime.date(y, m, d)
+        return f"{dt.year}年{dt.month}月{dt.day}日"
+    except Exception:
+        return raw_date
+
+
+def draw_full_bg(c: canvas.Canvas, filename: str):
+    """ページいっぱいに背景画像を描画"""
+    path = os.path.join(ASSETS_DIR, filename)
+    if os.path.exists(path):
+        img = ImageReader(path)
+        c.drawImage(img, 0, 0, width=PAGE_WIDTH, height=PAGE_HEIGHT)
+    else:
+        c.setFillColorRGB(1, 1, 1)
+        c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
+
+
+def draw_wrapped_block(c, text, x, y, width, font, size, line_height):
+    """文章を自動改行して下方向に描画。最後に使った y を返す"""
+    c.setFont(font, size)
+    words = list(text)
+    line = ""
+    for ch in words:
+        test = line + ch
+        if pdfmetrics.stringWidth(test, font, size) > width:
+            c.drawString(x, y, line)
+            y -= line_height
+            line = ch
+        else:
+            line = test
+    if line:
+        c.drawString(x, y, line)
+        y -= line_height
+    return y
+
+
+def draw_wrapped_block_limited(
+    c, text, x, y, width, font, size, line_height, max_lines
+):
+    """最大 max_lines 行まで描画して終了。最後の y を返す"""
+    c.setFont(font, size)
+    words = list(text)
+    line = ""
+    lines = []
+    for ch in words:
+        test = line + ch
+        if pdfmetrics.stringWidth(test, font, size) > width:
+            lines.append(line)
+            line = ch
+        else:
+            line = test
+    if line:
+        lines.append(line)
+
+    for i, ln in enumerate(lines):
+        if i >= max_lines:
+            break
+        c.drawString(x, y, ln)
+        y -= line_height
+    return y
+
+
+def draw_planet_icon(c, cx, cy, chart_size, degree, rgb, icon_filename):
+    """円の上に小さな丸＋アイコンを描く"""
+    radius = chart_size * 0.40
+    rad = math.radians(degree)
+    px = cx + radius * math.cos(rad)
+    py = cy + radius * math.sin(rad)
+
+    r, g, b = rgb
+    c.setFillColorRGB(r, g, b)
+    c.circle(px, py, 3, fill=1, stroke=0)
+
+    icon_path = os.path.join(ASSETS_DIR, icon_filename)
+    if os.path.exists(icon_path):
+        img = ImageReader(icon_path)
+        c.drawImage(img, px - 7, py - 7, width=14, height=14, mask="auto")
+
+
+# ------------------------------------------------------------------
+# Token 設定（3 回まで + 管理者は無制限）
+# ------------------------------------------------------------------
+
+TOKEN_FILE = os.path.join(BASE_DIR, "token_usage.json")
+ADMIN_TOKEN = "Lumina_admin"  # あなた専用の無制限トークン
 
 
 def load_token_usage():
-    """读取 token 使用次数"""
     if not os.path.exists(TOKEN_FILE):
         return {}
     try:
@@ -34,23 +137,18 @@ def load_token_usage():
 
 
 def save_token_usage(data):
-    """保存 token 使用次数"""
     with open(TOKEN_FILE, "w", encoding="utf-8") as f:
         json.dump(data, f)
 
 
 def token_remaining(token):
-    """剩余可用次数 0~3"""
     data = load_token_usage()
     used = data.get(token, 0)
     return max(0, 3 - used)
 
 
 def register_token_use(token):
-    """记录 token 使用（管理员不记录）"""
-    if not token:
-        return
-    if token == ADMIN_TOKEN:
+    if not token or token == ADMIN_TOKEN:
         return
     data = load_token_usage()
     data[token] = data.get(token, 0) + 1
@@ -58,16 +156,16 @@ def register_token_use(token):
 
 
 def check_token_limit(token):
-    """检查 token 是否可用"""
     if not token:
-        return None  # 本地测试允许无限用
+        return None
     if token == ADMIN_TOKEN:
-        return None  # 管理员无限
-
+        return None
     remaining = token_remaining(token)
     if remaining <= 0:
-        return (False, "このリンクはすでに3回ご利用済みです。新しいご注文でお申し込みください。")
-
+        return (
+            False,
+            "このリンクはすでに3回ご利用済みです。新しいご注文でお申し込みください。",
+        )
     register_token_use(token)
     return None
 
@@ -100,22 +198,18 @@ def generate_report():
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
-    # ！！下面开始保持你自己的 PDF 生成代码，不要动！！
-    # -----------------------------------------------------------
-
-
     # ------------------------------------------------------------------
     # 封面：cover.jpg
     # ------------------------------------------------------------------
     draw_full_bg(c, "cover.jpg")
 
-    # 姓名：恋愛占星レポート 正上方（字体颜色整体调浅一点）
+    # 姓名
     c.setFont(JP_SANS, 18)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     couple_text = f"{male_name} さん ＆ {female_name} さん"
     c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
-    # 作成日：底部中央
+    # 作成日
     c.setFont(JP_SANS, 12)
     date_text = f"作成日：{date_display}"
     c.drawCentredString(PAGE_WIDTH / 2, 80, date_text)
@@ -136,43 +230,52 @@ def generate_report():
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
-    # 星盘尺寸 + 位置（整体稍微缩小：200 → 180）
+    # 星盘尺寸 + 位置
     chart_size = 180
     left_x = 90
     left_y = 520
     right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
-    # 星盘中心
     left_cx = left_x + chart_size / 2
     left_cy = left_y + chart_size / 2
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    # 画星盘底图
-    c.drawImage(chart_img, left_x, left_y,
-                width=chart_size, height=chart_size, mask="auto")
-    c.drawImage(chart_img, right_x, right_y,
-                width=chart_size, height=chart_size, mask="auto")
+    c.drawImage(
+        chart_img,
+        left_x,
+        left_y,
+        width=chart_size,
+        height=chart_size,
+        mask="auto",
+    )
+    c.drawImage(
+        chart_img,
+        right_x,
+        right_y,
+        width=chart_size,
+        height=chart_size,
+        mask="auto",
+    )
 
-    # ------------------ 行星示例数据（角度 + 文字） ------------------
+    # 行星示例数据
     male_planets = {
-        "sun":   {"deg": 12.3,  "label": "太陽：牡羊座 12.3°"},
-        "moon":  {"deg": 65.4,  "label": "月：双子座 5.4°"},
+        "sun": {"deg": 12.3, "label": "太陽：牡羊座 12.3°"},
+        "moon": {"deg": 65.4, "label": "月：双子座 5.4°"},
         "venus": {"deg": 147.8, "label": "金星：獅子座 17.8°"},
-        "mars":  {"deg": 183.2, "label": "火星：天秤座 3.2°"},
-        "asc":   {"deg": 220.1, "label": "ASC：山羊座 20.1°"},
+        "mars": {"deg": 183.2, "label": "火星：天秤座 3.2°"},
+        "asc": {"deg": 220.1, "label": "ASC：山羊座 20.1°"},
     }
 
     female_planets = {
-        "sun":   {"deg": 8.5,   "label": "太陽：蟹座 8.5°"},
-        "moon":  {"deg": 150.0, "label": "月：乙女座 22.0°"},
+        "sun": {"deg": 8.5, "label": "太陽：蟹座 8.5°"},
+        "moon": {"deg": 150.0, "label": "月：乙女座 22.0°"},
         "venus": {"deg": 214.6, "label": "金星：蠍座 14.6°"},
-        "mars":  {"deg": 262.9, "label": "火星：水瓶座 2.9°"},
-        "asc":   {"deg": 288.4, "label": "ASC：魚座 28.4°"},
+        "mars": {"deg": 262.9, "label": "火星：水瓶座 2.9°"},
+        "asc": {"deg": 288.4, "label": "ASC：魚座 28.4°"},
     }
 
-    # 与 key 对应的 PNG 文件名
     icon_files = {
         "sun": "icon_sun.png",
         "moon": "icon_moon.png",
@@ -181,11 +284,9 @@ def generate_report():
         "asc": "icon_asc.png",
     }
 
-    # 男 = 蓝色 / 女 = 粉色
     male_color = (0.15, 0.45, 0.9)
     female_color = (0.9, 0.35, 0.65)
 
-    # ------------------ 在星盘上画点 + 图标（内圈） ------------------
     for key, info in male_planets.items():
         draw_planet_icon(
             c,
@@ -208,13 +309,13 @@ def generate_report():
             icon_files[key],
         )
 
-    # ------------------ 星盘下方姓名（用细明朝体） ------------------
+    # 星盘下姓名
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # ------------------ 星盘下方 5 行列表（用细明朝体，左对齐） ------------------
+    # 星盘下 5 行列表
     c.setFont(JP_SERIF, 8.5)
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
@@ -228,21 +329,17 @@ def generate_report():
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
 
-    # ------------------------------------------------------------------
-    # 星盘下：総合相性スコア ＋ 太陽・月・上昇の分析
-    # ------------------------------------------------------------------
+    # ---- 総合相性スコア ＋ 太陽・月・ASC ----
     text_x3 = 130
     wrap_width3 = 360
     body_font3 = JP_SERIF
     body_size3 = 12
     line_height3 = 18
 
-    # ===== 総合相性スコア =====
-    compat_score = 82  # ★ 先写死一个分数，之后你可以自己换成计算结果
+    compat_score = 82
     c.setFont(JP_SANS, 12)
     c.drawString(text_x3, 350, f"相性バランス： {compat_score} / 100")
 
-    # 俯瞰式总结（最多 2 行）
     compat_summary = (
         "二人の相性は、安心感とほどよい刺激がバランスよく混ざった組み合わせです。"
         "ゆっくりと関係を育てていくほど、お互いの良さが引き出されやすいタイプといえます。"
@@ -251,7 +348,7 @@ def generate_report():
         c,
         compat_summary,
         text_x3,
-        350 - line_height3 * 1.4,  # 标题下留一点空隙
+        350 - line_height3 * 1.4,
         wrap_width3,
         body_font3,
         body_size3,
@@ -259,23 +356,22 @@ def generate_report():
         max_lines=2,
     )
 
-    # ===== 太陽・月・上昇の分析 =====
     y_analysis = 220
     analysis_blocks = [
         (
             "太陽（ふたりの価値観）：",
             "太郎 さんは安定感と責任感を、花子 さんは素直さとあたたかさを大切にするタイプです。"
-            "方向性を共有できると、同じゴールに向かって進みやすくなります。"
+            "方向性を共有できると、同じゴールに向かって進みやすくなります。",
         ),
         (
             "月（素の感情と安心ポイント）：",
             "太郎 さんは落ち着いた空間やペースを守れる関係に安心し、"
-            "花子 さんは気持ちをその場で分かち合えることに心地よさを感じやすい傾向があります。"
+            "花子 さんは気持ちをその場で分かち合えることに心地よさを感じやすい傾向があります。",
         ),
         (
             "ASC（第一印象・ふたりの雰囲気）：",
             "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
-            "少しずつ素の表情が見えるほど、二人らしい雰囲気が育っていきます。"
+            "少しずつ素の表情が見えるほど、二人らしい雰囲気が育っていきます。",
         ),
     ]
 
@@ -294,7 +390,7 @@ def generate_report():
             line_height3,
             max_lines=2,
         )
-        y_analysis -= line_height3  # 段落之间空一行
+        y_analysis -= line_height3
 
     c.showPage()
 
@@ -704,9 +800,7 @@ def generate_report():
 
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 收尾
-    # ------------------------------------------------------------------
+   # -------------- 收尾（这段一定要在最后）--------------
     c.save()
     buffer.seek(0)
 
@@ -720,24 +814,17 @@ def generate_report():
 
 
 # ------------------------------------------------------------------
-# Tally webhook（示例）：接收表单 JSON
+# Tally webhook（可选）
 # ------------------------------------------------------------------
 @app.route("/tally_webhook", methods=["POST"])
 def tally_webhook():
-    """
-    Tally 里 Webhook URL 填：
-      https://你的域名/tally_webhook
-
-    现在只是把收到的东西打印出来并返回 ok，
-    先确认能不能打通，再决定要不要在这里直接生成 PDF / 发邮件。
-    """
     data = request.get_json(silent=True) or request.form.to_dict() or {}
     print("Tally webhook payload:", data)
     return {"status": "ok"}
 
 
 # ------------------------------------------------------------------
-# 主程序入口（必须顶格）
+# 主程序入口
 # ------------------------------------------------------------------
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
