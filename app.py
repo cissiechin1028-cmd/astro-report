@@ -220,7 +220,7 @@ def test_page():
 
 
 # ==============================================================
-#           第 3〜6 页：页面绘制函数（你已有的）
+#           第 3〜7 页：页面绘制函数
 # ==============================================================
 
 # ------------------------------------------------------------------
@@ -253,6 +253,59 @@ def build_planet_block(core: dict) -> dict:
             "label": fmt("ASC", core["asc"]),
         },
     }
+
+
+def compute_compat_score(male_core: dict, female_core: dict) -> int:
+    """根据五个点的度数差，算一个 80〜92 的分数"""
+    keys = ["sun", "moon", "venus", "mars", "asc"]
+    sims = []
+    for k in keys:
+        dm = male_core[k]["lon"]
+        df = female_core[k]["lon"]
+        diff = abs(dm - df) % 360.0
+        if diff > 180:
+            diff = 360 - diff
+        sim = 1.0 - diff / 180.0  # 0 (完全相反) ~ 1 (完全重合)
+        sims.append(sim)
+    if not sims:
+        return 86
+    avg_sim = sum(sims) / len(sims)
+    raw = 80 + int(avg_sim * 12)
+    if raw < 80:
+        raw = 80
+    if raw > 92:
+        raw = 92
+    return raw
+
+
+def build_page3_texts(male_name, female_name, male_core, female_core):
+    """
+    之后你可以把这里完全换成「元素组合 → 文案模板」。
+    现在先给一个安全的默认版本。
+    """
+    compat_score = compute_compat_score(male_core, female_core)
+
+    compat_summary = (
+        "二人の相性は、安心感とほどよい刺激がバランスよく混ざった組み合わせです。"
+        "ゆっくりと関係を育てていくほど、お互いの良さが引き出されやすいタイプといえます。"
+    )
+
+    sun_text = (
+        "太陽（ふたりの価値観）："
+        f"{male_name} さんは安定感と責任感を、{female_name} さんは素直さとあたたかさを大切にするタイプです。"
+    )
+    moon_text = (
+        "月（素の感情と安心ポイント）："
+        f"{male_name} さんは落ち着いた空間やペースを守れる関係に安心し、"
+        f"{female_name} さんは気持ちをその場で分かち合えることに心地よさを感じやすい傾向があります。"
+    )
+    asc_text = (
+        "ASC（第一印象・ふたりの雰囲気）："
+        "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
+        "少しずつ素の表情が見えるほど、二人らしい雰囲気が育っていきます。"
+    )
+
+    return compat_score, compat_summary, sun_text, moon_text, asc_text
 
 
 def draw_page3_basic_and_synastry(
@@ -398,7 +451,7 @@ def draw_page3_basic_and_synastry(
 
 
 # ------------------------------------------------------------------
-# 第 4 页：性格の違いとコミュニケーション
+# 第 4 页：性格の違いとコミュニケーション（变量版）
 # ------------------------------------------------------------------
 def draw_page4_communication(
     c,
@@ -495,7 +548,7 @@ def draw_page4_communication(
 
 
 # ------------------------------------------------------------------
-# 第 5 页：相性の良い点・すれ違いやすい点
+# 第 5 页：相性の良い点・すれ違いやすい点（变量版）
 # ------------------------------------------------------------------
 def draw_page5_points(
     c,
@@ -592,9 +645,15 @@ def draw_page5_points(
 
 
 # ------------------------------------------------------------------
-# 第 6 页：関係の方向性と今後の傾向（行数を少し減らした版）
+# 第 6 页：関係の方向性と今後の傾向（变量版）
 # ------------------------------------------------------------------
-def draw_page6_trend(c):
+def draw_page6_trend(
+    c,
+    theme_text, theme_summary,
+    emotion_text, emotion_summary,
+    style_text, style_summary,
+    future_text, future_summary,
+):
     draw_full_bg(c, "page_trend.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
@@ -606,18 +665,9 @@ def draw_page6_trend(c):
 
     # ① 二人の関係テーマ
     y = 620
-    body_theme = (
-        "二人の関係は、「安心感」と「前進力」をバランスよく両立させていくタイプです。"
-        "大切にしたい価値観や向かう方向が似ているため、土台が安定しやすく、"
-        "意見が分かれる場面でも最終的には同じゴールを選びやすいペアです。"
-    )
-    summary_theme = (
-        "一言でいうと、「同じ方向を見て進める安定感のあるテーマ」です。"
-    )
-
     y = draw_wrapped_block(
         c,
-        body_theme,
+        theme_text,
         text_x,
         y,
         wrap_width,
@@ -628,7 +678,7 @@ def draw_page6_trend(c):
     y -= line_height
     draw_wrapped_block_limited(
         c,
-        summary_theme,
+        theme_summary,
         text_x,
         y,
         wrap_width,
@@ -640,18 +690,9 @@ def draw_page6_trend(c):
 
     # ② 感情の流れ・深まり方
     y2 = 460
-    body_emotion = (
-        "感情の深まり方は、最初はゆっくりですが、一度安心できると一気に距離が縮まるスタイルです。"
-        "相手の気持ちを丁寧に受け取るほど信頼が積み重なり、"
-        "日常の小さな会話から親密さが育っていきます。"
-    )
-    summary_emotion = (
-        "一言でいうと、「ゆっくり始まり、深くつながる流れ」です。"
-    )
-
     y2 = draw_wrapped_block(
         c,
-        body_emotion,
+        emotion_text,
         text_x,
         y2,
         wrap_width,
@@ -662,7 +703,7 @@ def draw_page6_trend(c):
     y2 -= line_height
     draw_wrapped_block_limited(
         c,
-        summary_emotion,
+        emotion_summary,
         text_x,
         y2,
         wrap_width,
@@ -674,18 +715,9 @@ def draw_page6_trend(c):
 
     # ③ 二人が築いていくスタイル
     y3 = 300
-    body_style = (
-        "このペアは、片方が雰囲気をつくり、もう片方が行動を整えるように、"
-        "自然と役割分担が生まれやすい組み合わせです。"
-        "生活のペースと会話のリズムが合いやすく、無理なく居心地の良い関係を形にできます。"
-    )
-    summary_style = (
-        "一言でいうと、「調和しながら一緒に形を作る関係」です。"
-    )
-
     y3 = draw_wrapped_block(
         c,
-        body_style,
+        style_text,
         text_x,
         y3,
         wrap_width,
@@ -696,7 +728,7 @@ def draw_page6_trend(c):
     y3 -= line_height
     draw_wrapped_block_limited(
         c,
-        summary_style,
+        style_summary,
         text_x,
         y3,
         wrap_width,
@@ -706,19 +738,11 @@ def draw_page6_trend(c):
         max_lines=1,
     )
 
-    # ④ 今後 1〜2 年の関係傾向（前の 3 ブロックより少し短め）
+    # ④ 今後 1〜2 年の関係傾向
     y4 = 145
-    body_future = (
-        "今後1〜2年は、安心できる土台の上で少しずつ新しい挑戦を重ねていく時期です。"
-        "環境の変化にも協力して向き合うことで、関係の方向性がよりはっきりしていきます。"
-    )
-    summary_future = (
-        "一言でいうと、「安定の中で小さな前進が続く時期」です。"
-    )
-
     y4 = draw_wrapped_block(
         c,
-        body_future,
+        future_text,
         text_x,
         y4,
         wrap_width,
@@ -729,7 +753,7 @@ def draw_page6_trend(c):
     y4 -= line_height
     draw_wrapped_block_limited(
         c,
-        summary_future,
+        future_summary,
         text_x,
         y4,
         wrap_width,
@@ -742,6 +766,7 @@ def draw_page6_trend(c):
     draw_page_number(c, 6)
     c.showPage()
 
+
 # ------------------------------------------------------------------
 # 第 7 页：日常で役立つアドバイス（变量版）
 # ------------------------------------------------------------------
@@ -753,7 +778,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
     draw_full_bg(c, "page_advice.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # 表整体设置（保持你现在的版式不变）
+    # 表整体设置
     table_x = 130
     table_width = 360
     col1_width = 140
@@ -766,7 +791,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
 
     header_y = 680
 
-    # 表头（粗体效果：用黑体 + 稍大字号）
+    # 表头
     header_font_size = body_size + 2
     c.setFont(JP_SANS, header_font_size)
     c.drawString(table_x, header_y, "ふたりのシーン")
@@ -780,14 +805,11 @@ def draw_page7_advice(c, advice_rows, footer_text):
     # 内容行起始位置
     y_row = header_y - line_height * 1.8
 
-    # 正文用明朝体
     c.setFont(body_font, body_size)
 
     for scene_text, tip_text in advice_rows:
-        # 每一行顶部基准
         row_top = y_row
 
-        # 左列：ふたりのシーン
         scene_y = draw_wrapped_block(
             c,
             scene_text,
@@ -798,8 +820,6 @@ def draw_page7_advice(c, advice_rows, footer_text):
             body_size,
             line_height,
         )
-
-        # 右列：うまくいくコツ
         tip_y = draw_wrapped_block(
             c,
             tip_text,
@@ -810,17 +830,10 @@ def draw_page7_advice(c, advice_rows, footer_text):
             body_size,
             line_height,
         )
-
-        # 这一行实际用到的最下面的 y
         row_bottom = min(scene_y, tip_y)
-
-        # 该行下方横线
         c.line(table_x, row_bottom + 4, table_x + table_width, row_bottom + 4)
-
-        # 下一行起点：再空一行
         y_row = row_bottom - line_height
 
-    # 表下面的小总结
     summary_y_start = y_row - line_height
     draw_wrapped_block(
         c,
@@ -833,24 +846,73 @@ def draw_page7_advice(c, advice_rows, footer_text):
         line_height,
     )
 
-    # 页码（第 7 页）
     draw_page_number(c, 7)
     c.showPage()
+
+
+# ------------------------------------------------------------------
+# 第 8 页：まとめ 用の文面生成（变量版）
+# ------------------------------------------------------------------
+def build_page8_summary(male_name: str, female_name: str, compat_score: int) -> str:
+    """
+    之后你可以把这里换成「要素组合→まとめ模板」。
+    现在先给一个柔らかいデフォルト。
+    目标：大约 230〜260 字，8〜10 行。
+    """
+    return (
+        f"{male_name} さんと {female_name} さんのホロスコープからは、"
+        "ふたりが出会ったこと自体に、やわらかな意味合いが感じられます。"
+        "価値観やペースの違いはありながらも、安心できるところと刺激になるところが、"
+        "ちょうどよく混ざり合っている組み合わせです。"
+        "大切なのは、どちらか一方の正解に寄せるのではなく、"
+        "ふたりだけのちょうどいい距離感や歩幅を、少しずつ探していくことです。"
+        "このレポートで気になったポイントがあれば、小さな会話のきっかけとして、"
+        "「実はこう感じていたんだ」と伝えてみてください。"
+        "星の配置は、完璧なかたちを決めつけるものではなく、"
+        "ふたりがこれから選んでいく物語を、そっと照らしてくれるヒントです。"
+    )
 
 
 # ==============================================================
 #                    生成 PDF 主入口
 # ==============================================================
 
+def compute_core_from_birth(birth_date, birth_time, birth_place):
+    """
+    ★ 现在是占位函数：先返回固定示例，确保系统跑通。
+      之后你可以在这里接 astro API / 自己的星历库。
+    """
+    # TODO: 把这里换成真实计算
+    return {
+        "sun":   {"lon": 12.3, "name_ja": "牡羊座"},
+        "moon":  {"lon": 65.4, "name_ja": "双子座"},
+        "venus": {"lon": 147.8, "name_ja": "獅子座"},
+        "mars":  {"lon": 183.2, "name_ja": "天秤座"},
+        "asc":   {"lon": 220.1, "name_ja": "山羊座"},
+    }
+
+
 @app.route("/api/generate_report", methods=["GET"])
 def generate_report():
-    # ---- 1. 读取参数（现在先用 query 测试）----
+    # ---- 1. 读取参数 ----
     male_name = request.args.get("male_name", "太郎")
     female_name = request.args.get("female_name", "花子")
     raw_date = request.args.get("date")
     date_display = get_display_date(raw_date)
 
-    # ---- 2. 准备 PDF 缓冲区 ----
+    # 占位：之后这里要从 Tally 传进来的 8 个字段里取
+    your_dob = request.args.get("your_dob", "1990-01-01")
+    your_time = request.args.get("your_time", "12:00")
+    your_place = request.args.get("your_place", "Tokyo")
+    partner_dob = request.args.get("partner_dob", "1990-01-01")
+    partner_time = request.args.get("partner_time", "12:00")
+    partner_place = request.args.get("partner_place", "Tokyo")
+
+    # ---- 2. 先算出双方核心星盘（目前占位版）----
+    male_core = compute_core_from_birth(your_dob, your_time, your_place)
+    female_core = compute_core_from_birth(partner_dob, partner_time, partner_place)
+
+    # ---- 3. 准备 PDF 缓冲区 ----
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
@@ -877,49 +939,18 @@ def generate_report():
     c.showPage()
 
     # ------------------------------------------------------------------
-    # PAGE 3：基本ホロスコープと総合相性
-    # 现在先用写死示例数据，之后你再换成真实计算结果
+    # PAGE 3：基本ホロスコープと総合相性（完全变量版）
     # ------------------------------------------------------------------
-    sample_male_core = {
-        "sun":   {"lon": 12.3, "name_ja": "牡羊座"},
-        "moon":  {"lon": 65.4, "name_ja": "双子座"},
-        "venus": {"lon": 147.8, "name_ja": "獅子座"},
-        "mars":  {"lon": 183.2, "name_ja": "天秤座"},
-        "asc":   {"lon": 220.1, "name_ja": "山羊座"},
-    }
-    sample_female_core = {
-        "sun":   {"lon": 8.5,  "name_ja": "蟹座"},
-        "moon":  {"lon": 150.0, "name_ja": "乙女座"},
-        "venus": {"lon": 214.6, "name_ja": "蠍座"},
-        "mars":  {"lon": 262.9, "name_ja": "水瓶座"},
-        "asc":   {"lon": 288.4, "name_ja": "魚座"},
-    }
-    compat_score = 82
-    compat_summary = (
-        "二人の相性は、安心感とほどよい刺激がバランスよく混ざった組み合わせです。"
-        "ゆっくりと関係を育てていくほど、お互いの良さが引き出されやすいタイプといえます。"
-    )
-    sun_text = (
-        "太陽（ふたりの価値観）："
-        "太郎 さんは安定感と責任感を、花子 さんは素直さとあたたかさを大切にするタイプです。"
-    )
-    moon_text = (
-        "月（素の感情と安心ポイント）："
-        "太郎 さんは落ち着いた空間やペースを守れる関係に安心し、"
-        "花子 さんは気持ちをその場で分かち合えることに心地よさを感じやすい傾向があります。"
-    )
-    asc_text = (
-        "ASC（第一印象・ふたりの雰囲気）："
-        "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
-        "少しずつ素の表情が見えるほど、二人らしい雰囲気が育っていきます。"
+    compat_score, compat_summary, sun_text, moon_text, asc_text = build_page3_texts(
+        male_name, female_name, male_core, female_core
     )
 
     draw_page3_basic_and_synastry(
         c,
         male_name,
         female_name,
-        sample_male_core,
-        sample_female_core,
+        male_core,
+        female_core,
         compat_score,
         compat_summary,
         sun_text,
@@ -928,34 +959,46 @@ def generate_report():
     )
 
     # ------------------------------------------------------------------
-    # PAGE 4：性格の違いとコミュニケーション（先用你原来的固定文案）
+    # PAGE 4：性格の違いとコミュニケーション（变量文本生成）
     # ------------------------------------------------------------------
-    talk_text = (
-        "太郎 さんは、自分の気持ちを言葉にするまでに少し時間をかける、"
-        "じっくりタイプです。一方で、花子 さんは、その場で感じたことをすぐに言葉にする、"
-        "テンポの速いタイプです。日常会話では、片方が考えている間にもう一方がどんどん話してしまい、"
-        "「ちゃんと聞いてもらえていない」と感じる場面が出やすくなります。"
-    )
-    talk_summary = (
-        "一言でいうと、二人の話し方は「スピードの違いを理解し合うことで心地よくつながれるペア」です。"
-    )
-    problem_text = (
-        "太郎 さんは、問題が起きたときにまず全体を整理してから、落ち着いて対処しようとします。"
-        "花子 さんは、感情の動きに敏感で、まず気持ちを共有したいタイプです。"
-        "同じ出来事でも、片方は「どう解決するか」、もう片方は「どう感じたか」を大事にするため、"
-        "タイミングがずれると、すれ違いが生まれやすくなります。"
-    )
-    problem_summary = (
-        "一言でいうと、二人は「解決志向」と「共感志向」が支え合う、心強いバランス型のペアです。"
-    )
-    values_text = (
-        "太郎 さんは、安定や責任感を重視する一方で、花子 さんは、変化やワクワク感を大切にする傾向があります。"
-        "お金の使い方や休日の過ごし方、将来のイメージなど、小さな違いが積み重なると、"
-        "「なんでわかってくれないの？」と感じる瞬間が出てくるかもしれません。"
-    )
-    values_summary = (
-        "一言でいうと、二人の価値観は違いを否定するのではなく、「お互いの世界を広げ合うきっかけ」になる組み合わせです。"
-    )
+    def build_page4_texts(male_name, female_name, male_core, female_core):
+        talk_text = (
+            f"{male_name} さんは、自分の気持ちを言葉にするまでに少し時間をかける、じっくりタイプです。"
+            f"一方で、{female_name} さんは、その場で感じたことをすぐに言葉にする、テンポの速いタイプです。"
+            "日常会话では、片方が考えている间にもう一方がどんどん话してしまい、"
+            "「ちゃんと聞いてもらえていない」と感じる場面が出やすくなります。"
+        )
+        talk_summary = (
+            "一言でいうと、二人の話し方は「スピードの違いを理解し合うことで心地よくつながれるペア」です。"
+        )
+        problem_text = (
+            f"{male_name} さんは、問題が起きたときにまず全体を整理してから、落ち着いて対処しようとします。"
+            f"{female_name} さんは、感情の動きに敏感で、まず気持ちを共有したいタイプです。"
+            "同じ出来事でも、片方は「どう解決するか」、もう片方は「どう感じたか」を大事にするため、"
+            "タイミングがずれると、すれ違いが生まれやすくなります。"
+        )
+        problem_summary = (
+            "一言でいうと、二人は「解決志向」と「共感志向」が支え合う、心強いバランス型のペアです。"
+        )
+        values_text = (
+            f"{male_name} さんは、安定や責任感を重视する一方で、{female_name} さんは、変化やワクワク感を大切にする傾向があります。"
+            "お金の使い方や休日の過ごし方、将来のイメージなど、小さな違いが積み重なると、"
+            "「なんでわかってくれないの？」と感じる瞬间が出てくるかもしれません。"
+        )
+        values_summary = (
+            "一言でいうと、二人の価値観は違いを否定するのではなく、「お互いの世界を広げ合うきっかけ」になる組み合わせです。"
+        )
+        return (
+            talk_text, talk_summary,
+            problem_text, problem_summary,
+            values_text, values_summary,
+        )
+
+    (
+        talk_text, talk_summary,
+        problem_text, problem_summary,
+        values_text, values_summary,
+    ) = build_page4_texts(male_name, female_name, male_core, female_core)
 
     draw_page4_communication(
         c,
@@ -965,35 +1008,47 @@ def generate_report():
     )
 
     # ------------------------------------------------------------------
-    # PAGE 5：相性の良い点・すれ違いやすい点（同样先用原来的固定文案）
+    # PAGE 5：相性の良い点・すれ違いやすい点（变量文本生成）
     # ------------------------------------------------------------------
-    good_text = (
-        "太郎 さんは、相手の立場を考えながら行動できる、落ち着いた安心感のあるタイプです。"
-        "花子 さんは、その場の空気を明るくし、素直な気持ちを伝えられるタイプです。"
-        "二人が一緒にいると、「安心感」と「温かさ」が自然と周りにも伝わり、"
-        "お互いの長所を引き出し合える関係になりやすい組み合わせです。"
-    )
-    good_summary = (
-        "一言でいうと、二人は「一緒にいるだけで場がやわらぎ、温かさが自然と伝わっていくペア」です。"
-    )
-    gap_text = (
-        "太郎 さんは、物事を決めるときに慎重に考えたいタイプで、"
-        "花子 さんは、流れや直感を大切にして「とりあえずやってみよう」と思うことが多いかもしれません。"
-        "そのため、決断のペースや優先順位がずれると、"
-        "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感じやすくなります。"
-    )
-    gap_summary = (
-        "一言でいうと、二人のすれ違いは「慎重さ」と「フットワークの軽さ」の差ですが、そのギャップは視野を広げるヒントにもなります。"
-    )
-    hint_text = (
-        "太郎 さんの安定感と、花子 さんの柔軟さ・明るさが合わさることで、"
-        "二人は「現実的で無理のないチャレンジ」を積み重ねていけるペアです。"
-        "お互いの考え方を一度言葉にして共有する習慣ができると、"
-        "二人だけのペースや目標が見つかり、将来像もより具体的に描きやすくなります。"
-    )
-    hint_summary = (
-        "一言でいうと、二人の伸ばしていけるポイントは「安心できる土台の上で、新しい一歩を一緒に踏み出せる力」です。"
-    )
+    def build_page5_texts(male_name, female_name, male_core, female_core):
+        good_text = (
+            f"{male_name} さんは、相手の立場を考えながら行動できる、落ち着いた安心感のあるタイプです。"
+            f"{female_name} さんは、その場の空気を明るくし、素直な気持ちを伝えられるタイプです。"
+            "二人が一緒にいると、「安心感」と「温かさ」が自然と周りにも伝わり、"
+            "お互いの長所を引き出し合える関係になりやすい組み合わせです。"
+        )
+        good_summary = (
+            "一言でいうと、二人は「一緒にいるだけで場がやわらぎ、温かさが自然と伝わっていくペア」です。"
+        )
+        gap_text = (
+            f"{male_name} さんは、物事を決めるときに慎重に考えたいタイプで、"
+            f"{female_name} さんは、流れや直感を大切にして「とりあえずやってみよう」と思うことが多いかもしれません。"
+            "そのため、決断のペースや优先順位がずれると、"
+            "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感じやすくなります。"
+        )
+        gap_summary = (
+            "一言でいうと、二人のすれ違いは「慎重さ」と「フットワークの軽さ」の差ですが、そのギャップは視野を広げるヒントにもなります。"
+        )
+        hint_text = (
+            f"{male_name} さんの安定感と、{female_name} さんの柔軟さ・明るさが合わさることで、"
+            "二人は「現実的で無理のないチャレンジ」を積み重ねていけるペアです。"
+            "お互いの考え方を一度言葉にして共有する習慣ができると、"
+            "二人だけのペースや目標が見つかり、将来像もより具体的に描きやすくなります。"
+        )
+        hint_summary = (
+            "一言でいうと、二人の伸ばしていけるポイントは「安心できる土台の上で、新しい一歩を一緒に踏み出せる力」です。"
+        )
+        return (
+            good_text, good_summary,
+            gap_text, gap_summary,
+            hint_text, hint_summary,
+        )
+
+    (
+        good_text, good_summary,
+        gap_text, gap_summary,
+        hint_text, hint_summary,
+    ) = build_page5_texts(male_name, female_name, male_core, female_core)
 
     draw_page5_points(
         c,
@@ -1003,116 +1058,105 @@ def generate_report():
     )
 
     # ------------------------------------------------------------------
-    # PAGE 6：関係の方向性と今後の傾向（新版）
+    # PAGE 6：関係の方向性と今後の傾向（变量文本生成）
     # ------------------------------------------------------------------
-    draw_page6_trend(c)
-
-    # ------------------------------------------------------------------
-    # PAGE 7：日常で役立つアドバイス（完全按照你给的写死版）
-    # ------------------------------------------------------------------
-    draw_full_bg(c, "page_advice.jpg")
-    c.setFillColorRGB(0.2, 0.2, 0.2)
-
-    table_x = 130
-    table_width = 360
-    col1_width = 140
-    col_gap = 20
-    col2_width = table_width - col1_width - col_gap
-
-    body_font = JP_SERIF
-    body_size = 11
-    line_height = 16
-
-    header_y = 680
-    header_font_size = body_size + 2
-    c.setFont(JP_SANS, header_font_size)
-    c.drawString(table_x, header_y, "ふたりのシーン")
-    c.drawString(table_x + col1_width + col_gap, header_y, "うまくいくコツ")
-
-    c.setStrokeColorRGB(0.9, 0.9, 0.9)
-    c.setLineWidth(0.4)
-    c.line(table_x, header_y - 8, table_x + table_width, header_y - 8)
-
-    y_row = header_y - line_height * 1.8
-
-    advice_rows = [
-        (
-            "忙しい平日の夜",
-            "10分だけ携帯を置いて、お互いに「今日いちばん嬉しかったこと」を一つずつ話してみましょう。"
-        ),
-        (
-            "休みの日のデート前",
-            "予定を決める前に「今日はどんな気分？」と聞くひと言だけで、行き先のすれ違いが減りやすくなります。"
-        ),
-        (
-            "気持ちがすれ違ったとき",
-            "どちらが正しいかよりも、「今どう感じた？」を先に聞くと、落ち着いて話し直しやすくなります。"
-        ),
-        (
-            "記念日や特別な日",
-            "完璧を目指しすぎず、「お互いに一つずつ感謝を伝える」くらいのシンプルさが、ちょうどいいバランスです。"
-        ),
-        (
-            "相手が疲れていそうな日",
-            "アドバイスよりも「今日はおつかれさま」と一言ねぎらうだけで、安心感がぐっと高まります。"
-        ),
-        (
-            "なんとなく距離を感じるとき",
-            "重い話ではなく、「最近ハマっていること教えて？」など、軽いテーマから会話をつなげてみましょう。"
-        ),
-    ]
-
-    c.setFont(body_font, body_size)
-
-    for scene_text, tip_text in advice_rows:
-        row_top = y_row
-
-        scene_y = draw_wrapped_block(
-            c,
-            scene_text,
-            table_x,
-            row_top,
-            col1_width,
-            body_font,
-            body_size,
-            line_height,
+    def build_page6_texts(male_name, female_name, male_core, female_core):
+        theme_text = (
+            "二人の関係は、「安心感」と「前進力」をバランスよく両立させていくタイプです。"
+            "大切にしたい価値観や向かう方向が似ているため、土台が安定しやすく、"
+            "意見が分かれる場面でも最終的には同じゴールを選びやすいペアです。"
         )
-        tip_y = draw_wrapped_block(
-            c,
-            tip_text,
-            table_x + col1_width + col_gap,
-            row_top,
-            col2_width,
-            body_font,
-            body_size,
-            line_height,
+        theme_summary = (
+            "一言でいうと、「同じ方向を見て進める安定感のあるテーマ」です。"
         )
-        row_bottom = min(scene_y, tip_y)
-        c.line(table_x, row_bottom + 4, table_x + table_width, row_bottom + 4)
-        y_row = row_bottom - line_height
+        emotion_text = (
+            "感情の深まり方は、最初はゆっくりですが、一度安心できると一気に距離が縮まるスタイルです。"
+            "相手の気持ちを丁寧に受け取るほど信頼が積み重なり、"
+            "日常の小さな会話から親密さが育っていきます。"
+        )
+        emotion_summary = (
+            "一言でいうと、「ゆっくり始まり、深くつながる流れ」です。"
+        )
+        style_text = (
+            "このペアは、片方が雰囲気をつくり、もう片方が行動を整えるように、"
+            "自然と役割分担が生まれやすい組み合わせです。"
+            "生活のペースと会話のリズムが合いやすく、無理なく居心地の良い関係を形にできます。"
+        )
+        style_summary = (
+            "一言でいうと、「調和しながら一緒に形を作る関係」です。"
+        )
+        future_text = (
+            "今後1〜2年は、安心できる土台の上で少しずつ新しい挑戦を重ねていく時期です。"
+            "環境の変化にも協力して向き合うことで、関係の方向性がよりはっきりしていきます。"
+        )
+        future_summary = (
+            "一言でいうと、「安定の中で小さな前進が続く時期」です。"
+        )
+        return (
+            theme_text, theme_summary,
+            emotion_text, emotion_summary,
+            style_text, style_summary,
+            future_text, future_summary,
+        )
 
-    summary_text_7 = (
-        "ここに挙げたのはあくまで一例です。"
-        "ふたりらしい言葉やタイミングにアレンジしながら、"
-        "日常の中で少しずつ「話すきっかけ」を増やしていってください。"
-    )
-    summary_y_start = y_row - line_height
-    draw_wrapped_block(
+    (
+        theme_text, theme_summary,
+        emotion_text, emotion_summary,
+        style_text, style_summary,
+        future_text, future_summary,
+    ) = build_page6_texts(male_name, female_name, male_core, female_core)
+
+    draw_page6_trend(
         c,
-        summary_text_7,
-        table_x,
-        summary_y_start,
-        table_width,
-        body_font,
-        body_size,
-        line_height,
+        theme_text, theme_summary,
+        emotion_text, emotion_summary,
+        style_text, style_summary,
+        future_text, future_summary,
     )
 
-    draw_page_number(c, 7)
-    c.showPage()
+    # ------------------------------------------------------------------
+    # PAGE 7：日常で役立つアドバイス（变量文本生成）
+    # ------------------------------------------------------------------
+    def build_page7_texts(male_name, female_name, male_core, female_core):
+        advice_rows = [
+            (
+                "忙しい平日の夜",
+                "10分だけ携帯を置いて、お互いに「今日いちばん嬉しかったこと」を一つずつ話してみましょう。"
+            ),
+            (
+                "休みの日のデート前",
+                "予定を決める前に「今日はどんな気分？」と聞くひと言だけで、行き先のすれ違いが減りやすくなります。"
+            ),
+            (
+                "気持ちがすれ違ったとき",
+                "どちらが正しいかよりも、「今どう感じた？」を先に聞くと、落ち着いて話し直しやすくなります。"
+            ),
+            (
+                "記念日や特別な日",
+                "完璧を目指しすぎず、「お互いに一つずつ感謝を伝える」くらいのシンプルさが、ちょうどいいバランスです。"
+            ),
+            (
+                "相手が疲れていそうな日",
+                "アドバイスよりも「今日はおつかれさま」と一言ねぎらうだけで、安心感がぐっと高まります。"
+            ),
+            (
+                "なんとなく距離を感じるとき",
+                "重い話ではなく、「最近ハマっていること教えて？」など、軽いテーマから会話をつなげてみましょう。"
+            ),
+        ]
+        footer_text = (
+            "ここに挙げたのはあくまで一例です。"
+            "ふたりらしい言葉やタイミングにアレンジしながら、"
+            "日常の中で少しずつ「話すきっかけ」を増やしていってください。"
+        )
+        return advice_rows, footer_text
+
+    advice_rows, footer_text = build_page7_texts(male_name, female_name, male_core, female_core)
+
+    draw_page7_advice(c, advice_rows, footer_text)
 
     # ------------------------------------------------------------------
-    # PAGE 8：まとめ
+    # PAGE 8：まとめ（变量版）
     # ------------------------------------------------------------------
     draw_full_bg(c, "page_summary.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
@@ -1124,11 +1168,11 @@ def generate_report():
     summary_font_size = 13
     summary_line_height = 20
 
-    summary_text_8 = "【ここに生成された総まとめ文が入ります】"
+    summary_text = build_page8_summary(male_name, female_name, compat_score)
 
     draw_wrapped_block(
         c,
-        summary_text_8,
+        summary_text,
         summary_x,
         summary_y,
         summary_wrap_width,
@@ -1137,7 +1181,6 @@ def generate_report():
         summary_line_height,
     )
 
-    draw_page_number(c, 8)
     c.showPage()
 
     # ------------------------------------------------------------------
