@@ -256,7 +256,10 @@ def build_planet_block(core: dict) -> dict:
 
 
 def compute_compat_score(male_core: dict, female_core: dict) -> int:
-    """根据五个点的度数差，算一个 80〜92 的分数"""
+    """
+    旧版の度数ベース相性スコア（今は使っていないが、念のため残しておく）。
+    必要なくなったら削除してもOK。
+    """
     keys = ["sun", "moon", "venus", "mars", "asc"]
     sims = []
     for k in keys:
@@ -278,32 +281,69 @@ def compute_compat_score(male_core: dict, female_core: dict) -> int:
     return raw
 
 
+# ★ 这里开始换成「模板库 + 打分系统」生成文案
+from templates_astrology.templates_page3_a import build_page3_a
+from templates_astrology.templates_page3_score import get_page3_score_block
+
+
 def build_page3_texts(male_name, female_name, male_core, female_core):
     """
-    之后你可以把这里完全换成「元素组合 → 文案模板」。
-    现在先给一个安全的默认版本。
+    第3页用のテキスト一式を生成：
+      - compat_score : 数値スコア（0–100）
+      - compat_summary : 一言の相性まとめ
+      - sun_text / moon_text / asc_text : それぞれの説明文
+
+    ※ 呼び出し側のシグネチャ（戻り値の形）はそのまま維持。
     """
-    compat_score = compute_compat_score(male_core, female_core)
 
-    compat_summary = (
-        "二人の相性は、安心感とほどよい刺激がバランスよく混ざった組み合わせです。"
-        "ゆっくりと関係を育てていくほど、お互いの良さが引き出されやすいタイプといえます。"
-    )
+    # 星座名（日本語）を取り出す
+    your_sun = male_core["sun"]["name_ja"]
+    your_moon = male_core["moon"]["name_ja"]
+    your_asc = male_core["asc"]["name_ja"]
 
-    sun_text = (
-        "太陽（ふたりの価値観）："
-        f"{male_name} さんは安定感と責任感を、{female_name} さんは素直さとあたたかさを大切にするタイプです。"
+    partner_sun = female_core["sun"]["name_ja"]
+    partner_moon = female_core["moon"]["name_ja"]
+    partner_asc = female_core["asc"]["name_ja"]
+
+    # 1) 相性スコア + タイプ + 一言まとめ
+    score_block = get_page3_score_block(
+        your_sun, your_moon, your_asc,
+        partner_sun, partner_moon, partner_asc,
     )
-    moon_text = (
-        "月（素の感情と安心ポイント）："
-        f"{male_name} さんは落ち着いた空間やペースを守れる関係に安心し、"
-        f"{female_name} さんは気持ちをその場で分かち合えることに心地よさを感じやすい傾向があります。"
+    # score_block = {
+    #   "scores": {
+    #       "score_total": int,
+    #       "score_communication": int,
+    #       "score_emotion": int,
+    #       "score_values": int,
+    #   },
+    #   "type": "A"/"B"/"C"/"D",
+    #   "one_line": "…"
+    # }
+
+    scores = score_block["scores"]
+    compat_score = scores["score_total"]          # 総合点
+    compat_summary = score_block["one_line"]      # 相性を一言で
+
+    relation_type = score_block["type"]           # "A" / "B" / "C" / "D"
+
+    # 2) 太陽 / 月 / 上昇 のテンプレ文を組み立て
+    page3_texts = build_page3_a(
+        your_name=male_name,
+        partner_name=female_name,
+        sun_sign=your_sun,
+        moon_sign=your_moon,
+        asc_pattern=relation_type,
     )
-    asc_text = (
-        "ASC（第一印象・ふたりの雰囲気）："
-        "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
-        "少しずつ素の表情が見えるほど、二人らしい雰囲気が育っていきます。"
-    )
+    # page3_texts = {
+    #   "sun_block": "...",
+    #   "moon_block": "...",
+    #   "asc_block": "...",
+    # }
+
+    sun_text = page3_texts["sun_block"]
+    moon_text = page3_texts["moon_block"]
+    asc_text = page3_texts["asc_block"]
 
     return compat_score, compat_summary, sun_text, moon_text, asc_text
 
