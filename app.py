@@ -470,7 +470,7 @@ def draw_page3_basic_and_synastry(
     )
 
     # 太陽・月・ASC の分析（各 最大 10 行まで表示 → ほぼ切れない）
-    y_analysis = 220
+    y_analysis = 240
     c.setFont(body_font3, body_size3)
     for block_text in (sun_text, moon_text, asc_text):
         y_analysis = draw_wrapped_block_limited(
