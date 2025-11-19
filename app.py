@@ -226,8 +226,53 @@ def test_page():
 # ------------------------------------------------------------------
 # 第 3 页：基本ホロスコープと総合相性
 # ------------------------------------------------------------------
+
+def compute_compat_score(male_core: dict, female_core: dict) -> int:
+    """
+    五つのポイント（太陽・月・金星・火星・ASC）の度数差から
+    80〜92 点のざっくりした相性スコアを作る。
+    """
+    keys = ["sun", "moon", "venus", "mars", "asc"]
+    sims = []
+
+    for k in keys:
+        dm = male_core[k]["lon"]
+        df = female_core[k]["lon"]
+
+        # 0〜180 度の差に正規化
+        diff = abs(dm - df) % 360.0
+        if diff > 180:
+            diff = 360.0 - diff
+
+        # 0（真逆）〜1（ぴったり重なる）
+        sim = 1.0 - diff / 180.0
+        sims.append(sim)
+
+    if not sims:
+        return 86
+
+    avg_sim = sum(sims) / len(sims)
+
+    # 80〜92 にマッピング
+    raw = 80 + int(avg_sim * 12)
+    if raw < 80:
+        raw = 80
+    if raw > 92:
+        raw = 92
+    return raw
+
+
 def build_planet_block(core: dict) -> dict:
-    """core = {sun:{lon,name_ja}, moon:{...}, venus:{...}, mars:{...}, asc:{...}}"""
+    """
+    core = {
+      "sun":   {"lon": 123.4, "name_ja": "..."},
+      "moon":  {...},
+      "venus": {...},
+      "mars":  {...},
+      "asc":   {...},
+    }
+    を、描画用の {deg, label} に整形する。
+    """
     def fmt(label_ja: str, d: dict) -> str:
         return f"{label_ja}：{d['name_ja']} {d['lon']:.1f}°"
 
@@ -255,67 +300,39 @@ def build_planet_block(core: dict) -> dict:
     }
 
 
-def compute_compat_score(male_core: dict, female_core: dict) -> int:
-    """
-    旧版の度数ベース相性スコア（今は使っていないが、念のため残しておく）。
-    必要なくなったら削除してもOK。
-    """
-    keys = ["sun", "moon", "venus", "mars", "asc"]
-    sims = []
-    for k in keys:
-        dm = male_core[k]["lon"]
-        df = female_core[k]["lon"]
-        diff = abs(dm - df) % 360.0
-        if diff > 180:
-            diff = 360 - diff
-        sim = 1.0 - diff / 180.0  # 0 (完全相反) ~ 1 (完全重合)
-        sims.append(sim)
-    if not sims:
-        return 86
-    avg_sim = sum(sims) / len(sims)
-    raw = 80 + int(avg_sim * 12)
-    if raw < 80:
-        raw = 80
-    if raw > 92:
-        raw = 92
-    return raw
-
-
-# ★ 这里开始换成「模板库 + 打分系统」生成文案
-from templates_astrology.templates_page3_generate import generate_page3
-from templates_astrology.templates_page3_score import get_page3_score_block
-
-
 def build_page3_texts(male_name, female_name, male_core, female_core):
     """
     第3頁用のテキスト一式を生成:
-      - compat_score : 数値スコア (80〜92)
+      - compat_score   : 数値スコア (80〜92)
       - compat_summary : 一言の相性まとめ
       - sun_text / moon_text / asc_text : それぞれの説明文
+    ※ ここはまず「動くこと」を優先した共通テキスト。
+       あとでテンプレA/B/C/Dに差し替え可能。
     """
-    # まずスコアを計算（80〜92の範囲）
+
+    # 1) スコア計算
     compat_score = compute_compat_score(male_core, female_core)
 
-    # 一言の総まとめ
+    # 2) 一言まとめ
     compat_summary = (
         "二人の相性は、安心感とほどよい刺激がバランスよく混ざった組み合わせです。"
         "ゆっくりと関係を育てていくほど、お互いの良さが引き出されやすいタイプといえます。"
     )
 
-    # 太陽テキスト
+    # 3) 太陽テキスト
     sun_text = (
         "太陽（ふたりの価値観）："
         f"{male_name} さんは安定感と責任感を、{female_name} さんは素直さとあたたかさを大切にするタイプです。"
     )
 
-    # 月テキスト
+    # 4) 月テキスト
     moon_text = (
         "月（素の感情と安心ポイント）："
         f"{male_name} さんは落ち着いた空間やペースを守れる関係に安心し、"
         f"{female_name} さんは気持ちをその場で分かち合えることに心地よさを感じやすい傾向があります。"
     )
 
-    # ASCテキスト
+    # 5) ASC テキスト
     asc_text = (
         "ASC（第一印象・ふたりの雰囲気）："
         "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
@@ -323,7 +340,6 @@ def build_page3_texts(male_name, female_name, male_core, female_core):
     )
 
     return compat_score, compat_summary, sun_text, moon_text, asc_text
-
 
 
 def draw_page3_basic_and_synastry(
@@ -338,10 +354,18 @@ def draw_page3_basic_and_synastry(
     moon_text: str,
     asc_text: str,
 ):
+    """
+    第3頁のレイアウト：
+      - 左右に基本ホロスコープ（本人 / 相手）
+      - 下に 5 行の天体リスト
+      - その下に 相性スコア ＋ 一言まとめ
+      - 太陽 / 月 / ASC の説明（各 最大 10 行まで表示）
+    """
+
     # 背景
     draw_full_bg(c, "page_basic.jpg")
 
-    # 星盘底图
+    # 星盤底图
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
@@ -357,17 +381,16 @@ def draw_page3_basic_and_synastry(
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    # 画星盘底图
+    # 星盘底图
     c.drawImage(chart_img, left_x, left_y,
                 width=chart_size, height=chart_size, mask="auto")
     c.drawImage(chart_img, right_x, right_y,
                 width=chart_size, height=chart_size, mask="auto")
 
-    # ------------------ 行星数据（根据计算结果） ------------------
+    # ------------------ 行星データ整形 ------------------
     male_planets = build_planet_block(male_core)
     female_planets = build_planet_block(female_core)
 
-    # 与 key 对应的 PNG 文件名
     icon_files = {
         "sun": "icon_sun.png",
         "moon": "icon_moon.png",
@@ -403,7 +426,7 @@ def draw_page3_basic_and_synastry(
             icon_files[key],
         )
 
-    # 星盘下方姓名
+    # 星盘下方姓名（这里用的是你传进来的真实姓名）
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
@@ -433,7 +456,7 @@ def draw_page3_basic_and_synastry(
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawString(text_x3, 350, f"相性バランス： {compat_score} / 100")
 
-    # 俯瞰式总结（最多 2 行）
+    # 一言まとめ（最大 2 行）
     draw_wrapped_block_limited(
         c,
         compat_summary,
@@ -446,7 +469,7 @@ def draw_page3_basic_and_synastry(
         max_lines=2,
     )
 
-    # 太陽・月・上昇の分析（3 段，各 2 行以内）
+    # 太陽・月・ASC の分析（各 最大 10 行まで表示 → ほぼ切れない）
     y_analysis = 220
     c.setFont(body_font3, body_size3)
     for block_text in (sun_text, moon_text, asc_text):
@@ -459,7 +482,7 @@ def draw_page3_basic_and_synastry(
             body_font3,
             body_size3,
             line_height3,
-            max_lines=2,
+            max_lines=10,   # ← ここで「ほぼ切らない」設定にしている
         )
         y_analysis -= line_height3
 
