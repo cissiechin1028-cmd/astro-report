@@ -940,39 +940,67 @@ def _deg_and_sign(seed: int, mul: int, offset: int):
 
 def compute_core_from_birth(birth_date, birth_time, birth_place):
     """
-    ⚠️ 注意：
-    这里是「简易伪星盘」，只为了现在能上线用：
-      - 同一个生日+时间 → 每次生成同样的度数
-      - 不同生日 → 得到不同的度数
-    这不是天文学意义上的真实星盘。
-    之后如果你接 astro 库，只要把这个函数换掉即可。
+    真实星盘计算版：
+    输入：
+        birth_date: 'YYYY-MM-DD'
+        birth_time: 'HH:MM'
+        birth_place: 地点字符串（目前先不使用，只用东京经纬度）
+    输出：
+        与原来相同格式的 dict:
+        {
+            "sun":   {"lon": xx, "name_ja": "牡羊座"},
+            "moon":  {"lon": ...},
+            "venus": {...},
+            "mars":  {...},
+            "asc":   {...}
+        }
     """
+
+    # --- 1) 解析生日 ---
     try:
-        y, m, d = [int(x) for x in birth_date.split("-")]
-    except Exception:
+        y, m, d = map(int, birth_date.split("-"))
+    except:
         y, m, d = 1990, 1, 1
 
+    # --- 2) 解析出生时间 ---
     try:
-        hh, mm = [int(x) for x in birth_time.split(":")]
-    except Exception:
+        hh, mm = map(int, birth_time.split(":"))
+    except:
         hh, mm = 12, 0
 
-    # 简单 seed：年月日+时间
-    seed = y * 10000 + m * 100 + d + hh * 60 + mm
+    # --- 3) 使用日本时区（+09:00） ---
+    dt = Datetime(f"{y:04d}/{m:02d}/{d:02d}",
+                  f"{hh:02d}:{mm:02d}", "+09:00")
 
-    sun_deg, sun_sign = _deg_and_sign(seed, 3, 10)
-    moon_deg, moon_sign = _deg_and_sign(seed, 7, 40)
-    venus_deg, venus_sign = _deg_and_sign(seed, 11, 80)
-    mars_deg, mars_sign = _deg_and_sign(seed, 13, 120)
-    asc_deg, asc_sign = _deg_and_sign(seed, 17, 160)
+    # --- 4) 使用东京经纬度（未来可接地点DB） ---
+    pos = GeoPos(35.0, 139.0)
 
+    # --- 5) 建立星盘 ---
+    chart = Chart(dt, pos)
+
+    # --- 6) 星座日文名（保持你原来的顺序） ---
+    SIGNS_JA = [
+        "牡羊座", "牡牛座", "双子座", "蟹座", "獅子座", "乙女座",
+        "天秤座", "蠍座", "射手座", "山羊座", "水瓶座", "魚座"
+    ]
+
+    # --- 7) 构建单个星体 ---
+    def build_obj(obj_id):
+        obj = chart.get(obj_id)
+        lon = obj.lon                          # 0–360°
+        sign_index = int(lon // 30) % 12       # 计算星座编号
+        sign_name = SIGNS_JA[sign_index]       # 日文星座名
+        return {"lon": lon, "name_ja": sign_name}
+
+    # --- 8) 返回你原来的格式（完全兼容你的绘图代码） ---
     return {
-        "sun":   {"lon": sun_deg, "name_ja": sun_sign},
-        "moon":  {"lon": moon_deg, "name_ja": moon_sign},
-        "venus": {"lon": venus_deg, "name_ja": venus_sign},
-        "mars":  {"lon": mars_deg, "name_ja": mars_sign},
-        "asc":   {"lon": asc_deg, "name_ja": asc_sign},
+        "sun":   build_obj(const.SUN),
+        "moon":  build_obj(const.MOON),
+        "venus": build_obj(const.VENUS),
+        "mars":  build_obj(const.MARS),
+        "asc":   build_obj(const.ASC),
     }
+
 
 
 @app.route("/api/generate_report", methods=["GET"])
