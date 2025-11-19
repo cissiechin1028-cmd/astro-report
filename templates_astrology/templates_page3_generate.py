@@ -1,24 +1,135 @@
 # -*- coding: utf-8 -*-
 """
-Page3｜総合生成ロジック
+Page3 Aプラン用：太陽・月・ASC テキスト生成
 
-・太陽テンプレート（価値観・方向性）
-・月テンプレート（感情のクセ）
-・上昇テンプレート（雰囲気・第一印象のタイプ）
-・相性スコア（太陽／月／上昇の四元素バランス）
-・相性診断（一行まとめ）
+generate_page3(...) ->
+    {
+        "sun_block":  "...",
+        "moon_block": "...",
+        "asc_block":  "...",
+    }
 
-をまとめて生成するためのヘルパー関数を定義。
+今はまず「ちゃんと動く」ことを優先して、
+太陽12 / 月12 / ASC4 それぞれにエントリを用意しつつ、
+文章内容はタイプ別の汎用テキストにしています。
+あとで中身だけ差し替えればOK。
 """
 
-from templates_astrology.templates_page3_a import (
-    # ここはあなたの templates_page3_a.py に合わせて調整
-    # build_page3_a は、これまで作った「A案（太陽12・月12・上昇4の自動組み合わせ）」関数を想定
-    build_page3_a,
+
+# 12星座（日本語名）
+FIRE_SIGNS = ["牡羊座", "獅子座", "射手座"]
+EARTH_SIGNS = ["牡牛座", "乙女座", "山羊座"]
+AIR_SIGNS = ["双子座", "天秤座", "水瓶座"]
+WATER_SIGNS = ["蟹座", "蠍座", "魚座"]
+
+ALL_SIGNS = FIRE_SIGNS + EARTH_SIGNS + AIR_SIGNS + WATER_SIGNS
+
+
+# ---------------- 太陽：価値観の違いテキスト ----------------
+
+SUN_TEXT_GENERIC = (
+    "{your_name} さんと {partner_name} さんは、太陽サインの違いから "
+    "「大事にしたい価値観」の重心が少しずつ異なるペアです。"
+    "片方は安定や責任感を、もう片方は変化やワクワク感を求めやすく、"
+    "お金の使い方や休日の過ごし方など、小さな場面で違いが出やすくなります。"
+    "ただ、その違いはぶつかるためではなく、お互いの世界を広げ合うためのコントラストでもあります。"
+    "どちらかに寄せすぎるのではなく、「今日はどちらの価値観を優先するか」を相談して決めていくことで、"
+    "二人なりのちょうどいいバランスが見えてきます。"
 )
-from templates_astrology.templates_page3_score import (
-    get_page3_score_block,
+
+# ここでは12星座すべて同じ文章を使うが、あとで星座ごとに差し替え可能
+SUN_TEMPLATES = {sign: SUN_TEXT_GENERIC for sign in ALL_SIGNS}
+
+
+# ---------------- 月：感情と安心ポイントの違い ----------------
+
+MOON_TEXT_GENERIC = (
+    "月サインは「素の感情」と「安心できるポイント」を表します。"
+    "{your_name} さんと {partner_name} さんは、感情の受け取り方や、"
+    "落ち着ける距離感が少し違う組み合わせです。"
+    "片方は静かな時間や落ち着いたペースに安心し、"
+    "もう片方はその場で気持ちを共有することで心がほぐれていきます。"
+    "どちらが正しいということではなく、安心の形が違うだけです。"
+    "「今日は聞いてほしいのか」「そっとしておいてほしいのか」を一言だけ伝え合えると、"
+    "すれ違いがぐっと減り、感情面の信頼が深まっていきます。"
 )
+
+MOON_TEMPLATES = {sign: MOON_TEXT_GENERIC for sign in ALL_SIGNS}
+
+
+# ---------------- ASC：第一印象＆ふたりの雰囲気 ----------------
+
+ASC_TEXT_SOFT = (
+    "ASC（アセンダント）は、第一印象やふたりの雰囲気を表します。"
+    "{your_name} さんと {partner_name} さんの組み合わせは、"
+    "周りから見ると「穏やかで話しやすいペア」という印象になりやすいタイプです。"
+    "ゆるやかな空気感の中で少しずつ距離を縮めていくため、"
+    "出会ってから時間をかけて関係が深まっていく傾向があります。"
+)
+
+ASC_TEXT_ACTIVE = (
+    "ASC（アセンダント）は、第一印象やふたりの雰囲気を表します。"
+    "{your_name} さんと {partner_name} さんの組み合わせは、"
+    "周りから見ると「明るくて行動力のあるペア」という印象になりやすいタイプです。"
+    "一緒に動くほど距離が縮まりやすく、共通の体験がそのまま思い出になっていきます。"
+)
+
+ASC_TEXT_BALANCED = (
+    "ASC（アセンダント）は、第一印象やふたりの雰囲気を表します。"
+    "{your_name} さんと {partner_name} さんの組み合わせは、"
+    "落ち着きと柔らかさのバランスがよく、場面によって空気を読みながら "
+    "雰囲気を変えていけるペアです。"
+    "状況に合わせて役割を切り替えられるため、長く付き合うほど居心地がよくなっていきます。"
+)
+
+ASC_TEXT_DEEP = (
+    "ASC（アセンダント）は、第一印象やふたりの雰囲気を表します。"
+    "{your_name} さんと {partner_name} さんの組み合わせは、"
+    "静かだけれど深い信頼を育てていくペアです。"
+    "外からはあまり見えないところで理解が深まりやすく、"
+    "時間をかけて「二人だけの世界観」ができていきます。"
+)
+
+# ASC 用の4タイプ（ラベルだけ。実際の割り当てロジックは後で詳細化してOK）
+ASC_TYPES = {
+    "soft": ASC_TEXT_SOFT,
+    "active": ASC_TEXT_ACTIVE,
+    "balanced": ASC_TEXT_BALANCED,
+    "deep": ASC_TEXT_DEEP,
+}
+
+
+def _render(text: str,
+            your_name: str,
+            partner_name: str,
+            your_sign: str,
+            partner_sign: str) -> str:
+    """
+    テンプレ内の {your_name} などを実際の値に差し替える。
+    （今は sign を文章中で使っていないが、あとで修正しやすいように渡しておく）
+    """
+    return text.format(
+        your_name=your_name,
+        partner_name=partner_name,
+        your_sign=your_sign,
+        partner_sign=partner_sign,
+    )
+
+
+def _pick_asc_type(your_asc: str, partner_asc: str) -> str:
+    """
+    ASC を4タイプにざっくり分類するための簡易ロジック。
+    ここもあとで細かく調整してOK。
+    """
+    # ざっくり：火・風 = active / 土 = deep / 水 = soft / その他 = balanced
+    if your_asc in FIRE_SIGNS or partner_asc in FIRE_SIGNS:
+        return "active"
+    if your_asc in AIR_SIGNS or partner_asc in AIR_SIGNS:
+        return "balanced"
+    if your_asc in WATER_SIGNS or partner_asc in WATER_SIGNS:
+        return "soft"
+    # 残り（土要素など）
+    return "deep"
 
 
 def generate_page3(
@@ -32,77 +143,25 @@ def generate_page3(
     partner_asc: str,
 ) -> dict:
     """
-    Page3 一式をまとめて生成するメイン関数。
-
-    Parameters
-    ----------
-    your_name : str
-        あなたの名前（{your_name} 置換用）
-    partner_name : str
-        お相手の名前（{partner_name} 置換用）
-    your_sun : str
-        あなたの太陽星座（例："牡羊座"）
-    your_moon : str
-        あなたの月星座
-    your_asc : str
-        あなたの上昇星座
-    partner_sun : str
-        お相手の太陽星座
-    partner_moon : str
-        お相手の月星座
-    partner_asc : str
-        お相手の上昇星座
-
-    Returns
-    -------
-    dict
-        {
-          "texts": {...},   # templates_page3_a.build_page3_a の戻り値そのまま
-          "scores": {
-             "score_total": int,
-             "score_communication": int,
-             "score_emotion": int,
-             "score_values": int,
-          },
-          "relation_type": "A" | "B" | "C" | "D",
-          "relation_sentence": str,   # 一行の相性まとめ
-        }
+    Page3 Aプラン用：
+    太陽（価値観）・月（感情）・ASC（雰囲気）の3つの文章ブロックを返す。
     """
 
-    # 1) 太陽・月・上昇の四元素から相性スコアを計算
-    score_block = get_page3_score_block(
-        your_sun,
-        your_moon,
-        your_asc,
-        partner_sun,
-        partner_moon,
-        partner_asc,
-    )
-    # score_block = {
-    #   "scores": {...},
-    #   "type": "A/B/C/D",
-    #   "one_line": "相性の一行まとめ",
-    # }
+    # 太陽ブロック
+    sun_tpl = SUN_TEMPLATES.get(your_sun, SUN_TEXT_GENERIC)
+    sun_block = _render(sun_tpl, your_name, partner_name, your_sun, partner_sun)
 
-    relation_type = score_block["type"]           # "A" / "B" / "C" / "D"
-    relation_sentence = score_block["one_line"]   # 一行の相性診断
-    scores = score_block["scores"]                # 各スコア dict
+    # 月ブロック
+    moon_tpl = MOON_TEMPLATES.get(your_moon, MOON_TEXT_GENERIC)
+    moon_block = _render(moon_tpl, your_name, partner_name, your_moon, partner_moon)
 
-    # 2) A案のテンプレートロジックで、太陽＋月＋上昇テキストをまとめて生成
-    #    ※ ここでは「上昇4タイプ」の選択キーとして relation_type をそのまま使う想定
-    #       → Asc テンプレは "A" / "B" / "C" / "D" の4種類
-    page3_texts = build_page3_a(
-        your_name=your_name,
-        partner_name=partner_name,
-        sun_sign=your_sun,
-        moon_sign=your_moon,
-        asc_pattern=relation_type,
-    )
+    # ASCブロック（4タイプのどれかを選ぶ）
+    asc_type_key = _pick_asc_type(your_asc, partner_asc)
+    asc_tpl = ASC_TYPES.get(asc_type_key, ASC_TEXT_BALANCED)
+    asc_block = _render(asc_tpl, your_name, partner_name, your_asc, partner_asc)
 
-    # 3) すべてまとめて返す
     return {
-        "texts": page3_texts,
-        "scores": scores,
-        "relation_type": relation_type,
-        "relation_sentence": relation_sentence,
+        "sun_block": sun_block,
+        "moon_block": moon_block,
+        "asc_block": asc_block,
     }
