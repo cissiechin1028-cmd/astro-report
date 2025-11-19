@@ -493,7 +493,6 @@ def draw_page3_basic_and_synastry(
     c.showPage()
 
 
-
 # ------------------------------------------------------------------
 # 第 4 页：性格の違いとコミュニケーション（变量版）
 # ------------------------------------------------------------------
@@ -910,7 +909,7 @@ def build_page8_summary(male_name: str, female_name: str, compat_score: int) -> 
         "ちょうどよく混ざり合っている組み合わせです。"
         "大切なのは、どちらか一方の正解に寄せるのではなく、"
         "ふたりだけのちょうどいい距離感や歩幅を、少しずつ探していくことです。"
-        "このレポートで気になったポイントがあれば、小さな会話のきっかけとして、"
+        "このレポートで気になったポイントがあれば、小さな会话のきっかけとして、"
         "「実はこう感じていたんだ」と伝えてみてください。"
         "星の配置は、完璧なかたちを決めつけるものではなく、"
         "ふたりがこれから選んでいく物語を、そっと照らしてくれるヒントです。"
@@ -921,38 +920,112 @@ def build_page8_summary(male_name: str, female_name: str, compat_score: int) -> 
 #                    生成 PDF 主入口
 # ==============================================================
 
+SIGNS_JA = [
+    "牡羊座", "牡牛座", "双子座", "蟹座", "獅子座", "乙女座",
+    "天秤座", "蠍座", "射手座", "山羊座", "水瓶座", "魚座",
+]
+
+
+def _deg_and_sign(seed: int, mul: int, offset: int):
+    """简单的伪星盘：用生日+时间算一个稳定的度数和星座（不是天文学真星盘，只是应急上线用）"""
+    deg = (seed * mul + offset) % 360
+    idx = int(deg // 30) % 12
+    return deg, SIGNS_JA[idx]
+
+
 def compute_core_from_birth(birth_date, birth_time, birth_place):
     """
-    ★ 现在是占位函数：先返回固定示例，确保系统跑通。
-      之后你可以在这里接 astro API / 自己的星历库。
+    ⚠️ 注意：
+    这里是「简易伪星盘」，只为了现在能上线用：
+      - 同一个生日+时间 → 每次生成同样的度数
+      - 不同生日 → 得到不同的度数
+    这不是天文学意义上的真实星盘。
+    之后如果你接 astro 库，只要把这个函数换掉即可。
     """
-    # TODO: 把这里换成真实计算
+    try:
+        y, m, d = [int(x) for x in birth_date.split("-")]
+    except Exception:
+        y, m, d = 1990, 1, 1
+
+    try:
+        hh, mm = [int(x) for x in birth_time.split(":")]
+    except Exception:
+        hh, mm = 12, 0
+
+    # 简单 seed：年月日+时间
+    seed = y * 10000 + m * 100 + d + hh * 60 + mm
+
+    sun_deg, sun_sign = _deg_and_sign(seed, 3, 10)
+    moon_deg, moon_sign = _deg_and_sign(seed, 7, 40)
+    venus_deg, venus_sign = _deg_and_sign(seed, 11, 80)
+    mars_deg, mars_sign = _deg_and_sign(seed, 13, 120)
+    asc_deg, asc_sign = _deg_and_sign(seed, 17, 160)
+
     return {
-        "sun":   {"lon": 12.3, "name_ja": "牡羊座"},
-        "moon":  {"lon": 65.4, "name_ja": "双子座"},
-        "venus": {"lon": 147.8, "name_ja": "獅子座"},
-        "mars":  {"lon": 183.2, "name_ja": "天秤座"},
-        "asc":   {"lon": 220.1, "name_ja": "山羊座"},
+        "sun":   {"lon": sun_deg, "name_ja": sun_sign},
+        "moon":  {"lon": moon_deg, "name_ja": moon_sign},
+        "venus": {"lon": venus_deg, "name_ja": venus_sign},
+        "mars":  {"lon": mars_deg, "name_ja": mars_sign},
+        "asc":   {"lon": asc_deg, "name_ja": asc_sign},
     }
 
 
 @app.route("/api/generate_report", methods=["GET"])
 def generate_report():
     # ---- 1. 读取参数 ----
-    male_name = request.args.get("male_name", "太郎")
-    female_name = request.args.get("female_name", "花子")
+    # 名字：不再给「太郎 / 花子」默认值，如果取不到就变成空字符串
+    male_name = (
+        request.args.get("male_name")
+        or request.args.get("your_name")
+        or request.args.get("name")
+        or ""
+    )
+    female_name = (
+        request.args.get("female_name")
+        or request.args.get("partner_name")
+        or request.args.get("partner")
+        or ""
+    )
+
     raw_date = request.args.get("date")
     date_display = get_display_date(raw_date)
 
-    # 占位：之后这里要从 Tally 传进来的 8 个字段里取
-    your_dob = request.args.get("your_dob", "1990-01-01")
-    your_time = request.args.get("your_time", "12:00")
-    your_place = request.args.get("your_place", "Tokyo")
-    partner_dob = request.args.get("partner_dob", "1990-01-01")
-    partner_time = request.args.get("partner_time", "12:00")
-    partner_place = request.args.get("partner_place", "Tokyo")
+    # 生日 / 时间 / 地点：先尝试多种 key，实在没有才用默认
+    your_dob = (
+        request.args.get("your_dob")
+        or request.args.get("male_dob")
+        or request.args.get("dob")
+        or "1990-01-01"
+    )
+    your_time = (
+        request.args.get("your_time")
+        or request.args.get("male_time")
+        or "12:00"
+    )
+    your_place = (
+        request.args.get("your_place")
+        or request.args.get("male_place")
+        or "Tokyo"
+    )
 
-    # ---- 2. 先算出双方核心星盘（目前占位版）----
+    partner_dob = (
+        request.args.get("partner_dob")
+        or request.args.get("female_dob")
+        or request.args.get("partner_dob")
+        or "1990-01-01"
+    )
+    partner_time = (
+        request.args.get("partner_time")
+        or request.args.get("female_time")
+        or "12:00"
+    )
+    partner_place = (
+        request.args.get("partner_place")
+        or request.args.get("female_place")
+        or "Tokyo"
+    )
+
+    # ---- 2. 计算双方核心星盘（现在是简易伪星盘）----
     male_core = compute_core_from_birth(your_dob, your_time, your_place)
     female_core = compute_core_from_birth(partner_dob, partner_time, partner_place)
 
@@ -1009,7 +1082,7 @@ def generate_report():
         talk_text = (
             f"{male_name} さんは、自分の気持ちを言葉にするまでに少し時間をかける、じっくりタイプです。"
             f"一方で、{female_name} さんは、その場で感じたことをすぐに言葉にする、テンポの速いタイプです。"
-            "日常会话では、片方が考えている间にもう一方がどんどん话してしまい、"
+            "日常会話では、片方が考えている間にもう一方がどんどん話してしまい、"
             "「ちゃんと聞いてもらえていない」と感じる場面が出やすくなります。"
         )
         talk_summary = (
@@ -1025,9 +1098,9 @@ def generate_report():
             "一言でいうと、二人は「解決志向」と「共感志向」が支え合う、心強いバランス型のペアです。"
         )
         values_text = (
-            f"{male_name} さんは、安定や責任感を重视する一方で、{female_name} さんは、変化やワクワク感を大切にする傾向があります。"
+            f"{male_name} さんは、安定や責任感を重視する一方で、{female_name} さんは、変化やワクワク感を大切にする傾向があります。"
             "お金の使い方や休日の過ごし方、将来のイメージなど、小さな違いが積み重なると、"
-            "「なんでわかってくれないの？」と感じる瞬间が出てくるかもしれません。"
+            "「なんでわかってくれないの？」と感じる瞬間が出てくるかもしれません。"
         )
         values_summary = (
             "一言でいうと、二人の価値観は違いを否定するのではなく、「お互いの世界を広げ合うきっかけ」になる組み合わせです。"
@@ -1067,7 +1140,7 @@ def generate_report():
         gap_text = (
             f"{male_name} さんは、物事を決めるときに慎重に考えたいタイプで、"
             f"{female_name} さんは、流れや直感を大切にして「とりあえずやってみよう」と思うことが多いかもしれません。"
-            "そのため、決断のペースや优先順位がずれると、"
+            "そのため、決断のペースや優先順位がずれると、"
             "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感じやすくなります。"
         )
         gap_summary = (
@@ -1124,7 +1197,7 @@ def generate_report():
         style_text = (
             "このペアは、片方が雰囲気をつくり、もう片方が行動を整えるように、"
             "自然と役割分担が生まれやすい組み合わせです。"
-            "生活のペースと会話のリズムが合いやすく、無理なく居心地の良い関係を形にできます。"
+            "生活のペースと会话のリズムが合いやすく、無理なく居心地の良い関係を形にできます。"
         )
         style_summary = (
             "一言でいうと、「調和しながら一緒に形を作る関係」です。"
@@ -1173,7 +1246,7 @@ def generate_report():
             ),
             (
                 "気持ちがすれ違ったとき",
-                "どちらが正しいかよりも、「今どう感じた？」を先に聞くと、落ち着いて話し直しやすくなります。"
+                "どちらが正しいかよりも、「今どう感じた？」を先に听くと、落ち着いて话し直しやすくなります。"
             ),
             (
                 "記念日や特別な日",
