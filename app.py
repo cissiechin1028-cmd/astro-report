@@ -227,52 +227,9 @@ def test_page():
 # 第 3 页：基本ホロスコープと総合相性
 # ------------------------------------------------------------------
 
-def compute_compat_score(male_core: dict, female_core: dict) -> int:
-    """
-    五つのポイント（太陽・月・金星・火星・ASC）の度数差から
-    80〜92 点のざっくりした相性スコアを作る。
-    """
-    keys = ["sun", "moon", "venus", "mars", "asc"]
-    sims = []
-
-    for k in keys:
-        dm = male_core[k]["lon"]
-        df = female_core[k]["lon"]
-
-        # 0〜180 度の差に正規化
-        diff = abs(dm - df) % 360.0
-        if diff > 180:
-            diff = 360.0 - diff
-
-        # 0（真逆）〜1（ぴったり重なる）
-        sim = 1.0 - diff / 180.0
-        sims.append(sim)
-
-    if not sims:
-        return 86
-
-    avg_sim = sum(sims) / len(sims)
-
-    # 80〜92 にマッピング
-    raw = 80 + int(avg_sim * 12)
-    if raw < 80:
-        raw = 80
-    if raw > 92:
-        raw = 92
-    return raw
-
-
 def build_planet_block(core: dict) -> dict:
-    """
-    core = {
-      "sun":   {"lon": 123.4, "name_ja": "..."},
-      "moon":  {...},
-      "venus": {...},
-      "mars":  {...},
-      "asc":   {...},
-    }
-    を、描画用の {deg, label} に整形する。
-    """
+    """core = {sun:{lon,name_ja}, moon:{...}, venus:{...}, mars:{...}, asc:{...}}"""
+
     def fmt(label_ja: str, d: dict) -> str:
         return f"{label_ja}：{d['name_ja']} {d['lon']:.1f}°"
 
@@ -303,36 +260,33 @@ def build_planet_block(core: dict) -> dict:
 def build_page3_texts(male_name, female_name, male_core, female_core):
     """
     第3頁用のテキスト一式を生成:
-      - compat_score   : 数値スコア (80〜92)
+      - compat_score : 数値スコア (80〜92)
       - compat_summary : 一言の相性まとめ
       - sun_text / moon_text / asc_text : それぞれの説明文
-    ※ ここはまず「動くこと」を優先した共通テキスト。
-       あとでテンプレA/B/C/Dに差し替え可能。
     """
-
-    # 1) スコア計算
+    # まずスコアを計算（80〜92の範囲）
     compat_score = compute_compat_score(male_core, female_core)
 
-    # 2) 一言まとめ
+    # 一言の総まとめ
     compat_summary = (
         "二人の相性は、安心感とほどよい刺激がバランスよく混ざった組み合わせです。"
         "ゆっくりと関係を育てていくほど、お互いの良さが引き出されやすいタイプといえます。"
     )
 
-    # 3) 太陽テキスト
+    # 太陽テキスト
     sun_text = (
         "太陽（ふたりの価値観）："
         f"{male_name} さんは安定感と責任感を、{female_name} さんは素直さとあたたかさを大切にするタイプです。"
     )
 
-    # 4) 月テキスト
+    # 月テキスト
     moon_text = (
         "月（素の感情と安心ポイント）："
         f"{male_name} さんは落ち着いた空間やペースを守れる関係に安心し、"
         f"{female_name} さんは気持ちをその場で分かち合えることに心地よさを感じやすい傾向があります。"
     )
 
-    # 5) ASC テキスト
+    # ASCテキスト
     asc_text = (
         "ASC（第一印象・ふたりの雰囲気）："
         "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
@@ -354,18 +308,10 @@ def draw_page3_basic_and_synastry(
     moon_text: str,
     asc_text: str,
 ):
-    """
-    第3頁のレイアウト：
-      - 左右に基本ホロスコープ（本人 / 相手）
-      - 下に 5 行の天体リスト
-      - その下に 相性スコア ＋ 一言まとめ
-      - 太陽 / 月 / ASC の説明（各 最大 10 行まで表示）
-    """
-
     # 背景
     draw_full_bg(c, "page_basic.jpg")
 
-    # 星盤底图
+    # 星盤底図
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
@@ -375,19 +321,19 @@ def draw_page3_basic_and_synastry(
     right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
-    # 星盘中心
+    # 星盤中心
     left_cx = left_x + chart_size / 2
     left_cy = left_y + chart_size / 2
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    # 星盘底图
+    # 星盤画像
     c.drawImage(chart_img, left_x, left_y,
                 width=chart_size, height=chart_size, mask="auto")
     c.drawImage(chart_img, right_x, right_y,
                 width=chart_size, height=chart_size, mask="auto")
 
-    # ------------------ 行星データ整形 ------------------
+    # 行星データ（実際の計算結果）
     male_planets = build_planet_block(male_core)
     female_planets = build_planet_block(female_core)
 
@@ -399,11 +345,10 @@ def draw_page3_basic_and_synastry(
         "asc": "icon_asc.png",
     }
 
-    # 男 = 蓝色 / 女 = 粉色
-    male_color = (0.15, 0.45, 0.9)
-    female_color = (0.9, 0.35, 0.65)
+    male_color = (0.15, 0.45, 0.9)   # 青
+    female_color = (0.9, 0.35, 0.65) # ピンク
 
-    # 在星盘上画点 + 图标
+    # 左：あなた
     for key, info in male_planets.items():
         draw_planet_icon(
             c,
@@ -415,6 +360,7 @@ def draw_page3_basic_and_synastry(
             icon_files[key],
         )
 
+    # 右：お相手
     for key, info in female_planets.items():
         draw_planet_icon(
             c,
@@ -426,13 +372,13 @@ def draw_page3_basic_and_synastry(
             icon_files[key],
         )
 
-    # 星盘下方姓名（这里用的是你传进来的真实姓名）
+    # 星盤下の名前
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # 星盘下方 5 行列表
+    # 星盤下の5行リスト
     c.setFont(JP_SERIF, 8.5)
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
@@ -444,51 +390,52 @@ def draw_page3_basic_and_synastry(
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
 
-    # 星盘下：総合相性スコア ＋ 太陽・月・上昇の分析
-    text_x3 = 130
-    wrap_width3 = 360
-    body_font3 = JP_SERIF
-    body_size3 = 12
-    line_height3 = 18
+    # テキスト部分
+    text_x = 130
+    wrap_width = 360
+    body_font = JP_SERIF
+    body_size = 12
+    line_height = 18
 
     # 相性スコア
     c.setFont(JP_SANS, 12)
     c.setFillColorRGB(0.2, 0.2, 0.2)
-    c.drawString(text_x3, 350, f"相性バランス： {compat_score} / 100")
+    c.drawString(text_x, 350, f"相性バランス： {compat_score} / 100")
 
-    # 一言まとめ（最大 2 行）
+    # 相性まとめ（行数多めにして切れないように）
     draw_wrapped_block_limited(
         c,
         compat_summary,
-        text_x3,
-        350 - line_height3 * 1.4,
-        wrap_width3,
-        body_font3,
-        body_size3,
-        line_height3,
-        max_lines=2,
+        text_x,
+        350 - line_height * 1.4,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=4,
     )
 
-    # 太陽・月・ASC の分析（各 最大 10 行まで表示 → ほぼ切れない）
-    y_analysis = 240
-    c.setFont(body_font3, body_size3)
+    # 太陽・月・ASC（それぞれ 3 行まで使う）
+    y_analysis = 220
+    c.setFont(body_font, body_size)
     for block_text in (sun_text, moon_text, asc_text):
         y_analysis = draw_wrapped_block_limited(
             c,
             block_text,
-            text_x3,
+            text_x,
             y_analysis,
-            wrap_width3,
-            body_font3,
-            body_size3,
-            line_height3,
-            max_lines=10,   # ← ここで「ほぼ切らない」設定にしている
+            wrap_width,
+            body_font,
+            body_size,
+            line_height,
+            max_lines=3,
         )
-        y_analysis -= line_height3
+        y_analysis -= line_height
 
-    # 页码
+    # ページ番号
     draw_page_number(c, 3)
     c.showPage()
+
 
 
 # ------------------------------------------------------------------
