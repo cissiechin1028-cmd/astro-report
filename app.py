@@ -935,65 +935,54 @@ def _deg_and_sign(seed: int, mul: int, offset: int):
 
 def compute_core_from_birth(birth_date, birth_time, birth_place):
     """
-    真实星盘计算版：
-    输入：
-        birth_date: 'YYYY-MM-DD'
-        birth_time: 'HH:MM'
-        birth_place: 地点字符串（目前先不使用，只用东京经纬度）
-    输出：
-        与原来相同格式的 dict:
-        {
-            "sun":   {"lon": xx, "name_ja": "牡羊座"},
-            "moon":  {"lon": ...},
-            "venus": {...},
-            "mars":  {...},
-            "asc":   {...}
-        }
+    简易伪星盘：
+    - 根据生日计算一个“稳定但不真实”的度数
+    - 让 PDF 正常运行
+    - 之后要换成真实星盘，只要把整个函数替换即可
     """
 
-    # --- 1) 解析生日 ---
+    # -------------------------
+    # 解析生日
+    # -------------------------
     try:
-        y, m, d = map(int, birth_date.split("-"))
-    except:
+        y, m, d = [int(x) for x in birth_date.split("-")]
+    except Exception:
         y, m, d = 1990, 1, 1
 
-    # --- 2) 解析出生时间 ---
+    # -------------------------
+    # 解析出生时间
+    # -------------------------
     try:
-        hh, mm = map(int, birth_time.split(":"))
-    except:
+        hh, mm = [int(x) for x in birth_time.split(":")]
+    except Exception:
         hh, mm = 12, 0
 
-    # --- 3) 使用日本时区（+09:00） ---
-    dt = Datetime(f"{y:04d}/{m:02d}/{d:02d}",
-                  f"{hh:02d}:{mm:02d}", "+09:00")
+    # -------------------------
+    # 简单哈希算法（让不同生日生成不同度数）
+    # -------------------------
+    base = (y * 3721 + m * 131 + d * 17 + hh * 7 + mm) % 360
 
-    # --- 4) 使用东京经纬度（未来可接地点DB） ---
-    pos = GeoPos(35.0, 139.0)
+    sun_deg   = (base +   0) % 360
+    moon_deg  = (base +  33) % 360
+    venus_deg = (base +  77) % 360
+    mars_deg  = (base + 121) % 360
+    asc_deg   = (base + 199) % 360
 
-    # --- 5) 建立星盘 ---
-    chart = Chart(dt, pos)
-
-    # --- 6) 星座日文名（保持你原来的顺序） ---
     SIGNS_JA = [
         "牡羊座", "牡牛座", "双子座", "蟹座", "獅子座", "乙女座",
         "天秤座", "蠍座", "射手座", "山羊座", "水瓶座", "魚座"
     ]
 
-    # --- 7) 构建单个星体 ---
-    def build_obj(obj_id):
-        obj = chart.get(obj_id)
-        lon = obj.lon                          # 0–360°
-        sign_index = int(lon // 30) % 12       # 计算星座编号
-        sign_name = SIGNS_JA[sign_index]       # 日文星座名
-        return {"lon": lon, "name_ja": sign_name}
+    def deg_to_sign(deg):
+        idx = int(deg // 30) % 12
+        return SIGNS_JA[idx]
 
-    # --- 8) 返回你原来的格式（完全兼容你的绘图代码） ---
     return {
-        "sun":   build_obj(const.SUN),
-        "moon":  build_obj(const.MOON),
-        "venus": build_obj(const.VENUS),
-        "mars":  build_obj(const.MARS),
-        "asc":   build_obj(const.ASC),
+        "sun":   {"lon": sun_deg,   "name_ja": deg_to_sign(sun_deg)},
+        "moon":  {"lon": moon_deg,  "name_ja": deg_to_sign(moon_deg)},
+        "venus": {"lon": venus_deg, "name_ja": deg_to_sign(venus_deg)},
+        "mars":  {"lon": mars_deg,  "name_ja": deg_to_sign(mars_deg)},
+        "asc":   {"lon": asc_deg,   "name_ja": deg_to_sign(asc_deg)},
     }
 
 
