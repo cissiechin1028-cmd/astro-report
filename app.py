@@ -282,7 +282,7 @@ def compute_compat_score(male_core: dict, female_core: dict) -> int:
 
 
 # ★ 这里开始换成「模板库 + 打分系统」生成文案
-from templates_astrology.templates_page3_a import build_page3_a
+from templates_astrology.templates_page3_generate import generate_page3
 from templates_astrology.templates_page3_score import get_page3_score_block
 
 
@@ -328,7 +328,7 @@ def build_page3_texts(male_name, female_name, male_core, female_core):
     relation_type = score_block["type"]           # "A" / "B" / "C" / "D"
 
     # 2) 太陽 / 月 / 上昇 のテンプレ文を組み立て
-    page3_texts = build_page3_a(
+    page3_texts = generate_page3(
         your_name=male_name,
         partner_name=female_name,
         sun_sign=your_sun,
