@@ -2,4 +2,3 @@ flask
 reportlab
 gunicorn
 Pillow
-flatlib>=0.2.0
