@@ -362,6 +362,51 @@ def build_page3_texts(male_name: str,
     第3ページ用のテキスト一式をまとめて生成する。
 
     戻り値:
+      compat_score   : 数値スコア (80〜92)  ※ 今はレイアウト維持用のダミー値
+      compat_summary : 一言の相性まとめ（太陽星座×太陽星座で 2 文）
+      sun_text       : 太陽サインの説明
+      moon_text      : 月サインの説明
+      asc_text       : ASC の説明
+    """
+
+    # ① 太陽星座 → 元素 → 相性まとめ（2 文以内）
+    male_sun_ja = male_core.get("sun", {}).get("name_ja")
+    female_sun_ja = female_core.get("sun", {}).get("name_ja")
+    compat_summary = build_pair_summary_from_sun(male_sun_ja, female_sun_ja)
+
+    # ② スコアはとりあえず固定値（デザイン崩さないため）
+    #    あとで本物のロジックに差し替え可能
+    compat_score = 88
+
+    # ③ 太陽テキスト（名前だけ実データ差し込み）
+    sun_text = (
+        "太陽（ふたりの価値観）："
+        f"{male_name} さんは安定感と責任感を、"
+        f"{female_name} さんは素直さとあたたかさを大切にするタイプです。"
+    )
+
+    # ④ 月テキスト
+    moon_text = (
+        "月（素の感情と安心ポイント）："
+        f"{male_name} さんは落ち着いた空間やペースを守れる関係に安心し、"
+        f"{female_name} さんは気持ちをその場で分かち合えることに"
+        "心地よさを感じやすい傾向があります。"
+    )
+
+    # ⑤ ASC テキスト
+    asc_text = (
+        "ASC（第一印象・ふたりの雰囲気）："
+        "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
+        "少しずつ素の表情が見えるほど、二人らしい雰囲気が育っていきます。"
+    )
+
+    # ⑥ 必ず 5 つ返す（上の generate_report のアンパックと対応）
+    return compat_score, compat_summary, sun_text, moon_text, asc_text
+
+    """
+    第3ページ用のテキスト一式をまとめて生成する。
+
+    戻り値:
       compat_score   : 数値スコア (80〜92)
       compat_summary : 一言の相性まとめ
       sun_text       : 太陽サインの説明
