@@ -354,60 +354,67 @@ def build_pair_summary_from_sun(male_sun_ja: str, female_sun_ja: str) -> str:
     return base_text
 
 
-def build_page3_texts(male_name: str,
-                      female_name: str,
-                      male_core: dict,
-                      female_core: dict):
+def build_page3_texts(
+    male_name: str,
+    female_name: str,
+    male_core: dict,
+    female_core: dict,
+):
     """
-    第3ページ用のテキスト一式をまとめて生成する。
-
-    戻り値:
-      compat_score   : 数値スコア (80〜92)  ※ 今はレイアウト維持用のダミー値
-      compat_summary : 一言の相性まとめ（太陽星座×太陽星座で 2 文）
-      sun_text       : 太陽サインの説明
-      moon_text      : 月サインの説明
-      asc_text       : ASC の説明
+    第3ページ用のテキストをまとめて作る。
+    ここでは一旦「必ず動くシンプル版」にしておく。
+    - compat_score: 数値スコア（今はダミーで使わない）
+    - compat_summary: 太陽星座から見た一言まとめ
+    - sun_text / moon_text / asc_text: 各3行以内の解説文
     """
 
-        # ① 太陽星座 → 元素 → 相性まとめ（2 文以内）
-    # male_core["sun"] / female_core["sun"] 可能是 dict 或 str，所以做兼容
-    def _nz(v):
+    # 相性スコアはとりあえずダミー（デザイン用に残しておく）
+    compat_score = 88
+
+    # --- 太陽星座名を「安全に」文字列として取り出す（dict でも str でもOK） ---
+    def get_sign_name(core: dict, key: str) -> str:
+        v = core.get(key)
         if isinstance(v, dict):
             return v.get("name_ja") or v.get("label") or ""
-        return v or ""
+        if v is None:
+            return ""
+        return str(v)
 
-    male_sun_ja = _nz(male_core.get("sun"))
-    female_sun_ja = _nz(female_core.get("sun"))
+    male_sun = get_sign_name(male_core, "sun")
+    female_sun = get_sign_name(female_core, "sun")
 
-    compat_summary = build_pair_summary_from_sun(male_sun_ja, female_sun_ja)
+    # ここはあなたが作った 12×12 ロジックに差し替えてOK（今はとりあえず汎用文）
+    try:
+        # もし build_pair_summary_from_sun があるなら使う
+        compat_summary = build_pair_summary_from_sun(male_sun, female_sun)  # type: ignore[name-defined]
+    except NameError:
+        # なければ一旦汎用テキスト
+        compat_summary = (
+            f"{male_name}さんと{female_name}さんは、"
+            f"お互いの個性を尊重し合いながら成長していけるペアです。"
+        )
 
-    # ② スコア（不要 → 完全削除せず、呼び出し用に固定 None）
-    compat_score = None
-
-
-    # ③ 太陽テキスト（名前だけ実データ差し込み）
+    # --- 太陽の相性テキスト（3行以内想定） ---
     sun_text = (
-        "太陽（ふたりの価値観）："
-        f"{male_name} さんは安定感と責任感を、"
-        f"{female_name} さんは素直さとあたたかさを大切にするタイプです。"
+        f"太陽星座の組み合わせから見ると、"
+        f"{male_name}さんと{female_name}さんは、基本的な価値観に共通点が多く、"
+        "支え合える関係になりやすいペアです。"
     )
 
-    # ④ 月テキスト
+    # --- 月の相性テキスト ---
     moon_text = (
-        "月（素の感情と安心ポイント）："
-        f"{male_name} さんは落ち着いた空間やペースを守れる関係に安心し、"
-        f"{female_name} さんは気持ちをその場で分かち合えることに"
-        "心地よさを感じやすい傾向があります。"
+        "月は、ふたりが一緒にいるときの「安心感」や素の自分を表します。"
+        "感情のペースが少し違っても、丁寧に言葉にして伝えることで、"
+        "居心地のよさがぐっと高まっていきます。"
     )
 
-    # ⑤ ASC テキスト
+    # --- ASC の相性テキスト ---
     asc_text = (
-        "ASC（第一印象・ふたりの雰囲気）："
-        "出会ったときの印象は、周りから見ると「穏やかだけれど芯のあるペア」。"
-        "少しずつ素の表情が見えるほど、二人らしい雰囲気が育っていきます。"
+        "ASC（第一印象）の相性は、出会ったときのフィーリングや、"
+        "外から見たふたりの雰囲気を示します。"
+        "少しずつ素の自分を見せ合うことが、長く続く関係のカギになります。"
     )
 
-    # ⑥ generate_report 側のアンパックと対応させるため、必ず 5 つ返す
     return compat_score, compat_summary, sun_text, moon_text, asc_text
 
 
@@ -489,7 +496,7 @@ def draw_page3_basic_and_synastry(
     female_name: str,
     male_core: dict,
     female_core: dict,
-    compat_score: int,
+    compat_score: int,      # ← 现在暂时不用，但保留参数
     compat_summary: str,
     sun_text: str,
     moon_text: str,
@@ -497,8 +504,8 @@ def draw_page3_basic_and_synastry(
 ):
     """
     PDF 第3ページを丸ごと描画する。
-    - 左右のホロスコープ（ここでは「星座中点の擬似度数」でプロット）
-    - 下部に総合相性スコア
+    - 左右のホロスコープ
+    - 下部に相性まとめ（数値スコアは使わない）
     - 太陽 / 月 / ASC の文章（3ブロック）
     """
     # 背景
@@ -538,11 +545,10 @@ def draw_page3_basic_and_synastry(
         mask="auto",
     )
 
-    # 行星データ（ここに「简易星盤 core」が入ってくる）
+    # 行星データ
     male_planets = build_planet_block(male_core)
     female_planets = build_planet_block(female_core)
 
-    # アイコンファイル
     icon_files = {
         "sun": "icon_sun.png",
         "moon": "icon_moon.png",
@@ -551,7 +557,6 @@ def draw_page3_basic_and_synastry(
         "asc": "icon_asc.png",
     }
 
-    # 男 = 青系 / 女 = ピンク系
     male_color = (0.15, 0.45, 0.9)
     female_color = (0.9, 0.35, 0.65)
 
@@ -562,7 +567,7 @@ def draw_page3_basic_and_synastry(
             left_cx,
             left_cy,
             chart_size,
-            info["deg"],  # ★ 星座中点の擬似度数
+            info["deg"],
             male_color,
             icon_files[key],
         )
@@ -585,7 +590,7 @@ def draw_page3_basic_and_synastry(
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # 星盤下の 5 行（太陽〜ASC）—— 只显示星座名
+    # 星盤下の 5 行（太陽〜ASC）—— 星座名のみ表示
     c.setFont(JP_SERIF, 8.5)
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
