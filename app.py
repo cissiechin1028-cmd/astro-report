@@ -513,10 +513,22 @@ def draw_page3_basic_and_synastry(
     right_cy = right_y + chart_size / 2
 
     # ベース画像を描画
-    c.drawImage(chart_img, left_x, left_y,
-                width=chart_size, height=chart_size, mask="auto")
-    c.drawImage(chart_img, right_x, right_y,
-                width=chart_size, height=chart_size, mask="auto")
+    c.drawImage(
+        chart_img,
+        left_x,
+        left_y,
+        width=chart_size,
+        height=chart_size,
+        mask="auto",
+    )
+    c.drawImage(
+        chart_img,
+        right_x,
+        right_y,
+        width=chart_size,
+        height=chart_size,
+        mask="auto",
+    )
 
     # 行星データ（ここに「简易星盤 core」が入ってくる）
     male_planets = build_planet_block(male_core)
@@ -542,7 +554,7 @@ def draw_page3_basic_and_synastry(
             left_cx,
             left_cy,
             chart_size,
-            info["deg"],      # ★ 星座中点の擬似度数
+            info["deg"],  # ★ 星座中点の擬似度数
             male_color,
             icon_files[key],
         )
@@ -585,9 +597,9 @@ def draw_page3_basic_and_synastry(
     line_height = 18
 
     # 相性まとめ（数値スコアは出さない）
-c.setFont(JP_SANS, 12)
-c.setFillColorRGB(0.2, 0.2, 0.2)
-c.drawString(text_x, 350, "ふたりの相性バランス：")
+    c.setFont(JP_SANS, 12)
+    c.setFillColorRGB(0.2, 0.2, 0.2)
+    c.drawString(text_x, 350, "ふたりの相性バランス：")
 
     # 一言まとめ（最大2行）
     draw_wrapped_block_limited(
@@ -601,8 +613,6 @@ c.drawString(text_x, 350, "ふたりの相性バランス：")
         line_height,
         max_lines=2,
     )
-
-
 
     # 太陽・月・ASC の分析（各ブロック最大 3 行まで）
     y_analysis = 220
@@ -624,6 +634,7 @@ c.drawString(text_x, 350, "ふたりの相性バランス：")
     # ページ番号
     draw_page_number(c, 3)
     c.showPage()
+
 
 
 # ------------------------------------------------------------------
