@@ -319,13 +319,16 @@ def build_planet_block(core: dict) -> dict:
     }
     という形の dict を、描画用に整える。
     """
+
+    # ★ label 不显示度数，只显示星座
     def fmt(label_ja: str, d: dict) -> str:
-        return f"{label_ja}：{d['name_ja']} {d['lon']:.1f}°"
+        # 原来：return f"{label_ja}：{d['name_ja']} {d['lon']:.1f}°"
+        return f"{label_ja}：{d['name_ja']}"
 
     return {
         "sun": {
-            "deg": core["sun"]["lon"],
-            "label": fmt("太陽", core["sun"]),
+            "deg": core["sun"]["lon"],          # 图标绘制仍然使用度数
+            "label": fmt("太陽", core["sun"]),   # 下方文本不显示度数
         },
         "moon": {
             "deg": core["moon"]["lon"],
@@ -367,7 +370,7 @@ def draw_page3_basic_and_synastry(
     # 背景
     draw_full_bg(c, "page_basic.jpg")
 
-    # 星盤のベース画像
+    # 星盘底图
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
@@ -377,23 +380,23 @@ def draw_page3_basic_and_synastry(
     right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
-    # 中心座標
+    # 中心
     left_cx = left_x + chart_size / 2
     left_cy = left_y + chart_size / 2
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    # ベース画像を描画
+    # 底图
     c.drawImage(chart_img, left_x, left_y,
                 width=chart_size, height=chart_size, mask="auto")
     c.drawImage(chart_img, right_x, right_y,
                 width=chart_size, height=chart_size, mask="auto")
 
-    # 行星データ（ここに「本物の度数 core」が入ってくる）
+    # ★ 度数 + 星座名（已改成无度数 label）
     male_planets = build_planet_block(male_core)
     female_planets = build_planet_block(female_core)
 
-    # アイコンファイル
+    # 图标
     icon_files = {
         "sun": "icon_sun.png",
         "moon": "icon_moon.png",
@@ -402,41 +405,41 @@ def draw_page3_basic_and_synastry(
         "asc": "icon_asc.png",
     }
 
-    # 男 = 青系 / 女 = ピンク系
+    # 颜色
     male_color = (0.15, 0.45, 0.9)
     female_color = (0.9, 0.35, 0.65)
 
-    # 星盤にプロット
+    # 左侧（男）
     for key, info in male_planets.items():
         draw_planet_icon(
             c,
-            left_cx,
-            left_cy,
+            left_cx, left_cy,
             chart_size,
-            info["deg"],
+            info["deg"],       # ★ 图标仍然按度数绘制
             male_color,
             icon_files[key],
         )
 
+    # 右侧（女）
     for key, info in female_planets.items():
         draw_planet_icon(
             c,
-            right_cx,
-            right_cy,
+            right_cx, right_cy,
             chart_size,
             info["deg"],
             female_color,
             icon_files[key],
         )
 
-    # 星盤下の名前
+    # 名字
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # 星盤下の 5 行（太陽〜ASC）
+    # ★ 下方 5 行（已是“太陽：牡羊座”这种格式）
     c.setFont(JP_SERIF, 8.5)
+
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
         y = left_y - 45 - i * 11
