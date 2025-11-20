@@ -1025,57 +1025,12 @@ SIGN_JA = {
 
 def compute_core_from_birth(birth_date, birth_time, birth_place):
     """
-    简易伪星盘：
-    - 根据生日计算一个“稳定但不真实”的度数
-    - 让 PDF 正常运行
-    - 之后要换成真实星盘，只要把整个函数替换即可
+    入口函数：根据出生信息，返回 5 个星体的“星座名字”。
+
+    现在走的是【简化版：只算星座，不算真实度数】，调用 compute_simple_signs。
+    以后如果要接真实星盘 API，只要改这个函数，把返回结果保持同样结构即可。
     """
-
-    # -------------------------
-    # 解析生日
-    # -------------------------
-    try:
-        y, m, d = [int(x) for x in birth_date.split("-")]
-    except Exception:
-        y, m, d = 1990, 1, 1
-
-    # -------------------------
-    # 解析出生时间
-    # -------------------------
-    try:
-        hh, mm = [int(x) for x in birth_time.split(":")]
-    except Exception:
-        hh, mm = 12, 0
-
-    # -------------------------
-    # 简单哈希算法（让不同生日生成不同度数）
-    # -------------------------
-    base = (y * 3721 + m * 131 + d * 17 + hh * 7 + mm) % 360
-
-    sun_deg   = (base +   0) % 360
-    moon_deg  = (base +  33) % 360
-    venus_deg = (base +  77) % 360
-    mars_deg  = (base + 121) % 360
-    asc_deg   = (base + 199) % 360
-
-    SIGNS_JA = [
-        "牡羊座", "牡牛座", "双子座", "蟹座", "獅子座", "乙女座",
-        "天秤座", "蠍座", "射手座", "山羊座", "水瓶座", "魚座"
-    ]
-
-    def deg_to_sign(deg):
-        idx = int(deg // 30) % 12
-        return SIGNS_JA[idx]
-
-    return {
-        "sun":   {"lon": sun_deg,   "name_ja": deg_to_sign(sun_deg)},
-        "moon":  {"lon": moon_deg,  "name_ja": deg_to_sign(moon_deg)},
-        "venus": {"lon": venus_deg, "name_ja": deg_to_sign(venus_deg)},
-        "mars":  {"lon": mars_deg,  "name_ja": deg_to_sign(mars_deg)},
-        "asc":   {"lon": asc_deg,   "name_ja": deg_to_sign(asc_deg)},
-    }
-
-
+    return compute_simple_signs(birth_date, birth_time)
 
 
 @app.route("/api/generate_report", methods=["GET"])
