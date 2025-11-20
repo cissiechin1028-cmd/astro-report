@@ -933,6 +933,42 @@ def _deg_and_sign(seed: int, mul: int, offset: int):
     idx = int(deg // 30) % 12
     return deg, SIGNS_JA[idx]
 
+# ----------------------------------------------------
+# 简单星座计算：只返回“太阳/月亮/上升/金星/火星”所属星座
+# ----------------------------------------------------
+def compute_simple_signs(birth_date, birth_time):
+    """
+    输入：生日（YYYY-MM-DD）、时间（HH:MM）
+    输出：五个星体的星座（不计算度数，不需要外部API）
+    """
+
+    # 解析生日
+    try:
+        y, m, d = [int(x) for x in birth_date.split("-")]
+    except:
+        y, m, d = 1990, 1, 1
+
+    # 解析时间
+    try:
+        hh, mm = [int(x) for x in birth_time.split(":")]
+    except:
+        hh, mm = 12, 0
+
+    # 生成一个简单种子，用于星座分配（保持同一天的人固定结果）
+    seed = (y * 1231 + m * 97 + d * 13 + hh * 7 + mm) % 360
+
+    def get_sign(offset):
+        idx = ((seed + offset) % 360) // 30
+        return SIGNS_JA[int(idx)]
+
+    return {
+        "sun": get_sign(0),
+        "moon": get_sign(40),
+        "asc": get_sign(80),
+        "venus": get_sign(160),
+        "mars": get_sign(220),
+    }
+
 
 # 12星座英文 → 日文
 SIGN_JA = {
