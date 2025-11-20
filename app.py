@@ -369,13 +369,21 @@ def build_page3_texts(male_name: str,
       asc_text       : ASC の説明
     """
 
-    # ① 太陽星座 → 元素 → 相性まとめ（2 文以内）
-    male_sun_ja = male_core.get("sun", {}).get("name_ja")
-    female_sun_ja = female_core.get("sun", {}).get("name_ja")
+        # ① 太陽星座 → 元素 → 相性まとめ（2 文以内）
+    # male_core["sun"] / female_core["sun"] 可能是 dict 或 str，所以做兼容
+    def _nz(v):
+        if isinstance(v, dict):
+            return v.get("name_ja") or v.get("label") or ""
+        return v or ""
+
+    male_sun_ja = _nz(male_core.get("sun"))
+    female_sun_ja = _nz(female_core.get("sun"))
+
     compat_summary = build_pair_summary_from_sun(male_sun_ja, female_sun_ja)
 
-    # ② スコアはとりあえず固定値（デザイン崩さないためのダミー）
-    compat_score = 88
+    # ② スコア（不要 → 完全削除せず、呼び出し用に固定 None）
+    compat_score = None
+
 
     # ③ 太陽テキスト（名前だけ実データ差し込み）
     sun_text = (
