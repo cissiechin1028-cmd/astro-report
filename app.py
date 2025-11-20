@@ -8,10 +8,6 @@ import io
 import os
 import datetime
 import math
-from flatlib.chart import Chart
-from flatlib.datetime import Datetime
-from flatlib.geopos import GeoPos
-from flatlib import const
 
 
 # ------------------------------------------------------------------
