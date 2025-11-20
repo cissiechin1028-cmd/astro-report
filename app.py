@@ -308,6 +308,35 @@ def build_page3_texts(male_name: str,
     return compat_score, compat_summary, sun_text, moon_text, asc_text
 
 
+# ------------------------------------------------------------------
+# 星座 → 星座中点の「擬似度数」（本物の度数は使わない簡易星盤）
+# ------------------------------------------------------------------
+SIGN_CENTER_DEG = {
+    "牡羊座": 15,
+    "牡牛座": 45,
+    "双子座": 75,
+    "蟹座": 105,
+    "獅子座": 135,
+    "乙女座": 165,
+    "天秤座": 195,
+    "蠍座": 225,
+    "射手座": 255,
+    "山羊座": 285,
+    "水瓶座": 315,
+    "魚座": 345,
+}
+
+
+def fake_deg_from_sign_dict(d: dict) -> float:
+    """
+    d = {"lon": ..., "name_ja": "..."} みたいな dict から、
+    name_ja（星座名）だけを見て「その星座扇形の真ん中の度数」を返す。
+    lon は無視する（本物の度数を使わない簡易版）。
+    """
+    sign = d.get("name_ja")
+    return SIGN_CENTER_DEG.get(sign, 0.0)
+
+
 def build_planet_block(core: dict) -> dict:
     """
     core = {
@@ -320,30 +349,31 @@ def build_planet_block(core: dict) -> dict:
     という形の dict を、描画用に整える。
     """
 
-    # ★ label 不显示度数，只显示星座
+    # 文本：只显示星座名，不显示度数
     def fmt(label_ja: str, d: dict) -> str:
-        # 原来：return f"{label_ja}：{d['name_ja']} {d['lon']:.1f}°"
+        # 原来是：f"{label_ja}：{d['name_ja']} {d['lon']:.1f}°"
         return f"{label_ja}：{d['name_ja']}"
 
     return {
         "sun": {
-            "deg": core["sun"]["lon"],          # 图标绘制仍然使用度数
-            "label": fmt("太陽", core["sun"]),   # 下方文本不显示度数
+            # ★ 用星座中点的假度数画图标
+            "deg": fake_deg_from_sign_dict(core["sun"]),
+            "label": fmt("太陽", core["sun"]),
         },
         "moon": {
-            "deg": core["moon"]["lon"],
+            "deg": fake_deg_from_sign_dict(core["moon"]),
             "label": fmt("月", core["moon"]),
         },
         "venus": {
-            "deg": core["venus"]["lon"],
+            "deg": fake_deg_from_sign_dict(core["venus"]),
             "label": fmt("金星", core["venus"]),
         },
         "mars": {
-            "deg": core["mars"]["lon"],
+            "deg": fake_deg_from_sign_dict(core["mars"]),
             "label": fmt("火星", core["mars"]),
         },
         "asc": {
-            "deg": core["asc"]["lon"],
+            "deg": fake_deg_from_sign_dict(core["asc"]),
             "label": fmt("ASC", core["asc"]),
         },
     }
@@ -363,14 +393,14 @@ def draw_page3_basic_and_synastry(
 ):
     """
     PDF 第3ページを丸ごと描画する。
-    - 左右のホロスコープ（実際の度数でプロット）
+    - 左右のホロスコープ（ここでは「星座中点の擬似度数」でプロット）
     - 下部に総合相性スコア
     - 太陽 / 月 / ASC の文章（3ブロック）
     """
     # 背景
     draw_full_bg(c, "page_basic.jpg")
 
-    # 星盘底图
+    # 星盤のベース画像
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
@@ -380,23 +410,23 @@ def draw_page3_basic_and_synastry(
     right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
-    # 中心
+    # 中心座標
     left_cx = left_x + chart_size / 2
     left_cy = left_y + chart_size / 2
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    # 底图
+    # ベース画像を描画
     c.drawImage(chart_img, left_x, left_y,
                 width=chart_size, height=chart_size, mask="auto")
     c.drawImage(chart_img, right_x, right_y,
                 width=chart_size, height=chart_size, mask="auto")
 
-    # ★ 度数 + 星座名（已改成无度数 label）
+    # 行星データ（ここに「简易星盤 core」が入ってくる）
     male_planets = build_planet_block(male_core)
     female_planets = build_planet_block(female_core)
 
-    # 图标
+    # アイコンファイル
     icon_files = {
         "sun": "icon_sun.png",
         "moon": "icon_moon.png",
@@ -405,41 +435,42 @@ def draw_page3_basic_and_synastry(
         "asc": "icon_asc.png",
     }
 
-    # 颜色
+    # 男 = 青系 / 女 = ピンク系
     male_color = (0.15, 0.45, 0.9)
     female_color = (0.9, 0.35, 0.65)
 
-    # 左侧（男）
+    # 星盤にプロット（男）
     for key, info in male_planets.items():
         draw_planet_icon(
             c,
-            left_cx, left_cy,
+            left_cx,
+            left_cy,
             chart_size,
-            info["deg"],       # ★ 图标仍然按度数绘制
+            info["deg"],      # ★ 星座中点の擬似度数
             male_color,
             icon_files[key],
         )
 
-    # 右侧（女）
+    # 星盤にプロット（女）
     for key, info in female_planets.items():
         draw_planet_icon(
             c,
-            right_cx, right_cy,
+            right_cx,
+            right_cy,
             chart_size,
             info["deg"],
             female_color,
             icon_files[key],
         )
 
-    # 名字
+    # 星盤下の名前
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # ★ 下方 5 行（已是“太陽：牡羊座”这种格式）
+    # 星盤下の 5 行（太陽〜ASC）—— 只显示星座名
     c.setFont(JP_SERIF, 8.5)
-
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
         y = left_y - 45 - i * 11
@@ -449,6 +480,9 @@ def draw_page3_basic_and_synastry(
     for i, line in enumerate(female_lines):
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
+
+    # （下面是你原来就有的分析文字 & ページ番号部分，保持不变）
+    # ※ 如果你下面本来还有分析文本 / ページ番号的代码，照旧放在这里就行
 
     # 下部テキストブロック
     text_x = 130
