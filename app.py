@@ -338,15 +338,20 @@ def build_pair_summary_from_sun(male_sun_ja: str, female_sun_ja: str) -> str:
 
     if em is None or ef is None:
         # 万が一星座が取れなかったときの予備
-        return "お互いの違いを通して、新しい価値観を学び合えるペアです。少しずつ歩調を合わせていくことで、安心できる関係が育っていきます。"
+        return (
+            "お互いの違いを通して、新しい価値観を学び合えるペアです。"
+            "少しずつ歩調を合わせていくことで、安心できる関係が育っていきます。"
+        )
 
     base_text = PAIR_SUMMARY_TEXT.get((em, ef))
     if base_text is None:
-        base_text = "お互いの個性を活かしながら、ほどよい距離感で支え合えるペアです。違いを否定せず、興味を持って聞き合うことで信頼が深まります。"
+        base_text = (
+            "お互いの個性を活かしながら、ほどよい距離感で支え合えるペアです。"
+            "違いを否定せず、興味を持って聞き合うことで信頼が深まります。"
+        )
 
     # ここではあえて星座名を入れず、「2文以内」に収める
     return base_text
-
 
 
 def build_page3_texts(male_name: str,
@@ -363,11 +368,16 @@ def build_page3_texts(male_name: str,
       moon_text      : 月サインの説明
       asc_text       : ASC の説明
     """
-                          
-compat_summary = get_pair_summary(male_core, female_core)
 
+    # ① 数値スコア（既存ロジックそのまま使用）
+    compat_score = compute_compat_score(male_core, female_core)
 
-    # 太陽テキスト（名前だけ実データ差し込み）
+    # ② 太陽星座 → 12×12 元素組み合わせで 2文以内のまとめ文
+    male_sun_ja = male_core.get("sun", {}).get("name_ja")
+    female_sun_ja = female_core.get("sun", {}).get("name_ja")
+    compat_summary = build_pair_summary_from_sun(male_sun_ja, female_sun_ja)
+
+    # ③ 太陽テキスト（名前だけ実データ差し込み）
     sun_text = (
         "太陽（ふたりの価値観）："
         f"{male_name} さんは安定感と責任感を、"
@@ -565,9 +575,6 @@ def draw_page3_basic_and_synastry(
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
 
-    # （下面是你原来就有的分析文字 & ページ番号部分，保持不变）
-    # ※ 如果你下面本来还有分析文本 / ページ番号的代码，照旧放在这里就行
-
     # 下部テキストブロック
     text_x = 130
     wrap_width = 360
@@ -580,7 +587,7 @@ def draw_page3_basic_and_synastry(
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawString(text_x, 350, f"相性バランス： {compat_score} / 100")
 
-    # 一言まとめ（3行まで使うように拡張）
+    # 一言まとめ（最大 3 行まで）
     draw_wrapped_block_limited(
         c,
         compat_summary,
