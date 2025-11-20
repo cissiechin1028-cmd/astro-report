@@ -584,23 +584,24 @@ def draw_page3_basic_and_synastry(
     body_size = 12
     line_height = 18
 
-    # 相性スコア
-    c.setFont(JP_SANS, 12)
-    c.setFillColorRGB(0.2, 0.2, 0.2)
-    c.drawString(text_x, 350, f"相性バランス： {compat_score} / 100")
+    # 相性まとめ（数値スコアは出さない）
+c.setFont(JP_SANS, 12)
+c.setFillColorRGB(0.2, 0.2, 0.2)
+c.drawString(text_x, 350, "ふたりの相性バランス：")
 
-    # 一言まとめ（最大 3 行まで）
-    draw_wrapped_block_limited(
-        c,
-        compat_summary,
-        text_x,
-        350 - line_height * 1.4,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-        max_lines=3,
-    )
+# 一言まとめ（最大2行）
+draw_wrapped_block_limited(
+    c,
+    compat_summary,
+    text_x,
+    350 - line_height * 1.4,
+    wrap_width,
+    body_font,
+    body_size,
+    line_height,
+    max_lines=2,
+)
+
 
     # 太陽・月・ASC の分析（各ブロック最大 3 行まで）
     y_analysis = 220
