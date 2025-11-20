@@ -938,57 +938,68 @@ def _deg_and_sign(seed: int, mul: int, offset: int):
     return deg, SIGNS_JA[idx]
 
 
+# 12星座英文 → 日文
+SIGN_JA = {
+    "ARI": "牡羊座",
+    "TAU": "牡牛座",
+    "GEM": "双子座",
+    "CAN": "蟹座",
+    "LEO": "獅子座",
+    "VIR": "乙女座",
+    "LIB": "天秤座",
+    "SCO": "蠍座",
+    "SAG": "射手座",
+    "CAP": "山羊座",
+    "AQU": "水瓶座",
+    "PIS": "魚座",
+}
+
 def compute_core_from_birth(birth_date, birth_time, birth_place):
-    """
-    简易伪星盘：
-    - 根据生日计算一个“稳定但不真实”的度数
-    - 让 PDF 正常运行
-    - 之后要换成真实星盘，只要把整个函数替换即可
-    """
+    """用 flatlib 计算真实的 太阳 / 月亮 / 上升 / 金星 / 火星 度数"""
 
-    # -------------------------
     # 解析生日
-    # -------------------------
     try:
-        y, m, d = [int(x) for x in birth_date.split("-")]
+        date_str = birth_date.strip()
+        if not date_str:
+            raise ValueError
     except Exception:
-        y, m, d = 1990, 1, 1
+        date_str = "1990-01-01"
 
-    # -------------------------
-    # 解析出生时间
-    # -------------------------
+    # 解析时间
     try:
-        hh, mm = [int(x) for x in birth_time.split(":")]
+        time_str = birth_time.strip()
+        if not time_str:
+            raise ValueError
     except Exception:
-        hh, mm = 12, 0
+        time_str = "12:00"
 
-    # -------------------------
-    # 简单哈希算法（让不同生日生成不同度数）
-    # -------------------------
-    base = (y * 3721 + m * 131 + d * 17 + hh * 7 + mm) % 360
+    # 默认为日本时间（+09:00）
+    dt = Datetime(date_str, time_str, "+09:00")
 
-    sun_deg   = (base +   0) % 360
-    moon_deg  = (base +  33) % 360
-    venus_deg = (base +  77) % 360
-    mars_deg  = (base + 121) % 360
-    asc_deg   = (base + 199) % 360
+    # 先固定东京经纬度（后面可按出生地细化）
+    pos = GeoPos("35n41", "139e41")
 
-    SIGNS_JA = [
-        "牡羊座", "牡牛座", "双子座", "蟹座", "獅子座", "乙女座",
-        "天秤座", "蠍座", "射手座", "山羊座", "水瓶座", "魚座"
-    ]
+    chart = Chart(dt, pos)
 
-    def deg_to_sign(deg):
-        idx = int(deg // 30) % 12
-        return SIGNS_JA[idx]
+    # 提取星体信息
+    def get_body(body_const):
+        obj = chart.get(body_const)
+        sign_en = obj.sign
+        sign_ja = SIGN_JA.get(sign_en, sign_en)
+        return {
+            "lon": obj.lon,       # 度数 = 0~360°
+            "sign_en": sign_en,   # 英文星座
+            "sign_ja": sign_ja,   # 日文星座
+        }
 
     return {
-        "sun":   {"lon": sun_deg,   "name_ja": deg_to_sign(sun_deg)},
-        "moon":  {"lon": moon_deg,  "name_ja": deg_to_sign(moon_deg)},
-        "venus": {"lon": venus_deg, "name_ja": deg_to_sign(venus_deg)},
-        "mars":  {"lon": mars_deg,  "name_ja": deg_to_sign(mars_deg)},
-        "asc":   {"lon": asc_deg,   "name_ja": deg_to_sign(asc_deg)},
+        "sun": get_body(const.SUN),
+        "moon": get_body(const.MOON),
+        "asc": get_body(const.ASC),
+        "venus": get_body(const.VENUS),
+        "mars": get_body(const.MARS),
     }
+
 
 
 
