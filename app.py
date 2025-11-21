@@ -1165,18 +1165,20 @@ def compute_core_from_birth(birth_date, birth_time, birth_place):
 def generate_report():
     # ---- 1. 读取参数 ----
     # 名字：不再给「太郎 / 花子」默认值，如果取不到就变成空字符串
-    male_name = (
-        request.args.get("male_name")
-        or request.args.get("your_name")
-        or request.args.get("name")
-        or ""
-    )
-    female_name = (
-        request.args.get("female_name")
-        or request.args.get("partner_name")
-        or request.args.get("partner")
-        or ""
-    )
+    # ---- 读取参数（你的 / 对方） ----
+
+your_name = request.args.get("your_name", "")
+partner_name = request.args.get("partner_name", "")
+
+your_dob = request.args.get("your_dob", "1990-01-01")
+partner_dob = request.args.get("partner_dob", "1990-01-01")
+
+your_time = request.args.get("your_time", "12:00")
+partner_time = request.args.get("partner_time", "12:00")
+
+your_place = request.args.get("your_place", "Tokyo")
+partner_place = request.args.get("partner_place", "Tokyo")
+
 
     raw_date = request.args.get("date")
     date_display = get_display_date(raw_date)
@@ -1234,7 +1236,7 @@ def generate_report():
     # ------------ 标题上面的名字组合 ------------
     c.setFont(JP_SANS, 20)
     c.setFillColorRGB(0.1, 0.1, 0.1)
-    couple_text = f"{male_name} さん & {female_name} さん"
+    couple_text = f"{your_name} さん & {partner_name} さん"
     c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
     # ------------ 主标题 ------------
