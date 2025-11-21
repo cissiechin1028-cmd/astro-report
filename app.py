@@ -441,7 +441,7 @@ SIGN_CENTER_DEG = {
 def fake_deg_from_sign_dict(d) -> float:
     """
     d が dict の場合（{"lon": ..., "name_ja": "..."}）でも、
-    すでに「おうし座」のような日本語名の str の場合でも動くように、
+    すでに「牡牛座」のような日本語名の str の場合でも動くように、
     星座名だけを取り出して、その星座扇形の真ん中の度数を返す簡易関数。
     """
     # dict なら name_ja / label から取り出す。str / その他ならそのまま文字列化。
@@ -464,7 +464,6 @@ def build_planet_block(core: dict) -> dict:
     という形の dict を、描画用に整える。
     """
 
-    # 文本：只显示星座名，不显示度数
     # 文本：只显示星座名，不显示度数（dict でも str でも安全）
     def fmt(label_ja: str, d) -> str:
         # dict の場合：name_ja / label を優先、なければ空文字。
@@ -473,6 +472,7 @@ def build_planet_block(core: dict) -> dict:
         else:
             name = str(d) if d is not None else ""
         return f"{label_ja}：{name}"
+
 
     return {
         "sun": {
