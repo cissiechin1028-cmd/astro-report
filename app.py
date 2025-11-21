@@ -1224,21 +1224,32 @@ def generate_report():
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
-    # ------------------------------------------------------------------
-    # PAGE 1：封面
-    # ------------------------------------------------------------------
-    draw_full_bg(c, "cover.jpg")
+    # ------------------------------------------------------------
+# PAGE 1：封面
+# ------------------------------------------------------------
 
-    c.setFont(JP_SANS, 18)
-    c.setFillColorRGB(0.2, 0.2, 0.2)
-    couple_text = f"{male_name} さん ＆ {female_name} さん"
-    c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
+# 背景图
+draw_full_bg(c, "cover.jpg")   # 使用你的封面背景图（已含logo）
 
-    c.setFont(JP_SANS, 12)
-    date_text = f"作成日：{date_display}"
-    c.drawCentredString(PAGE_WIDTH / 2, 80, date_text)
+# ------------ 标题上面的名字组合 ------------
+c.setFont(JP_SANS, 20)
+c.setFillColorRGB(0.1, 0.1, 0.1)
+couple_text = f"{male_name} さん & {female_name} さん"
+c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
-    c.showPage()
+# ------------ 主标题 ------------
+c.setFont(JP_SANS, 28)
+c.setFillColorRGB(0.35, 0.28, 0.15)
+c.drawCentredString(PAGE_WIDTH / 2, 360, "恋愛占星レポート")
+
+# ------------ 日期 ------------
+c.setFont(JP_SANS, 12)
+c.setFillColorRGB(0.2, 0.2, 0.2)
+date_text = f"作成日：{date_display}"
+c.drawCentredString(PAGE_WIDTH / 2, 80, date_text)
+
+c.showPage()
+
 
     # ------------------------------------------------------------------
     # PAGE 2：このレポートについて（背景固定，不生成内容）
