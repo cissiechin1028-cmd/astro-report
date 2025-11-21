@@ -1164,26 +1164,32 @@ def compute_core_from_birth(birth_date, birth_time, birth_place):
 @app.route("/api/generate_report", methods=["GET"])
 def generate_report():
     # ---- 1. 读取参数 ----
-    # 名字：不再给「太郎 / 花子」默认值，如果取不到就变成空字符串
-    # ---- 读取参数（你的 / 对方） ----
+    # 这里优先用 Tally 的字段：your_name / partner_name
+    # 但也兼容旧的 male_name / female_name / name / partner
+    your_name = (
+        request.args.get("your_name")
+        or request.args.get("male_name")
+        or request.args.get("name")
+        or ""
+    )
 
-your_name = request.args.get("your_name", "")
-partner_name = request.args.get("partner_name", "")
+    partner_name = (
+        request.args.get("partner_name")
+        or request.args.get("female_name")
+        or request.args.get("partner")
+        or ""
+    )
 
-your_dob = request.args.get("your_dob", "1990-01-01")
-partner_dob = request.args.get("partner_dob", "1990-01-01")
+    # 后面代码里继续用 male_name / female_name 这两个变量
+    male_name = your_name
+    female_name = partner_name
 
-your_time = request.args.get("your_time", "12:00")
-partner_time = request.args.get("partner_time", "12:00")
-
-your_place = request.args.get("your_place", "Tokyo")
-partner_place = request.args.get("partner_place", "Tokyo")
-
-
+    # 表单里你暂时没有传 date，就按今天的日期来显示
     raw_date = request.args.get("date")
     date_display = get_display_date(raw_date)
 
-    # 生日 / 时间 / 地点：先尝试多种 key，实在没有才用默认
+    # 生日 / 时间 / 地点：优先用 Tally 的 your_xxx / partner_xxx，
+    # 没有的话再兼容以前的 key
     your_dob = (
         request.args.get("your_dob")
         or request.args.get("male_dob")
@@ -1204,7 +1210,6 @@ partner_place = request.args.get("partner_place", "Tokyo")
     partner_dob = (
         request.args.get("partner_dob")
         or request.args.get("female_dob")
-        or request.args.get("partner_dob")
         or "1990-01-01"
     )
     partner_time = (
@@ -1226,25 +1231,18 @@ partner_place = request.args.get("partner_place", "Tokyo")
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
-        # ------------------------------------------------------------
+    # ------------------------------------------------------------------
     # PAGE 1：封面
-    # ------------------------------------------------------------
+    # ------------------------------------------------------------------
+    # 背景图（包含 logo、LOVE REPORT、标题等）
+    draw_full_bg(c, "cover.jpg")
 
-    # 背景图
-    draw_full_bg(c, "cover.jpg")   # 使用你的封面背景图（已含logo）
-
-    # ------------ 标题上面的名字组合 ------------
+    # 只额外画「名字组合」+「作成日」
     c.setFont(JP_SANS, 20)
     c.setFillColorRGB(0.1, 0.1, 0.1)
-    couple_text = f"{your_name} さん & {partner_name} さん"
+    couple_text = f"{male_name} さん ＆ {female_name} さん"
     c.drawCentredString(PAGE_WIDTH / 2, 420, couple_text)
 
-    # ------------ 主标题 ------------
-    c.setFont(JP_SANS, 28)
-    c.setFillColorRGB(0.35, 0.28, 0.15)
-    c.drawCentredString(PAGE_WIDTH / 2, 360, "恋愛占星レポート")
-
-    # ------------ 日期 ------------
     c.setFont(JP_SANS, 12)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     date_text = f"作成日：{date_display}"
@@ -1252,7 +1250,7 @@ partner_place = request.args.get("partner_place", "Tokyo")
 
     c.showPage()
 
-
+ 
     # ------------------------------------------------------------------
     # PAGE 2：このレポートについて（背景固定，不生成内容）
     # ------------------------------------------------------------------
