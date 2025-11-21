@@ -1103,10 +1103,10 @@ def _deg_and_sign(seed: int, mul: int, offset: int):
 # ----------------------------------------------------
 def compute_simple_signs(birth_date, birth_time):
     """
-    输入：生日（YYYY-MM-DD）、时间（HH:MM）
-    输出：五个星体的星座（不计算度数，不需要外部API）
+    简单星盘逻辑：
+    - 太阳：按真实黄道日期范围计算（西洋占星常用日期）
+    - 月亮 / 上升 / 金星 / 火星：继续用简化的 seed 算法（只是保持风格一致，不是真实天文）
     """
-
     # 解析生日
     try:
         y, m, d = [int(x) for x in birth_date.split("-")]
@@ -1119,20 +1119,64 @@ def compute_simple_signs(birth_date, birth_time):
     except:
         hh, mm = 12, 0
 
-    # 生成一个简单种子，用于星座分配（保持同一天的人固定结果）
+    # ---- 1. 太阳星座：按日期区间来算 ----
+    # SIGNS_JA 顺序是：牡羊, 牡牛, 双子, 蟹, 獅子, 乙女, 天秤, 蠍, 射手, 山羊, 水瓶, 魚
+    def get_sun_index(m, d):
+        # 白羊座 3/21–4/19
+        if (m == 3 and d >= 21) or (m == 4 and d <= 19):
+            return 0  # 牡羊座
+        # 牡牛座 4/20–5/20
+        elif (m == 4 and d >= 20) or (m == 5 and d <= 20):
+            return 1
+        # 双子座 5/21–6/21
+        elif (m == 5 and d >= 21) or (m == 6 and d <= 21):
+            return 2
+        # 蟹座 6/22–7/22
+        elif (m == 6 and d >= 22) or (m == 7 and d <= 22):
+            return 3
+        # 獅子座 7/23–8/22
+        elif (m == 7 and d >= 23) or (m == 8 and d <= 22):
+            return 4
+        # 乙女座 8/23–9/22
+        elif (m == 8 and d >= 23) or (m == 9 and d <= 22):
+            return 5
+        # 天秤座 9/23–10/23
+        elif (m == 9 and d >= 23) or (m == 10 and d <= 23):
+            return 6
+        # 蠍座 10/24–11/22
+        elif (m == 10 and d >= 24) or (m == 11 and d <= 22):
+            return 7
+        # 射手座 11/23–12/21
+        elif (m == 11 and d >= 23) or (m == 12 and d <= 21):
+            return 8
+        # 山羊座 12/22–1/19
+        elif (m == 12 and d >= 22) or (m == 1 and d <= 19):
+            return 9
+        # 水瓶座 1/20–2/18
+        elif (m == 1 and d >= 20) or (m == 2 and d <= 18):
+            return 10
+        # 魚座 2/19–3/20
+        else:
+            return 11
+
+    sun_index = get_sun_index(m, d)
+    sun_sign = SIGNS_JA[sun_index]
+
+    # ---- 2. 其他星体：继续用简化 seed 算法（不是严格占星，只是风格用）----
     seed = (y * 1231 + m * 97 + d * 13 + hh * 7 + mm) % 360
 
-    def get_sign(offset):
+    def get_fake_sign(offset):
         idx = ((seed + offset) % 360) // 30
         return SIGNS_JA[int(idx)]
 
     return {
-        "sun": get_sign(0),
-        "moon": get_sign(40),
-        "asc": get_sign(80),
-        "venus": get_sign(160),
-        "mars": get_sign(220),
+        "sun": sun_sign,
+        "moon": get_fake_sign(40),
+        "asc": get_fake_sign(80),
+        "venus": get_fake_sign(160),
+        "mars": get_fake_sign(220),
     }
+
 
 
 # 12星座英文 → 日文
