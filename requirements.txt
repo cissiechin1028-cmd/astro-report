@@ -2,3 +2,5 @@ flask
 reportlab
 gunicorn
 Pillow
+pyswisseph==2.10.3
+pytz==2024.1
