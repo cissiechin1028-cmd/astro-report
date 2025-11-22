@@ -9,6 +9,15 @@ import os
 import datetime
 import math
 
+# 尝试导入 Swiss Ephemeris（pyswisseph）
+try:
+    import swisseph as swe
+    HAS_SWISSEPH = True
+except ImportError:
+    swe = None
+    HAS_SWISSEPH = False
+
+
 
 # ------------------------------------------------------------------
 # Flask 基本设置：public 目录作为静态目录
