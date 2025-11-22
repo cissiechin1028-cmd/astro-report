@@ -1005,7 +1005,7 @@ def build_page8_summary(male_name: str, female_name: str, compat_score: int) -> 
 
 
 # ==============================================================
-#           真实星盘近似算法（替换原来的假星盘）
+#           星盘核心计算：优先用瑞士星历（真算法）
 # ==============================================================
 
 SIGNS_JA = [
@@ -1013,191 +1013,128 @@ SIGNS_JA = [
     "天秤座", "蠍座", "射手座", "山羊座", "水瓶座", "魚座",
 ]
 
-
-def _norm360(x: float) -> float:
-    return x % 360.0
-
-
-def _to_julian_day(dt: datetime.datetime) -> float:
-    y = dt.year
-    m = dt.month
-    D = dt.day + (dt.hour + dt.minute / 60.0) / 24.0
-    if m <= 2:
-        y -= 1
-        m += 12
-    A = y // 100
-    B = 2 - A + A // 4
-    JD = int(365.25 * (y + 4716)) + int(30.6001 * (m + 1)) + D + B - 1524.5
-    return JD
-
-
-def _calc_sun_deg(jd: float) -> float:
-    n = jd - 2451545.0
-    L = _norm360(280.460 + 0.9856474 * n)
-    g = math.radians(_norm360(357.528 + 0.9856003 * n))
-    lam = L + 1.915 * math.sin(g) + 0.020 * math.sin(2 * g)
-    return _norm360(lam)
-
-
-def _calc_moon_deg(jd: float) -> float:
-    n = jd - 2451545.0
-    L = _norm360(218.316 + 13.176396 * n)
-    M = math.radians(_norm360(134.963 + 13.064993 * n))
-    F = math.radians(_norm360(93.272 + 13.229350 * n))
-    lam = (
-        L
-        + 6.289 * math.sin(M)
-        + 1.274 * math.sin(2 * M - F)
-        + 0.658 * math.sin(2 * M)
-        + 0.214 * math.sin(2 * F)
-        + 0.110 * math.sin(M)
-    )
-    return _norm360(lam)
-
-
-def _calc_venus_deg(jd: float) -> float:
-    T = (jd - 2451545.0) / 36525.0
-    L = _norm360(181.9798 + 58517.815 * T)
-    M = math.radians(_norm360(50.4161 + 58517.803 * T))
-    lam = L + 0.7758 * math.sin(M)
-    return _norm360(lam)
-
-
-def _calc_mars_deg(jd: float) -> float:
-    T = (jd - 2451545.0) / 36525.0
-    L = _norm360(355.433 + 19140.299 * T)
-    M = math.radians(_norm360(19.373 + 19140.299 * T))
-    lam = L + 10.691 * math.sin(M)
-    return _norm360(lam)
-
-
-def _calc_asc_deg(jd: float, lat: float, lon: float) -> float:
-    T = (jd - 2451545.0) / 36525.0
-    GMST = _norm360(280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T)
-    LST = _norm360(GMST + lon)
-    e = math.radians(23.4393 - 0.01300 * T)
-    LST_rad = math.radians(LST)
-    lat_rad = math.radians(lat)
-    tan_lambda = math.atan2(
-        -math.cos(LST_rad),
-        math.sin(LST_rad) * math.cos(e) + math.tan(lat_rad) * math.sin(e),
-    )
-    asc = math.degrees(tan_lambda)
-    return _norm360(asc)
-
-
-def _deg_to_sign_name(deg: float) -> str:
-    idx = int(deg // 30) % 12
+def lon_to_sign_name(lon: float) -> str:
+    """黄经度数 → 12星座（日文名）"""
+    idx = int(lon // 30) % 12
     return SIGNS_JA[idx]
+
+
+# ----------------------------------------------------
+# 简单星座计算（备用）：只用日期+时间，纯假算法
+# ----------------------------------------------------
+def compute_simple_signs(birth_date, birth_time):
+    """
+    这是【备用】假算法，只有在没有安装 pyswisseph
+    或真算法报错时才会使用。
+    """
+    try:
+        y, m, d = [int(x) for x in birth_date.split("-")]
+    except:
+        y, m, d = 1990, 1, 1
+
+    try:
+        hh, mm = [int(x) for x in birth_time.split(":")]
+    except:
+        hh, mm = 12, 0
+
+    seed = (y * 1231 + m * 97 + d * 13 + hh * 7 + mm) % 360
+
+    def fake(offset):
+        idx = ((seed + offset) % 360) // 30
+        return SIGNS_JA[int(idx)]
+
+    return {
+        "sun":   fake(0),
+        "moon":  fake(40),
+        "asc":   fake(80),
+        "venus": fake(160),
+        "mars":  fake(220),
+    }
+
+
+# ----------------------------------------------------
+# 真实星盘：用 Swiss Ephemeris（Moshier 模式，不需要 ephe）
+# ----------------------------------------------------
+def compute_core_real(birth_date, birth_time, birth_place):
+    """
+    使用 pyswisseph 计算：
+      - 太阳 Sun
+      - 月亮 Moon
+      - 金星 Venus
+      - 火星 Mars
+      - 上升 ASC（假定在日本，使用东京经纬度，足够做星座判断）
+
+    ⚠ 不需要 ephe 目录：使用 swe.FLG_MOSEPH（Moshier 算法）。
+    """
+
+    # 解析生日
+    try:
+        y, m, d = [int(x) for x in birth_date.split("-")]
+    except Exception:
+        y, m, d = 1990, 1, 1
+
+    # 解析时间
+    try:
+        hh, mm = [int(x) for x in birth_time.split(":")]
+    except Exception:
+        hh, mm = 12, 0
+
+    hour_local = hh + mm / 60.0
+
+    # 你的服务只面向日本用户 → 统一认为 JST(UTC+9)
+    hour_ut = hour_local - 9.0
+
+    # UT 的儒略日
+    jd_ut = swe.julday(y, m, d, hour_ut)
+
+    flag = swe.FLG_MOSEPH  # 不用 ephe 目录
+
+    def calc_planet(body):
+        lon, lat, dist, lon_speed = swe.calc_ut(jd_ut, body, flag)
+        return {
+            "lon": lon,
+            "name_ja": lon_to_sign_name(lon),
+        }
+
+    core = {
+        "sun":   calc_planet(swe.SUN),
+        "moon":  calc_planet(swe.MOON),
+        "venus": calc_planet(swe.VENUS),
+        "mars":  calc_planet(swe.MARS),
+    }
+
+    # ASC：用东京经纬度做近似（星座判断已经非常接近真实）
+    tokyo_lat = 35.6895
+    tokyo_lon = 139.6917
+    houses, ascmc = swe.houses(jd_ut, tokyo_lat, tokyo_lon)
+    asc_lon = ascmc[0]
+    core["asc"] = {
+        "lon": asc_lon,
+        "name_ja": lon_to_sign_name(asc_lon),
+    }
+
+    return core
 
 
 def compute_core_from_birth(birth_date, birth_time, birth_place):
     """
-    入口函数：根据出生信息，返回 5 个星体的「真实度数 + 星座名字」。
-
-    - 优先使用 Swiss Ephemeris（pyswisseph），计算太阳・月・金星・火星・ASC 的黄经度数；
-    - 如果运行环境里没有安装 pyswisseph，则自动退回到 compute_simple_signs 的简化版，
-      这样即使星历库缺失，整套 PDF 也不会崩掉。
-
-    返回格式示例（每个键下面都是一个 dict）::
-        {
-            "sun":   {"lon": 123.4, "name_ja": "獅子座"},
-            "moon":  {"lon":  56.7, "name_ja": "蟹座"},
-            "venus": {"lon": 210.1, "name_ja": "水瓶座"},
-            "mars":  {"lon":  89.0, "name_ja": "双子座"},
-            "asc":   {"lon": 300.2, "name_ja": "山羊座"},
-        }
+    入口函数：
+      1. 如果安装了 pyswisseph → 用真实星盘算法
+      2. 否则退回到简单星座算法（保证服务不崩）
     """
-    # ---- 如果没有星历库，就用旧的简化逻辑兜底 ----
-    if not ('HAS_SWISSEPH' in globals() and HAS_SWISSEPH):
-        simple = compute_simple_signs(birth_date, birth_time)
-        return {
-            "sun":   {"lon": 0.0, "name_ja": simple["sun"]},
-            "moon":  {"lon": 0.0, "name_ja": simple["moon"]},
-            "venus": {"lon": 0.0, "name_ja": simple["venus"]},
-            "mars":  {"lon": 0.0, "name_ja": simple["mars"]},
-            "asc":   {"lon": 0.0, "name_ja": simple["asc"]},
-        }
+    if HAS_SWISSEPH:
+        try:
+            return compute_core_real(birth_date, birth_time, birth_place)
+        except Exception as e:
+            # 真算法出错时，打日志，但仍然给用户一个结果
+            print("Swiss ephemeris error, fallback to simple:", e)
 
-    # ---- 解析日期时间 ----
-    try:
-        y, m, d = [int(x) for x in (birth_date or "1990-01-01").split("-")]
-    except Exception:
-        y, m, d = 1990, 1, 1
-
-    try:
-        hh, mm = [int(x) for x in (birth_time or "12:00").split(":")]
-    except Exception:
-        hh, mm = 12, 0
-
-    # ---- 简单时区推断：默认日本 (+9)，部分城市做微调 ----
-    place = (birth_place or "").lower()
-    tz = 9.0  # 默认日本时间
-    if any(k in place for k in ["tokyo", "東京"]):
-        tz = 9.0
-    elif any(k in place for k in ["osaka", "大阪"]):
-        tz = 9.0
-    elif any(k in place for k in ["sapporo", "札幌"]):
-        tz = 9.0
-    elif any(k in place for k in ["fukuoka", "福岡"]):
-        tz = 9.0
-    # 其他国家以后要扩展可以再加，这里先全部当做 +9
-
-    # 本地时间 → UTC 时间
-    local_dt = datetime.datetime(y, m, d, hh, mm)
-    dt_utc = local_dt - datetime.timedelta(hours=tz)
-
-    # Swiss Ephemeris 需要 UT 的儒略日
-    jd_ut = swe.julday(
-        dt_utc.year,
-        dt_utc.month,
-        dt_utc.day,
-        dt_utc.hour + dt_utc.minute / 60.0,
-    )
-
-    # ---- 辅助：度数 → 日文星座名 ----
-    def lon_to_sign_name(lon_deg: float) -> str:
-        idx = int((lon_deg % 360.0) // 30)
-        return SIGNS_JA[idx]
-
-    # ---- 计算四个行星 ----
-    def calc_body(body_id) -> float:
-        lon, lat, dist, speed = swe.calc_ut(jd_ut, body_id)
-        return lon % 360.0
-
-    sun_lon = calc_body(swe.SUN)
-    moon_lon = calc_body(swe.MOON)
-    venus_lon = calc_body(swe.VENUS)
-    mars_lon = calc_body(swe.MARS)
-
-    # ---- ASC：需要经纬度，这里用简化版日本城市坐标 ----
-    # 默认抓一个日本的中间位置（京都附近）
-    lat = 35.0116
-    lon_geo = 135.7681
-
-    if "tokyo" in place or "東京" in place:
-        lat, lon_geo = 35.6895, 139.6917
-    elif "osaka" in place or "大阪" in place:
-        lat, lon_geo = 34.6937, 135.5023
-    elif "sapporo" in place or "札幌" in place:
-        lat, lon_geo = 43.0618, 141.3545
-    elif "fukuoka" in place or "福岡" in place:
-        lat, lon_geo = 33.5902, 130.4017
-
-    # swe.houses 返回 12 宫以及 ascmc（ASC, MC 等）
-    try:
-        houses, ascmc = swe.houses(jd_ut, lat, lon_geo)
-        asc_lon = float(ascmc[0]) % 360.0
-    except Exception:
-        # 如果万一失败，就用太阳度数当兜底（至少不会崩）
-        asc_lon = sun_lon
-
+    # 没有 pyswisseph 或出错时，退回假算法
+    simple = compute_simple_signs(birth_date, birth_time)
+    # simple 返回的是字符串，这里包装成和真算法一样的结构
     return {
-        "sun":   {"lon": sun_lon,   "name_ja": lon_to_sign_name(sun_lon)},
-        "moon":  {"lon": moon_lon,  "name_ja": lon_to_sign_name(moon_lon)},
-        "venus": {"lon": venus_lon, "name_ja": lon_to_sign_name(venus_lon)},
-        "mars":  {"lon": mars_lon,  "name_ja": lon_to_sign_name(mars_lon)},
-        "asc":   {"lon": asc_lon,   "name_ja": lon_to_sign_name(asc_lon)},
+        key: {"lon": 0.0, "name_ja": val}
+        for key, val in simple.items()
     }
 
 
