@@ -8,18 +8,13 @@ import io
 import os
 import datetime
 import math
-import pytz
-import swisseph as swe
 
-
-# 尝试导入 Swiss Ephemeris（pyswisseph）
+# ----- Swiss Ephemeris 尝试导入（不需要 ephe 目录） -----
 try:
     import swisseph as swe
     HAS_SWISSEPH = True
 except ImportError:
-    swe = None
     HAS_SWISSEPH = False
-
 
 
 # ------------------------------------------------------------------
