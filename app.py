@@ -1146,7 +1146,6 @@ def compute_core_from_birth(birth_date, birth_time, birth_place):
 def generate_report():
     ...
 
-def generate_report():
     # ---- 1. 读取参数 ----
     your_name = (
         request.args.get("your_name")
