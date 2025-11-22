@@ -11,11 +11,8 @@ import math
 
 
 # ------ Swiss Ephemeris 尝试导入（不需要 ephe 目录） ------
-try:
-    import swisseph as swe
-    HAS_SWISSEPH = True
-except ImportError:
-    HAS_SWISSEPH = False
+HAS_SWISSEPH = False
+
 
 
 # ------------------------------------------------------------------
