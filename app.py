@@ -1095,43 +1095,111 @@ def _deg_to_sign_name(deg: float) -> str:
 
 def compute_core_from_birth(birth_date, birth_time, birth_place):
     """
-    入口函数：根据出生信息，返回 5 个星体的度数 + 星座名。
-    使用数学近似算法，不依赖 ephe 文件和 pyswisseph。
+    入口函数：根据出生信息，返回 5 个星体的「真实度数 + 星座名字」。
+
+    - 优先使用 Swiss Ephemeris（pyswisseph），计算太阳・月・金星・火星・ASC 的黄经度数；
+    - 如果运行环境里没有安装 pyswisseph，则自动退回到 compute_simple_signs 的简化版，
+      这样即使星历库缺失，整套 PDF 也不会崩掉。
+
+    返回格式示例（每个键下面都是一个 dict）::
+        {
+            "sun":   {"lon": 123.4, "name_ja": "獅子座"},
+            "moon":  {"lon":  56.7, "name_ja": "蟹座"},
+            "venus": {"lon": 210.1, "name_ja": "水瓶座"},
+            "mars":  {"lon":  89.0, "name_ja": "双子座"},
+            "asc":   {"lon": 300.2, "name_ja": "山羊座"},
+        }
     """
+    # ---- 如果没有星历库，就用旧的简化逻辑兜底 ----
+    if not ('HAS_SWISSEPH' in globals() and HAS_SWISSEPH):
+        simple = compute_simple_signs(birth_date, birth_time)
+        return {
+            "sun":   {"lon": 0.0, "name_ja": simple["sun"]},
+            "moon":  {"lon": 0.0, "name_ja": simple["moon"]},
+            "venus": {"lon": 0.0, "name_ja": simple["venus"]},
+            "mars":  {"lon": 0.0, "name_ja": simple["mars"]},
+            "asc":   {"lon": 0.0, "name_ja": simple["asc"]},
+        }
+
+    # ---- 解析日期时间 ----
     try:
-        dt = datetime.datetime.strptime(f"{birth_date} {birth_time}", "%Y-%m-%d %H:%M")
+        y, m, d = [int(x) for x in (birth_date or "1990-01-01").split("-")]
     except Exception:
-        dt = datetime.datetime(1990, 1, 1, 12, 0)
+        y, m, d = 1990, 1, 1
 
-    # 假定输入时间是日本时间 JST(+9)
-    jst = datetime.timezone(datetime.timedelta(hours=9))
-    dt = dt.replace(tzinfo=jst)
-    dt_utc = dt.astimezone(datetime.timezone.utc)
-    jd = _to_julian_day(dt_utc)
+    try:
+        hh, mm = [int(x) for x in (birth_time or "12:00").split(":")]
+    except Exception:
+        hh, mm = 12, 0
 
-    # 简单根据城市名决定经纬度（以后你可以扩展）
-    place_map = {
-        "Tokyo": (35.6895, 139.6917),
-        "東京": (35.6895, 139.6917),
-        "Osaka": (34.6937, 135.5023),
-        "大阪": (34.6937, 135.5023),
-        "Nagoya": (35.1815, 136.9066),
-        "名古屋": (35.1815, 136.9066),
-    }
-    lat, lon = place_map.get(birth_place, (35.0, 135.0))
+    # ---- 简单时区推断：默认日本 (+9)，部分城市做微调 ----
+    place = (birth_place or "").lower()
+    tz = 9.0  # 默认日本时间
+    if any(k in place for k in ["tokyo", "東京"]):
+        tz = 9.0
+    elif any(k in place for k in ["osaka", "大阪"]):
+        tz = 9.0
+    elif any(k in place for k in ["sapporo", "札幌"]):
+        tz = 9.0
+    elif any(k in place for k in ["fukuoka", "福岡"]):
+        tz = 9.0
+    # 其他国家以后要扩展可以再加，这里先全部当做 +9
 
-    sun_deg = _calc_sun_deg(jd)
-    moon_deg = _calc_moon_deg(jd)
-    venus_deg = _calc_venus_deg(jd)
-    mars_deg = _calc_mars_deg(jd)
-    asc_deg = _calc_asc_deg(jd, lat, lon)
+    # 本地时间 → UTC 时间
+    local_dt = datetime.datetime(y, m, d, hh, mm)
+    dt_utc = local_dt - datetime.timedelta(hours=tz)
+
+    # Swiss Ephemeris 需要 UT 的儒略日
+    jd_ut = swe.julday(
+        dt_utc.year,
+        dt_utc.month,
+        dt_utc.day,
+        dt_utc.hour + dt_utc.minute / 60.0,
+    )
+
+    # ---- 辅助：度数 → 日文星座名 ----
+    def lon_to_sign_name(lon_deg: float) -> str:
+        idx = int((lon_deg % 360.0) // 30)
+        return SIGNS_JA[idx]
+
+    # ---- 计算四个行星 ----
+    def calc_body(body_id) -> float:
+        lon, lat, dist, speed = swe.calc_ut(jd_ut, body_id)
+        return lon % 360.0
+
+    sun_lon = calc_body(swe.SUN)
+    moon_lon = calc_body(swe.MOON)
+    venus_lon = calc_body(swe.VENUS)
+    mars_lon = calc_body(swe.MARS)
+
+    # ---- ASC：需要经纬度，这里用简化版日本城市坐标 ----
+    # 默认抓一个日本的中间位置（京都附近）
+    lat = 35.0116
+    lon_geo = 135.7681
+
+    if "tokyo" in place or "東京" in place:
+        lat, lon_geo = 35.6895, 139.6917
+    elif "osaka" in place or "大阪" in place:
+        lat, lon_geo = 34.6937, 135.5023
+    elif "sapporo" in place or "札幌" in place:
+        lat, lon_geo = 43.0618, 141.3545
+    elif "fukuoka" in place or "福岡" in place:
+        lat, lon_geo = 33.5902, 130.4017
+
+    # swe.houses 返回 12 宫以及 ascmc（ASC, MC 等）
+    try:
+        houses, ascmc = swe.houses(jd_ut, lat, lon_geo)
+        asc_lon = float(ascmc[0]) % 360.0
+    except Exception:
+        # 如果万一失败，就用太阳度数当兜底（至少不会崩）
+        asc_lon = sun_lon
 
     return {
-        "sun":   {"lon": sun_deg,   "name_ja": _deg_to_sign_name(sun_deg)},
-        "moon":  {"lon": moon_deg,  "name_ja": _deg_to_sign_name(moon_deg)},
-        "venus": {"lon": venus_deg, "name_ja": _deg_to_sign_name(venus_deg)},
-        "mars":  {"lon": mars_deg,  "name_ja": _deg_to_sign_name(mars_deg)},
-        "asc":   {"lon": asc_deg,   "name_ja": _deg_to_sign_name(asc_deg)},
+        "sun":   {"lon": sun_lon,   "name_ja": lon_to_sign_name(sun_lon)},
+        "moon":  {"lon": moon_lon,  "name_ja": lon_to_sign_name(moon_lon)},
+        "venus": {"lon": venus_lon, "name_ja": lon_to_sign_name(venus_lon)},
+        "mars":  {"lon": mars_lon,  "name_ja": lon_to_sign_name(mars_lon)},
+        "asc":   {"lon": asc_lon,   "name_ja": lon_to_sign_name(asc_lon)},
     }
 
 
