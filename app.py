@@ -1431,7 +1431,19 @@ def generate_report():
 
     advice_rows, footer_text = build_page7_texts(male_name, female_name, male_core, female_core)
 
+    
     draw_page7_advice(c, advice_rows, footer_text)
+
+
+    def build_page8_summary(male_name, female_name, compat_score):
+        return (
+            f"{male_name} さんと {female_name} さんの関係は、"
+            f"お互いにとって自然体でいられる安心感と、"
+            f"前に進むための力を与えてくれる相性を持っています。\n\n"
+            f"総合相性スコア: {compat_score} 点\n"
+            "日々の小さな会話や共有が、二人の未来をより豊かにしていきます。"
+        )
+
 
     # PAGE 8：まとめ
     draw_full_bg(c, "page_summary.jpg")
