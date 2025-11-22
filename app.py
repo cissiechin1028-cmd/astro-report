@@ -1118,51 +1118,237 @@ def compute_core_from_birth(dob_str, time_str, place_name):
     """
     dob_str   : '1990-08-15'
     time_str  : '20:30'
-    place_name: 先不细化，默认东京
+    place_name: 先不细化，默认东京 (139.6917E, 35.6895N)
+
+    说明：
+    - 完全不用 swisseph / ephe
+    - 用近似天文公式计算：太阳 / 月亮 / 上升 / 金星 / 火星 的黄经度数
+    - 误差通常在几度以内，用来算星座、看盘完全够用
     """
-    if not HAS_SWISSEPH:
-        return {
-            "sun_deg": 0.0, "sun_sign_jp": "不明",
-            "moon_deg": 0.0, "moon_sign_jp": "不明",
-            "asc_deg": 0.0, "asc_sign_jp": "不明",
-            "venus_deg": 0.0, "venus_sign_jp": "不明",
-            "mars_deg": 0.0, "mars_sign_jp": "不明",
-        }
 
-    # 1. 生日
+    # -----------------------------
+    # 0. 解析日期 / 时间
+    # -----------------------------
     try:
-        year, month, day = [int(x) for x in dob_str.split("-")]
+        y, m, d = [int(x) for x in dob_str.split("-")]
     except Exception:
-        year, month, day = 1990, 1, 1
+        y, m, d = 1990, 1, 1
 
-    # 2. 时间（小时小数）
     try:
         hh, mm = [int(x) for x in time_str.split(":")]
     except Exception:
         hh, mm = 12, 0
-    hour_decimal = hh + mm / 60.0
 
-    # 3. 经纬度（先死写东京，之后你要可以换成查表）
-    lon = 139.6917
-    lat = 35.6895
+    # 日本时间 -> UTC（简单减 9 小时）
+    hour_decimal_local = hh + mm / 60.0
+    hour_decimal_utc = hour_decimal_local - 9.0
 
-    # 4. 儒略日（UT），默认日本 +9
-    utc_hour = hour_decimal - 9.0
-    jd_ut = swe.julday(year, month, day, utc_hour, swe.GREG_CAL)
+    # -----------------------------
+    # 1. 计算儒略日 JD（UT）
+    # -----------------------------
+    def julian_day(year, month, day, hour_decimal):
+        if month <= 2:
+            year -= 1
+            month += 12
+        A = year // 100
+        B = 2 - A + (A // 4)
+        day_frac = hour_decimal / 24.0
+        jd = (int(365.25 * (year + 4716))
+              + int(30.6001 * (month + 1))
+              + day + B - 1524.5 + day_frac)
+        return jd
 
-    # 5. 太阳 / 月亮 / 金星 / 火星
-    sun_lon   = swe.calc_ut(jd_ut, swe.SUN)[0]   % 360.0
-    moon_lon  = swe.calc_ut(jd_ut, swe.MOON)[0]  % 360.0
-    venus_lon = swe.calc_ut(jd_ut, swe.VENUS)[0] % 360.0
-    mars_lon  = swe.calc_ut(jd_ut, swe.MARS)[0]  % 360.0
+    jd = julian_day(y, m, d, hour_decimal_utc)
+    T = (jd - 2451545.0) / 36525.0      # 世纪数
+    D_days = jd - 2451545.0            # 距离 J2000 的天数
 
-    # 6. 上升 ASC
-    houses, ascmc = swe.houses(jd_ut, lat, lon)
-    asc_lon = ascmc[0] % 360.0
+    deg2rad = math.radians
+    rad2deg = math.degrees
 
-    # 7. 度数 → 日文星座
+    # -----------------------------
+    # 2. 太阳黄经（近似，高精度足够）
+    # -----------------------------
+    def sun_longitude(jd, T):
+        # 公式参考 NOAA / Meeus 简化版
+        L0 = 280.46646 + 36000.76983 * T + 0.0003032 * (T ** 2)
+        L0 %= 360.0
+
+        M = 357.52911 + 35999.05029 * T - 0.0001537 * (T ** 2)
+        M_rad = deg2rad(M)
+
+        C = ((1.914602 - 0.004817 * T - 0.000014 * (T ** 2)) * math.sin(M_rad)
+             + (0.019993 - 0.000101 * T) * math.sin(2 * M_rad)
+             + 0.000289 * math.sin(3 * M_rad))
+
+        true_long = L0 + C
+
+        omega = 125.04 - 1934.136 * T
+        lambda_sun = true_long - 0.00569 - 0.00478 * math.sin(deg2rad(omega))
+        return lambda_sun % 360.0
+
+    sun_lon = sun_longitude(jd, T)
+
+    # -----------------------------
+    # 3. 月亮黄经（简化近似，误差 1–6° 级别）
+    # -----------------------------
+    def moon_longitude(jd):
+        # 简化 Meeus 近似算法（主项），足够用于星座和相位判断
+        D = jd - 2451545.0
+
+        # 各种平均角（度）
+        L_0 = 218.3164477 + 13.17639648 * D      # 月亮平均黄经
+        M_sun = 357.5291092 + 0.98560028 * D     # 太阳平近点角
+        M_moon = 134.9633964 + 13.06499295 * D   # 月亮平近点角
+        F = 93.2720950 + 13.22935024 * D         # 月亮纬度参数
+        # 归一化
+        L_0 %= 360.0
+        M_sun %= 360.0
+        M_moon %= 360.0
+        F %= 360.0
+
+        D_moon = 297.8501921 + 12.19074912 * D   # 月亮与太阳的伸长
+        D_moon %= 360.0
+
+        # 转弧度
+        Ms = deg2rad(M_sun)
+        Mm = deg2rad(M_moon)
+        Dd = deg2rad(D_moon)
+        Fd = deg2rad(F)
+
+        # 取若干主项做近似
+        lon = (L_0
+               + 6.289 * math.sin(Mm)
+               + 1.274 * math.sin(2 * Dd - Mm)
+               + 0.658 * math.sin(2 * Dd)
+               + 0.214 * math.sin(2 * Mm)
+               - 0.186 * math.sin(Ms)
+               - 0.059 * math.sin(2 * Dd - 2 * Mm)
+               - 0.057 * math.sin(2 * Dd - Ms - Mm)
+               + 0.053 * math.sin(2 * Dd + Mm)
+               + 0.046 * math.sin(2 * Dd - Ms)
+               + 0.041 * math.sin(Ms - Mm)
+               - 0.035 * math.sin(Dd)
+               - 0.031 * math.sin(Ms + Mm)
+               - 0.015 * math.sin(2 * Fd - 2 * Dd)
+               )
+        return lon % 360.0
+
+    moon_lon = moon_longitude(jd)
+
+    # -----------------------------
+    # 4. 上升 ASC（黄道升交点）
+    # -----------------------------
+    def ascendant_longitude(jd, T, lon_deg, lat_deg):
+        # 本地恒星时
+        # JD0: 当前日 0 点
+        JD0 = math.floor(jd - 0.5) + 0.5
+        H = (jd - JD0) * 24.0
+        D = jd - 2451545.0
+        GMST = (6.697374558
+                + 0.06570982441908 * D
+                + 1.00273790935 * H
+                + 0.000026 * (T ** 2))
+        GMST = (GMST % 24.0) * 15.0  # 转成度
+
+        LST = (GMST + lon_deg) % 360.0
+
+        # 黄赤交角
+        eps = 23.439291 - 0.0130042 * T
+        eps_rad = deg2rad(eps)
+
+        lst_rad = deg2rad(LST)
+        lat_rad = deg2rad(lat_deg)
+
+        # Asc 公式（黄道坐标）
+        # tan(Asc) = 1 / (cos(LST)) * (-cos(eps)*tan(lat) + sin(eps)*sin(LST))
+        # 这里用常见 atan2 形式
+        sin_L = math.sin(lst_rad)
+        cos_L = math.cos(lst_rad)
+
+        numerator = -cos_L
+        denominator = (sin_L * math.cos(eps_rad) - math.tan(lat_rad) * math.sin(eps_rad))
+
+        asc_rad = math.atan2(numerator, denominator)
+        asc_deg = (rad2deg(asc_rad) + 360.0) % 360.0
+        return asc_deg
+
+    lon_tokyo = 139.6917
+    lat_tokyo = 35.6895
+    asc_lon = ascendant_longitude(jd, T, lon_tokyo, lat_tokyo)
+
+    # -----------------------------
+    # 5. 金星 & 火星 近似黄经
+    #    （简化椭圆轨道 + 地心坐标换算，误差数度级）
+    # -----------------------------
+    def planet_longitude_approx(jd, T, name):
+        # 参数：半长轴 a(AU), 离心率 e, 近日点经度 long_peri, 升交点经度 long_node, 轨道倾角 inc
+        # 这些是近似常数（J2000 附近）
+        if name == "venus":
+            a = 0.72333566
+            e = 0.00677672
+            long_peri = 131.602467
+            long_node = 76.679920
+            inc = 3.394662
+            mean_long = 181.979801 + 58517.8156760 * T  # 近似
+        elif name == "mars":
+            a = 1.52371034
+            e = 0.09339410
+            long_peri = 336.04084
+            long_node = 49.558093
+            inc = 1.849726
+            mean_long = 355.433 + 19140.2993039 * T  # 近似
+        else:
+            return 0.0
+
+        mean_long %= 360.0
+        long_peri %= 360.0
+        long_node %= 360.0
+
+        # 平近点角
+        M = (mean_long - long_peri) % 360.0
+        M_rad = deg2rad(M)
+
+        # 解 Kepler 方程（一次迭代就够近似）
+        E = M_rad + e * math.sin(M_rad)
+        # 真近点角
+        nu = 2.0 * math.atan2(math.sqrt(1 + e) * math.sin(E / 2.0),
+                              math.sqrt(1 - e) * math.cos(E / 2.0))
+        nu_deg = (rad2deg(nu) + 360.0) % 360.0
+
+        # 黄道面上的行星黄经（绕太阳的）
+        v = nu_deg
+        lon_orb = (v + long_peri) % 360.0
+
+        # 这里做一个粗略处理：直接从地心看，
+        # 用太阳黄经和行星黄经做矢量差近似。
+        R_earth = 1.0
+        R_planet = a * (1 - e * math.cos(E))  # 轨道半径近似
+
+        lam_sun_rad = deg2rad(sun_lon)
+        lam_pl_rad = deg2rad(lon_orb)
+
+        # 太阳系平面 2D 向量
+        x_earth = R_earth * math.cos(lam_sun_rad + math.pi)  # 地球在太阳对面
+        y_earth = R_earth * math.sin(lam_sun_rad + math.pi)
+
+        x_pl = R_planet * math.cos(lam_pl_rad)
+        y_pl = R_planet * math.sin(lam_pl_rad)
+
+        # 行星相对地球的向量
+        x_geo = x_pl - x_earth
+        y_geo = y_pl - y_earth
+
+        lam_geo = (rad2deg(math.atan2(y_geo, x_geo)) + 360.0) % 360.0
+        return lam_geo
+
+    venus_lon = planet_longitude_approx(jd, T, "venus")
+    mars_lon = planet_longitude_approx(jd, T, "mars")
+
+    # -----------------------------
+    # 6. 度数 → 日文星座名
+    # -----------------------------
     def deg_to_sign_jp(deg):
-        idx = int(deg // 30)
+        idx = int(deg // 30) % 12
         signs_jp = [
             "牡羊座", "牡牛座", "双子座", "蟹座",
             "獅子座", "乙女座", "天秤座", "蠍座",
@@ -1182,7 +1368,6 @@ def compute_core_from_birth(dob_str, time_str, place_name):
         "venus_sign_jp": deg_to_sign_jp(venus_lon),
         "mars_sign_jp":  deg_to_sign_jp(mars_lon),
     }
-
 
 
 # ==============================================================
