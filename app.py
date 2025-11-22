@@ -1117,26 +1117,75 @@ def compute_core_real(birth_date, birth_time, birth_place):
     return core
 
 
-def compute_core_from_birth(birth_date, birth_time, birth_place):
+def compute_core_from_birth(dob_str, time_str, place_name):
     """
-    入口函数：
-      1. 如果安装了 pyswisseph → 用真实星盘算法
-      2. 否则退回到简单星座算法（保证服务不崩）
+    dob_str   : '1990-08-15'
+    time_str  : '20:30'
+    place_name: 先不细化，默认东京
     """
-    if HAS_SWISSEPH:
-        try:
-            return compute_core_real(birth_date, birth_time, birth_place)
-        except Exception as e:
-            # 真算法出错时，打日志，但仍然给用户一个结果
-            print("Swiss ephemeris error, fallback to simple:", e)
+    if not HAS_SWISSEPH:
+        return {
+            "sun_deg": 0.0, "sun_sign_jp": "不明",
+            "moon_deg": 0.0, "moon_sign_jp": "不明",
+            "asc_deg": 0.0, "asc_sign_jp": "不明",
+            "venus_deg": 0.0, "venus_sign_jp": "不明",
+            "mars_deg": 0.0, "mars_sign_jp": "不明",
+        }
 
-    # 没有 pyswisseph 或出错时，退回假算法
-    simple = compute_simple_signs(birth_date, birth_time)
-    # simple 返回的是字符串，这里包装成和真算法一样的结构
+    # 1. 生日
+    try:
+        year, month, day = [int(x) for x in dob_str.split("-")]
+    except Exception:
+        year, month, day = 1990, 1, 1
+
+    # 2. 时间（小时小数）
+    try:
+        hh, mm = [int(x) for x in time_str.split(":")]
+    except Exception:
+        hh, mm = 12, 0
+    hour_decimal = hh + mm / 60.0
+
+    # 3. 经纬度（先死写东京，之后你要可以换成查表）
+    lon = 139.6917
+    lat = 35.6895
+
+    # 4. 儒略日（UT），默认日本 +9
+    utc_hour = hour_decimal - 9.0
+    jd_ut = swe.julday(year, month, day, utc_hour, swe.GREG_CAL)
+
+    # 5. 太阳 / 月亮 / 金星 / 火星
+    sun_lon   = swe.calc_ut(jd_ut, swe.SUN)[0]   % 360.0
+    moon_lon  = swe.calc_ut(jd_ut, swe.MOON)[0]  % 360.0
+    venus_lon = swe.calc_ut(jd_ut, swe.VENUS)[0] % 360.0
+    mars_lon  = swe.calc_ut(jd_ut, swe.MARS)[0]  % 360.0
+
+    # 6. 上升 ASC
+    houses, ascmc = swe.houses(jd_ut, lat, lon)
+    asc_lon = ascmc[0] % 360.0
+
+    # 7. 度数 → 日文星座
+    def deg_to_sign_jp(deg):
+        idx = int(deg // 30)
+        signs_jp = [
+            "牡羊座", "牡牛座", "双子座", "蟹座",
+            "獅子座", "乙女座", "天秤座", "蠍座",
+            "射手座", "山羊座", "水瓶座", "魚座",
+        ]
+        return signs_jp[idx]
+
     return {
-        key: {"lon": 0.0, "name_ja": val}
-        for key, val in simple.items()
+        "sun_deg": sun_lon,
+        "moon_deg": moon_lon,
+        "asc_deg": asc_lon,
+        "venus_deg": venus_lon,
+        "mars_deg": mars_lon,
+        "sun_sign_jp":   deg_to_sign_jp(sun_lon),
+        "moon_sign_jp":  deg_to_sign_jp(moon_lon),
+        "asc_sign_jp":   deg_to_sign_jp(asc_lon),
+        "venus_sign_jp": deg_to_sign_jp(venus_lon),
+        "mars_sign_jp":  deg_to_sign_jp(mars_lon),
     }
+
 
 
 # ==============================================================
