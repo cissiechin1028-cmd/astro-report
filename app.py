@@ -9,7 +9,8 @@ import os
 import datetime
 import math
 
-# ----- Swiss Ephemeris 尝试导入（不需要 ephe 目录） -----
+
+# ------ Swiss Ephemeris 尝试导入（不需要 ephe 目录） ------
 try:
     import swisseph as swe
     HAS_SWISSEPH = True
