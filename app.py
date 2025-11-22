@@ -26,6 +26,16 @@ app = Flask(__name__, static_url_path='', static_folder='public')
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
+EPHE_DIR = os.path.join(BASE_DIR, "ephe")
+
+# 如果有安装 Swiss Ephemeris，就设置星历文件目录
+if 'HAS_SWISSEPH' in globals() and HAS_SWISSEPH:
+    try:
+        swe.set_ephe_path(EPHE_DIR)
+    except Exception:
+        # 即使设置失败，也不要让整个服务崩掉
+        HAS_SWISSEPH = False
+
 
 PAGE_WIDTH, PAGE_HEIGHT = A4
 
