@@ -1139,7 +1139,10 @@ def compute_core_from_birth(birth_date, birth_time, birth_place):
 #                    生成 PDF 主入口
 # ==============================================================
 
-@app.route("/api/generate_report", methods=["GET"])
+@app.route("/api/generate_report", methods=["GET", "POST"])
+def generate_report():
+    ...
+
 def generate_report():
     # ---- 1. 读取参数 ----
     your_name = (
