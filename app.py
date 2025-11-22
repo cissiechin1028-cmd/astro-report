@@ -22,8 +22,6 @@ PAGE_WIDTH, PAGE_HEIGHT = A4
 
 # ------------------------------------------------------------------
 # 字体设置
-#   JP_SANS  : 粗一点的黑体（标题用）
-#   JP_SERIF : 细一点的明朝体（正文、第三页用）
 # ------------------------------------------------------------------
 JP_SANS = "HeiseiKakuGo-W5"
 JP_SERIF = "HeiseiMin-W3"
@@ -99,7 +97,7 @@ def draw_planet_icon(
 
     icon_path = os.path.join(ASSETS_DIR, icon_filename)
     icon_img = ImageReader(icon_path)
-    icon_size = 11  # PNG 尺寸（可以微调）
+    icon_size = 11  # PNG 尺寸
 
     c.drawImage(
         icon_img,
@@ -288,7 +286,7 @@ PAIR_SUMMARY_TEXT = {
 
     # air × fire
     ("air", "fire"):
-        "会話と行動力で世界をどんどん広げていける、冒険タイプのペアです。"
+        "会话と行動力で世界をどんどん広げていける、冒険タイプのペアです。"
         "テンションの差が出たときは、相手のモードを確認してから動くとすれ違いが減ります。",
 
     # air × earth
@@ -298,7 +296,7 @@ PAIR_SUMMARY_TEXT = {
 
     # air × air
     ("air", "air"):
-        "価値観や会話のテンポが似やすく、一緒にいて気楽なペアです。"
+        "価値観や会话のテンポが似やすく、一緒にいて気楽なペアです。"
         "話すだけで終わらず、小さな約束を実行していくと信頼感がより強くなります。",
 
     # air × water
@@ -337,7 +335,6 @@ def build_pair_summary_from_sun(male_sun_ja: str, female_sun_ja: str) -> str:
     ef = SIGN_ELEMENT.get(female_sun_ja)
 
     if em is None or ef is None:
-        # 万が一星座が取れなかったときの予備
         return (
             "お互いの違いを通して、新しい価値観を学び合えるペアです。"
             "少しずつ歩調を合わせていくことで、安心できる関係が育っていきます。"
@@ -349,8 +346,6 @@ def build_pair_summary_from_sun(male_sun_ja: str, female_sun_ja: str) -> str:
             "お互いの個性を活かしながら、ほどよい距離感で支え合えるペアです。"
             "違いを否定せず、興味を持って聞き合うことで信頼が深まります。"
         )
-
-    # ここではあえて星座名を入れず、「2文以内」に収める
     return base_text
 
 
@@ -360,18 +355,8 @@ def build_page3_texts(
     male_core: dict,
     female_core: dict,
 ):
-    """
-    第3ページ用のテキストをまとめて作る。
-    ここでは一旦「必ず動くシンプル版」にしておく。
-    - compat_score: 数値スコア（今はダミーで使わない）
-    - compat_summary: 太陽星座から見た一言まとめ
-    - sun_text / moon_text / asc_text: 各3行以内の解説文
-    """
-
-    # 相性スコアはとりあえずダミー（デザイン用に残しておく）
     compat_score = 88
 
-    # --- 太陽星座名を「安全に」文字列として取り出す（dict でも str でもOK） ---
     def get_sign_name(core: dict, key: str) -> str:
         v = core.get(key)
         if isinstance(v, dict):
@@ -383,32 +368,26 @@ def build_page3_texts(
     male_sun = get_sign_name(male_core, "sun")
     female_sun = get_sign_name(female_core, "sun")
 
-    # ここはあなたが作った 12×12 ロジックに差し替えてOK（今はとりあえず汎用文）
     try:
-        # もし build_pair_summary_from_sun があるなら使う
-        compat_summary = build_pair_summary_from_sun(male_sun, female_sun)  # type: ignore[name-defined]
+        compat_summary = build_pair_summary_from_sun(male_sun, female_sun)
     except NameError:
-        # なければ一旦汎用テキスト
         compat_summary = (
             f"{male_name}さんと{female_name}さんは、"
             f"お互いの個性を尊重し合いながら成長していけるペアです。"
         )
 
-    # --- 太陽の相性テキスト（3行以内想定） ---
     sun_text = (
         f"太陽星座の組み合わせから見ると、"
         f"{male_name}さんと{female_name}さんは、基本的な価値観に共通点が多く、"
         "支え合える関係になりやすいペアです。"
     )
 
-    # --- 月の相性テキスト ---
     moon_text = (
         "月は、ふたりが一緒にいるときの「安心感」や素の自分を表します。"
         "感情のペースが少し違っても、丁寧に言葉にして伝えることで、"
         "居心地のよさがぐっと高まっていきます。"
     )
 
-    # --- ASC の相性テキスト ---
     asc_text = (
         "ASC（第一印象）の相性は、出会ったときのフィーリングや、"
         "外から見たふたりの雰囲気を示します。"
@@ -418,40 +397,9 @@ def build_page3_texts(
     return compat_score, compat_summary, sun_text, moon_text, asc_text
 
 
-
 # ------------------------------------------------------------------
-# 星座 → 星座中点の「擬似度数」（本物の度数は使わない簡易星盤）
+# 星盘数据结构（使用真实度数）
 # ------------------------------------------------------------------
-SIGN_CENTER_DEG = {
-    "牡羊座": 15,
-    "牡牛座": 45,
-    "双子座": 75,
-    "蟹座": 105,
-    "獅子座": 135,
-    "乙女座": 165,
-    "天秤座": 195,
-    "蠍座": 225,
-    "射手座": 255,
-    "山羊座": 285,
-    "水瓶座": 315,
-    "魚座": 345,
-}
-
-
-def fake_deg_from_sign_dict(d) -> float:
-    """
-    d が dict の場合（{"lon": ..., "name_ja": "..."}）でも、
-    すでに「牡牛座」のような日本語名の str の場合でも動くように、
-    星座名だけを取り出して、その星座扇形の真ん中の度数を返す簡易関数。
-    """
-    # dict なら name_ja / label から取り出す。str / その他ならそのまま文字列化。
-    if isinstance(d, dict):
-        sign = d.get("name_ja") or d.get("label")
-    else:
-        sign = str(d) if d is not None else None
-    return SIGN_CENTER_DEG.get(sign, 0.0)
-
-
 def build_planet_block(core: dict) -> dict:
     """
     core = {
@@ -461,39 +409,36 @@ def build_planet_block(core: dict) -> dict:
         "mars":  {...},
         "asc":   {...},
     }
-    という形の dict を、描画用に整える。
     """
-
-    # 文本：只显示星座名，不显示度数（dict でも str でも安全）
     def fmt(label_ja: str, d) -> str:
-        # dict の場合：name_ja / label を優先、なければ空文字。
         if isinstance(d, dict):
             name = d.get("name_ja") or d.get("label") or ""
+            lon = d.get("lon")
         else:
             name = str(d) if d is not None else ""
+            lon = None
+        # 这里只显示星座名，如果以后想加度数可以加 lon
         return f"{label_ja}：{name}"
-
 
     return {
         "sun": {
-            # ★ 用星座中点的假度数画图标
-            "deg": fake_deg_from_sign_dict(core["sun"]),
+            "deg": core["sun"]["lon"],
             "label": fmt("太陽", core["sun"]),
         },
         "moon": {
-            "deg": fake_deg_from_sign_dict(core["moon"]),
+            "deg": core["moon"]["lon"],
             "label": fmt("月", core["moon"]),
         },
         "venus": {
-            "deg": fake_deg_from_sign_dict(core["venus"]),
+            "deg": core["venus"]["lon"],
             "label": fmt("金星", core["venus"]),
         },
         "mars": {
-            "deg": fake_deg_from_sign_dict(core["mars"]),
+            "deg": core["mars"]["lon"],
             "label": fmt("火星", core["mars"]),
         },
         "asc": {
-            "deg": fake_deg_from_sign_dict(core["asc"]),
+            "deg": core["asc"]["lon"],
             "label": fmt("ASC", core["asc"]),
         },
     }
@@ -505,22 +450,14 @@ def draw_page3_basic_and_synastry(
     female_name: str,
     male_core: dict,
     female_core: dict,
-    compat_score: int,      # ← 现在暂时不用，但保留参数
+    compat_score: int,
     compat_summary: str,
     sun_text: str,
     moon_text: str,
     asc_text: str,
 ):
-    """
-    PDF 第3ページを丸ごと描画する。
-    - 左右のホロスコープ
-    - 下部に相性まとめ（数値スコアは使わない）
-    - 太陽 / 月 / ASC の文章（3ブロック）
-    """
-    # 背景
     draw_full_bg(c, "page_basic.jpg")
 
-    # 星盤のベース画像
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
@@ -530,13 +467,11 @@ def draw_page3_basic_and_synastry(
     right_x = PAGE_WIDTH - chart_size - 90
     right_y = left_y
 
-    # 中心座標
     left_cx = left_x + chart_size / 2
     left_cy = left_y + chart_size / 2
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    # ベース画像を描画
     c.drawImage(
         chart_img,
         left_x,
@@ -554,7 +489,6 @@ def draw_page3_basic_and_synastry(
         mask="auto",
     )
 
-    # 行星データ
     male_planets = build_planet_block(male_core)
     female_planets = build_planet_block(female_core)
 
@@ -569,7 +503,6 @@ def draw_page3_basic_and_synastry(
     male_color = (0.15, 0.45, 0.9)
     female_color = (0.9, 0.35, 0.65)
 
-    # 星盤にプロット（男）
     for key, info in male_planets.items():
         draw_planet_icon(
             c,
@@ -581,7 +514,6 @@ def draw_page3_basic_and_synastry(
             icon_files[key],
         )
 
-    # 星盤にプロット（女）
     for key, info in female_planets.items():
         draw_planet_icon(
             c,
@@ -593,13 +525,11 @@ def draw_page3_basic_and_synastry(
             icon_files[key],
         )
 
-    # 星盤下の名前
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
 
-    # 星盤下の 5 行（太陽〜ASC）—— 星座名のみ表示
     c.setFont(JP_SERIF, 8.5)
     male_lines = [info["label"] for info in male_planets.values()]
     for i, line in enumerate(male_lines):
@@ -611,19 +541,16 @@ def draw_page3_basic_and_synastry(
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
 
-    # 下部テキストブロック
     text_x = 130
     wrap_width = 360
     body_font = JP_SERIF
     body_size = 12
     line_height = 18
 
-    # 相性まとめ（数値スコアは出さない）
     c.setFont(JP_SANS, 12)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawString(text_x, 350, "ふたりの相性バランス：")
 
-    # 一言まとめ（最大2行）
     draw_wrapped_block_limited(
         c,
         compat_summary,
@@ -636,7 +563,6 @@ def draw_page3_basic_and_synastry(
         max_lines=2,
     )
 
-    # 太陽・月・ASC の分析（各ブロック最大 3 行まで）
     y_analysis = 220
     c.setFont(body_font, body_size)
     for block_text in (sun_text, moon_text, asc_text):
@@ -651,12 +577,10 @@ def draw_page3_basic_and_synastry(
             line_height,
             max_lines=3,
         )
-        y_analysis -= line_height  # ブロック間の余白
+        y_analysis -= line_height
 
-    # ページ番号
     draw_page_number(c, 3)
     c.showPage()
-
 
 
 # ------------------------------------------------------------------
@@ -677,7 +601,6 @@ def draw_page4_communication(
     body_size = 12
     line_height = 18
 
-    # 話し方とテンポ
     y = 625
     y = draw_wrapped_block(
         c,
@@ -702,7 +625,6 @@ def draw_page4_communication(
         max_lines=1
     )
 
-    # 問題への向き合い方
     y2 = 434
     y2 = draw_wrapped_block(
         c,
@@ -727,7 +649,6 @@ def draw_page4_communication(
         max_lines=1
     )
 
-    # 価値観のズレ
     y3 = 236
     y3 = draw_wrapped_block(
         c,
@@ -774,7 +695,6 @@ def draw_page5_points(
     body_size = 12
     line_height = 18
 
-    # 相性の良いところ
     y = 625
     y = draw_wrapped_block(
         c,
@@ -799,7 +719,6 @@ def draw_page5_points(
         max_lines=1,
     )
 
-    # すれ違いやすいところ
     y2 = 434
     y2 = draw_wrapped_block(
         c,
@@ -824,7 +743,6 @@ def draw_page5_points(
         max_lines=1,
     )
 
-    # 関係をスムーズにするヒント
     y3 = 236
     y3 = draw_wrapped_block(
         c,
@@ -872,7 +790,6 @@ def draw_page6_trend(
     body_size = 12
     line_height = 18
 
-    # ① 二人の関係テーマ
     y = 620
     y = draw_wrapped_block(
         c,
@@ -897,7 +814,6 @@ def draw_page6_trend(
         max_lines=1,
     )
 
-    # ② 感情の流れ・深まり方
     y2 = 460
     y2 = draw_wrapped_block(
         c,
@@ -922,7 +838,6 @@ def draw_page6_trend(
         max_lines=1,
     )
 
-    # ③ 二人が築いていくスタイル
     y3 = 300
     y3 = draw_wrapped_block(
         c,
@@ -947,7 +862,6 @@ def draw_page6_trend(
         max_lines=1,
     )
 
-    # ④ 今後 1〜2 年の関係傾向
     y4 = 145
     y4 = draw_wrapped_block(
         c,
@@ -981,13 +895,12 @@ def draw_page6_trend(
 # ------------------------------------------------------------------
 def draw_page7_advice(c, advice_rows, footer_text):
     """
-    advice_rows: [(scene_text, tip_text), ...]  左列 + 右列 的列表
+    advice_rows: [(scene_text, tip_text), ...]
     footer_text: 最下方那段 2 行以内的小总结
     """
     draw_full_bg(c, "page_advice.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # 表整体设置
     table_x = 130
     table_width = 360
     col1_width = 140
@@ -1000,18 +913,15 @@ def draw_page7_advice(c, advice_rows, footer_text):
 
     header_y = 680
 
-    # 表头
     header_font_size = body_size + 2
     c.setFont(JP_SANS, header_font_size)
     c.drawString(table_x, header_y, "ふたりのシーン")
     c.drawString(table_x + col1_width + col_gap, header_y, "うまくいくコツ")
 
-    # 横线
     c.setStrokeColorRGB(0.9, 0.9, 0.9)
     c.setLineWidth(0.4)
     c.line(table_x, header_y - 8, table_x + table_width, header_y - 8)
 
-    # 内容行起始位置
     y_row = header_y - line_height * 1.8
 
     c.setFont(body_font, body_size)
@@ -1063,11 +973,6 @@ def draw_page7_advice(c, advice_rows, footer_text):
 # 第 8 页：まとめ 用の文面生成（变量版）
 # ------------------------------------------------------------------
 def build_page8_summary(male_name: str, female_name: str, compat_score: int) -> str:
-    """
-    之后你可以把这里换成「要素组合→まとめ模板」。
-    现在先给一个柔らかいデフォルト。
-    目标：大约 230〜260 字，8〜10 行。
-    """
     return (
         f"{male_name} さんと {female_name} さんのホロスコープからは、"
         "ふたりが出会ったこと自体に、やわらかな意味合いが感じられます。"
@@ -1075,7 +980,7 @@ def build_page8_summary(male_name: str, female_name: str, compat_score: int) -> 
         "ちょうどよく混ざり合っている組み合わせです。"
         "大切なのは、どちらか一方の正解に寄せるのではなく、"
         "ふたりだけのちょうどいい距離感や歩幅を、少しずつ探していくことです。"
-        "このレポートで気になったポイントがあれば、小さな会话のきっかけとして、"
+        "このレポートで気になったポイントがあれば、小さな会話のきっかけとして、"
         "「実はこう感じていたんだ」と伝えてみてください。"
         "星の配置は、完璧なかたちを決めつけるものではなく、"
         "ふたりがこれから選んでいく物語を、そっと照らしてくれるヒントです。"
@@ -1083,7 +988,7 @@ def build_page8_summary(male_name: str, female_name: str, compat_score: int) -> 
 
 
 # ==============================================================
-#                    生成 PDF 主入口
+#           真实星盘近似算法（替换原来的假星盘）
 # ==============================================================
 
 SIGNS_JA = [
@@ -1092,124 +997,132 @@ SIGNS_JA = [
 ]
 
 
-def _deg_and_sign(seed: int, mul: int, offset: int):
-    """简单的伪星盘：用生日+时间算一个稳定的度数和星座（不是天文学真星盘，只是应急上线用）"""
-    deg = (seed * mul + offset) % 360
+def _norm360(x: float) -> float:
+    return x % 360.0
+
+
+def _to_julian_day(dt: datetime.datetime) -> float:
+    y = dt.year
+    m = dt.month
+    D = dt.day + (dt.hour + dt.minute / 60.0) / 24.0
+    if m <= 2:
+        y -= 1
+        m += 12
+    A = y // 100
+    B = 2 - A + A // 4
+    JD = int(365.25 * (y + 4716)) + int(30.6001 * (m + 1)) + D + B - 1524.5
+    return JD
+
+
+def _calc_sun_deg(jd: float) -> float:
+    n = jd - 2451545.0
+    L = _norm360(280.460 + 0.9856474 * n)
+    g = math.radians(_norm360(357.528 + 0.9856003 * n))
+    lam = L + 1.915 * math.sin(g) + 0.020 * math.sin(2 * g)
+    return _norm360(lam)
+
+
+def _calc_moon_deg(jd: float) -> float:
+    n = jd - 2451545.0
+    L = _norm360(218.316 + 13.176396 * n)
+    M = math.radians(_norm360(134.963 + 13.064993 * n))
+    F = math.radians(_norm360(93.272 + 13.229350 * n))
+    lam = (
+        L
+        + 6.289 * math.sin(M)
+        + 1.274 * math.sin(2 * M - F)
+        + 0.658 * math.sin(2 * M)
+        + 0.214 * math.sin(2 * F)
+        + 0.110 * math.sin(M)
+    )
+    return _norm360(lam)
+
+
+def _calc_venus_deg(jd: float) -> float:
+    T = (jd - 2451545.0) / 36525.0
+    L = _norm360(181.9798 + 58517.815 * T)
+    M = math.radians(_norm360(50.4161 + 58517.803 * T))
+    lam = L + 0.7758 * math.sin(M)
+    return _norm360(lam)
+
+
+def _calc_mars_deg(jd: float) -> float:
+    T = (jd - 2451545.0) / 36525.0
+    L = _norm360(355.433 + 19140.299 * T)
+    M = math.radians(_norm360(19.373 + 19140.299 * T))
+    lam = L + 10.691 * math.sin(M)
+    return _norm360(lam)
+
+
+def _calc_asc_deg(jd: float, lat: float, lon: float) -> float:
+    T = (jd - 2451545.0) / 36525.0
+    GMST = _norm360(280.46061837 + 360.98564736629 * (jd - 2451545.0) + 0.000387933 * T * T)
+    LST = _norm360(GMST + lon)
+    e = math.radians(23.4393 - 0.01300 * T)
+    LST_rad = math.radians(LST)
+    lat_rad = math.radians(lat)
+    tan_lambda = math.atan2(
+        -math.cos(LST_rad),
+        math.sin(LST_rad) * math.cos(e) + math.tan(lat_rad) * math.sin(e),
+    )
+    asc = math.degrees(tan_lambda)
+    return _norm360(asc)
+
+
+def _deg_to_sign_name(deg: float) -> str:
     idx = int(deg // 30) % 12
-    return deg, SIGNS_JA[idx]
+    return SIGNS_JA[idx]
 
-# ----------------------------------------------------
-# 简单星座计算：只返回“太阳/月亮/上升/金星/火星”所属星座
-# ----------------------------------------------------
-def compute_simple_signs(birth_date, birth_time):
-    """
-    简单星盘逻辑：
-    - 太阳：按真实黄道日期范围计算（西洋占星常用日期）
-    - 月亮 / 上升 / 金星 / 火星：继续用简化的 seed 算法（只是保持风格一致，不是真实天文）
-    """
-    # 解析生日
-    try:
-        y, m, d = [int(x) for x in birth_date.split("-")]
-    except:
-        y, m, d = 1990, 1, 1
-
-    # 解析时间
-    try:
-        hh, mm = [int(x) for x in birth_time.split(":")]
-    except:
-        hh, mm = 12, 0
-
-    # ---- 1. 太阳星座：按日期区间来算 ----
-    # SIGNS_JA 顺序是：牡羊, 牡牛, 双子, 蟹, 獅子, 乙女, 天秤, 蠍, 射手, 山羊, 水瓶, 魚
-    def get_sun_index(m, d):
-        # 白羊座 3/21–4/19
-        if (m == 3 and d >= 21) or (m == 4 and d <= 19):
-            return 0  # 牡羊座
-        # 牡牛座 4/20–5/20
-        elif (m == 4 and d >= 20) or (m == 5 and d <= 20):
-            return 1
-        # 双子座 5/21–6/21
-        elif (m == 5 and d >= 21) or (m == 6 and d <= 21):
-            return 2
-        # 蟹座 6/22–7/22
-        elif (m == 6 and d >= 22) or (m == 7 and d <= 22):
-            return 3
-        # 獅子座 7/23–8/22
-        elif (m == 7 and d >= 23) or (m == 8 and d <= 22):
-            return 4
-        # 乙女座 8/23–9/22
-        elif (m == 8 and d >= 23) or (m == 9 and d <= 22):
-            return 5
-        # 天秤座 9/23–10/23
-        elif (m == 9 and d >= 23) or (m == 10 and d <= 23):
-            return 6
-        # 蠍座 10/24–11/22
-        elif (m == 10 and d >= 24) or (m == 11 and d <= 22):
-            return 7
-        # 射手座 11/23–12/21
-        elif (m == 11 and d >= 23) or (m == 12 and d <= 21):
-            return 8
-        # 山羊座 12/22–1/19
-        elif (m == 12 and d >= 22) or (m == 1 and d <= 19):
-            return 9
-        # 水瓶座 1/20–2/18
-        elif (m == 1 and d >= 20) or (m == 2 and d <= 18):
-            return 10
-        # 魚座 2/19–3/20
-        else:
-            return 11
-
-    sun_index = get_sun_index(m, d)
-    sun_sign = SIGNS_JA[sun_index]
-
-    # ---- 2. 其他星体：继续用简化 seed 算法（不是严格占星，只是风格用）----
-    seed = (y * 1231 + m * 97 + d * 13 + hh * 7 + mm) % 360
-
-    def get_fake_sign(offset):
-        idx = ((seed + offset) % 360) // 30
-        return SIGNS_JA[int(idx)]
-
-    return {
-        "sun": sun_sign,
-        "moon": get_fake_sign(40),
-        "asc": get_fake_sign(80),
-        "venus": get_fake_sign(160),
-        "mars": get_fake_sign(220),
-    }
-
-
-
-# 12星座英文 → 日文
-SIGN_JA = {
-    "ARI": "牡羊座",
-    "TAU": "牡牛座",
-    "GEM": "双子座",
-    "CAN": "蟹座",
-    "LEO": "獅子座",
-    "VIR": "乙女座",
-    "LIB": "天秤座",
-    "SCO": "蠍座",
-    "SAG": "射手座",
-    "CAP": "山羊座",
-    "AQU": "水瓶座",
-    "PIS": "魚座",
-}
 
 def compute_core_from_birth(birth_date, birth_time, birth_place):
     """
-    入口函数：根据出生信息，返回 5 个星体的“星座名字”。
-
-    现在走的是【简化版：只算星座，不算真实度数】，调用 compute_simple_signs。
-    以后如果要接真实星盘 API，只要改这个函数，把返回结果保持同样结构即可。
+    入口函数：根据出生信息，返回 5 个星体的度数 + 星座名。
+    使用数学近似算法，不依赖 ephe 文件和 pyswisseph。
     """
-    return compute_simple_signs(birth_date, birth_time)
+    try:
+        dt = datetime.datetime.strptime(f"{birth_date} {birth_time}", "%Y-%m-%d %H:%M")
+    except Exception:
+        dt = datetime.datetime(1990, 1, 1, 12, 0)
 
+    # 假定输入时间是日本时间 JST(+9)
+    jst = datetime.timezone(datetime.timedelta(hours=9))
+    dt = dt.replace(tzinfo=jst)
+    dt_utc = dt.astimezone(datetime.timezone.utc)
+    jd = _to_julian_day(dt_utc)
+
+    # 简单根据城市名决定经纬度（以后你可以扩展）
+    place_map = {
+        "Tokyo": (35.6895, 139.6917),
+        "東京": (35.6895, 139.6917),
+        "Osaka": (34.6937, 135.5023),
+        "大阪": (34.6937, 135.5023),
+        "Nagoya": (35.1815, 136.9066),
+        "名古屋": (35.1815, 136.9066),
+    }
+    lat, lon = place_map.get(birth_place, (35.0, 135.0))
+
+    sun_deg = _calc_sun_deg(jd)
+    moon_deg = _calc_moon_deg(jd)
+    venus_deg = _calc_venus_deg(jd)
+    mars_deg = _calc_mars_deg(jd)
+    asc_deg = _calc_asc_deg(jd, lat, lon)
+
+    return {
+        "sun":   {"lon": sun_deg,   "name_ja": _deg_to_sign_name(sun_deg)},
+        "moon":  {"lon": moon_deg,  "name_ja": _deg_to_sign_name(moon_deg)},
+        "venus": {"lon": venus_deg, "name_ja": _deg_to_sign_name(venus_deg)},
+        "mars":  {"lon": mars_deg,  "name_ja": _deg_to_sign_name(mars_deg)},
+        "asc":   {"lon": asc_deg,   "name_ja": _deg_to_sign_name(asc_deg)},
+    }
+
+
+# ==============================================================
+#                    生成 PDF 主入口
+# ==============================================================
 
 @app.route("/api/generate_report", methods=["GET"])
 def generate_report():
     # ---- 1. 读取参数 ----
-    # 这里优先用 Tally 的字段：your_name / partner_name
-    # 但也兼容旧的 male_name / female_name / name / partner
     your_name = (
         request.args.get("your_name")
         or request.args.get("male_name")
@@ -1224,16 +1137,12 @@ def generate_report():
         or ""
     )
 
-    # 后面代码里继续用 male_name / female_name 这两个变量
     male_name = your_name
     female_name = partner_name
 
-    # 表单里你暂时没有传 date，就按今天的日期来显示
     raw_date = request.args.get("date")
     date_display = get_display_date(raw_date)
 
-    # 生日 / 时间 / 地点：优先用 Tally 的 your_xxx / partner_xxx，
-    # 没有的话再兼容以前的 key
     your_dob = (
         request.args.get("your_dob")
         or request.args.get("male_dob")
@@ -1267,7 +1176,7 @@ def generate_report():
         or "Tokyo"
     )
 
-    # ---- 2. 计算双方核心星盘（现在是简易伪星盘）----
+    # ---- 2. 计算双方核心星盘（真实度数近似）----
     male_core = compute_core_from_birth(your_dob, your_time, your_place)
     female_core = compute_core_from_birth(partner_dob, partner_time, partner_place)
 
@@ -1275,13 +1184,8 @@ def generate_report():
     buffer = io.BytesIO()
     c = canvas.Canvas(buffer, pagesize=A4)
 
-    # ------------------------------------------------------------------
     # PAGE 1：封面
-    # ------------------------------------------------------------------
-    # 背景图（包含 logo、LOVE REPORT、标题等）
     draw_full_bg(c, "cover.jpg")
-
-    # 只额外画「名字组合」+「作成日」
     c.setFont(JP_SANS, 20)
     c.setFillColorRGB(0.1, 0.1, 0.1)
     couple_text = f"{male_name} さん ＆ {female_name} さん"
@@ -1294,16 +1198,11 @@ def generate_report():
 
     c.showPage()
 
- 
-    # ------------------------------------------------------------------
-    # PAGE 2：このレポートについて（背景固定，不生成内容）
-    # ------------------------------------------------------------------
+    # PAGE 2：このレポートについて
     draw_full_bg(c, "index.jpg")
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # PAGE 3：基本ホロスコープと総合相性（完全变量版）
-    # ------------------------------------------------------------------
+    # PAGE 3：基本ホロスコープと総合相性
     compat_score, compat_summary, sun_text, moon_text, asc_text = build_page3_texts(
         male_name, female_name, male_core, female_core
     )
@@ -1321,9 +1220,7 @@ def generate_report():
         asc_text,
     )
 
-    # ------------------------------------------------------------------
-    # PAGE 4：性格の違いとコミュニケーション（变量文本生成）
-    # ------------------------------------------------------------------
+    # PAGE 4
     def build_page4_texts(male_name, female_name, male_core, female_core):
         talk_text = (
             f"{male_name} さんは、自分の気持ちを言葉にするまでに少し時間をかける、じっくりタイプです。"
@@ -1344,12 +1241,12 @@ def generate_report():
             "一言でいうと、二人は「解決志向」と「共感志向」が支え合う、心強いバランス型のペアです。"
         )
         values_text = (
-            f"{male_name} さんは、安定や責任感を重視する一方で、{female_name} さんは、変化やワクワク感を大切にする傾向があります。"
+            f"{male_name} さんは、安定や責任感を重视する一方で、{female_name} さんは、変化やワクワク感を大切にする傾向があります。"
             "お金の使い方や休日の過ごし方、将来のイメージなど、小さな違いが積み重なると、"
             "「なんでわかってくれないの？」と感じる瞬間が出てくるかもしれません。"
         )
         values_summary = (
-            "一言でいうと、二人の価値観は違いを否定するのではなく、「お互いの世界を広げ合うきっかけ」になる組み合わせです。"
+            "一言でいうと、二人の価値观は違いを否定するのではなく、「お互いの世界を広げ合うきっかけ」になる組み合わせです。"
         )
         return (
             talk_text, talk_summary,
@@ -1370,9 +1267,7 @@ def generate_report():
         values_text, values_summary,
     )
 
-    # ------------------------------------------------------------------
-    # PAGE 5：相性の良い点・すれ違いやすい点（变量文本生成）
-    # ------------------------------------------------------------------
+    # PAGE 5
     def build_page5_texts(male_name, female_name, male_core, female_core):
         good_text = (
             f"{male_name} さんは、相手の立場を考えながら行動できる、落ち着いた安心感のあるタイプです。"
@@ -1386,17 +1281,17 @@ def generate_report():
         gap_text = (
             f"{male_name} さんは、物事を決めるときに慎重に考えたいタイプで、"
             f"{female_name} さんは、流れや直感を大切にして「とりあえずやってみよう」と思うことが多いかもしれません。"
-            "そのため、決断のペースや優先順位がずれると、"
+            "そのため、決断のペースや优先順位がずれると、"
             "「どうしてそんなに急ぐの？」「どうしてそんなに慎重なの？」とお互いに感じやすくなります。"
         )
         gap_summary = (
-            "一言でいうと、二人のすれ違いは「慎重さ」と「フットワークの軽さ」の差ですが、そのギャップは視野を広げるヒントにもなります。"
+            "一言でいうと、二人のすれ違いは「慎重さ」と「フットワークの軽さ」の差ですが、そのギャップは视野を広げるヒントにもなります。"
         )
         hint_text = (
             f"{male_name} さんの安定感と、{female_name} さんの柔軟さ・明るさが合わさることで、"
             "二人は「現実的で無理のないチャレンジ」を積み重ねていけるペアです。"
-            "お互いの考え方を一度言葉にして共有する習慣ができると、"
-            "二人だけのペースや目標が見つかり、将来像もより具体的に描きやすくなります。"
+            "お互いの考え方を一度言葉にして共有する習惯ができると、"
+            "二人だけのペースや目標が见つかり、将来像もより具体的に描きやすくなります。"
         )
         hint_summary = (
             "一言でいうと、二人の伸ばしていけるポイントは「安心できる土台の上で、新しい一歩を一緒に踏み出せる力」です。"
@@ -1420,37 +1315,35 @@ def generate_report():
         hint_text, hint_summary,
     )
 
-    # ------------------------------------------------------------------
-    # PAGE 6：関係の方向性と今後の傾向（变量文本生成）
-    # ------------------------------------------------------------------
+    # PAGE 6
     def build_page6_texts(male_name, female_name, male_core, female_core):
         theme_text = (
             "二人の関係は、「安心感」と「前進力」をバランスよく両立させていくタイプです。"
-            "大切にしたい価値観や向かう方向が似ているため、土台が安定しやすく、"
-            "意見が分かれる場面でも最終的には同じゴールを選びやすいペアです。"
+            "大切にしたい価値观や向かう方向が似ているため、土台が安定しやすく、"
+            "意見が分かれる場面でも最終的には同じゴールを选びやすいペアです。"
         )
         theme_summary = (
-            "一言でいうと、「同じ方向を見て進める安定感のあるテーマ」です。"
+            "一言でいうと、「同じ方向を见て进める安定感のあるテーマ」です。"
         )
         emotion_text = (
-            "感情の深まり方は、最初はゆっくりですが、一度安心できると一気に距離が縮まるスタイルです。"
-            "相手の気持ちを丁寧に受け取るほど信頼が積み重なり、"
-            "日常の小さな会話から親密さが育っていきます。"
+            "感情の深まり方は、最初はゆっくりですが、一度安心できると一気に距離が缩まるスタイルです。"
+            "相手の気持ちを丁寧に受け取るほど信頼が积み重なり、"
+            "日常の小さな会話から亲密さが育っていきます。"
         )
         emotion_summary = (
             "一言でいうと、「ゆっくり始まり、深くつながる流れ」です。"
         )
         style_text = (
             "このペアは、片方が雰囲気をつくり、もう片方が行動を整えるように、"
-            "自然と役割分担が生まれやすい組み合わせです。"
+            "自然と役割分担が生まれやすい组合せです。"
             "生活のペースと会话のリズムが合いやすく、無理なく居心地の良い関係を形にできます。"
         )
         style_summary = (
-            "一言でいうと、「調和しながら一緒に形を作る関係」です。"
+            "一言でいうと、「调和しながら一绪に形を作る関係」です。"
         )
         future_text = (
-            "今後1〜2年は、安心できる土台の上で少しずつ新しい挑戦を重ねていく時期です。"
-            "環境の変化にも協力して向き合うことで、関係の方向性がよりはっきりしていきます。"
+            "今后1〜2年は、安心できる土台の上で少しずつ新しい挑戦を重ねていく時期です。"
+            "环境の変化にも协力して向き合うことで、関係の方向性がよりはっきりしていきます。"
         )
         future_summary = (
             "一言でいうと、「安定の中で小さな前進が続く時期」です。"
@@ -1477,25 +1370,23 @@ def generate_report():
         future_text, future_summary,
     )
 
-    # ------------------------------------------------------------------
-    # PAGE 7：日常で役立つアドバイス（变量文本生成）
-    # ------------------------------------------------------------------
+    # PAGE 7
     def build_page7_texts(male_name, female_name, male_core, female_core):
         advice_rows = [
             (
                 "忙しい平日の夜",
-                "10分だけ携帯を置いて、お互いに「今日いちばん嬉しかったこと」を一つずつ話してみましょう。"
+                "10分だけ携帯を置いて、お互いに「今日いちばん嬉しかったこと」を一つずつ话してみましょう。"
             ),
             (
                 "休みの日のデート前",
-                "予定を決める前に「今日はどんな気分？」と聞くひと言だけで、行き先のすれ違いが減りやすくなります。"
+                "予定を决定する前に「今日はどんな気分？」と闻くひと言だけで、行き先のすれ违いが减りやすくなります。"
             ),
             (
-                "気持ちがすれ違ったとき",
+                "気持ちがすれ违ったとき",
                 "どちらが正しいかよりも、「今どう感じた？」を先に听くと、落ち着いて话し直しやすくなります。"
             ),
             (
-                "記念日や特別な日",
+                "记念日や特別な日",
                 "完璧を目指しすぎず、「お互いに一つずつ感謝を伝える」くらいのシンプルさが、ちょうどいいバランスです。"
             ),
             (
@@ -1504,13 +1395,13 @@ def generate_report():
             ),
             (
                 "なんとなく距離を感じるとき",
-                "重い話ではなく、「最近ハマっていること教えて？」など、軽いテーマから会話をつなげてみましょう。"
+                "重い话ではなく、「最近ハマっていること教えて？」など、軽いテーマから会话をつなげてみましょう。"
             ),
         ]
         footer_text = (
             "ここに挙げたのはあくまで一例です。"
             "ふたりらしい言葉やタイミングにアレンジしながら、"
-            "日常の中で少しずつ「話すきっかけ」を増やしていってください。"
+            "日常の中で少しずつ「话すきっかけ」を増やしていってください。"
         )
         return advice_rows, footer_text
 
@@ -1518,9 +1409,7 @@ def generate_report():
 
     draw_page7_advice(c, advice_rows, footer_text)
 
-    # ------------------------------------------------------------------
-    # PAGE 8：まとめ（变量版）
-    # ------------------------------------------------------------------
+    # PAGE 8：まとめ
     draw_full_bg(c, "page_summary.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
@@ -1546,9 +1435,7 @@ def generate_report():
 
     c.showPage()
 
-    # ------------------------------------------------------------------
-    # 收尾：保存并返回 PDF
-    # ------------------------------------------------------------------
+    # 收尾
     c.save()
     buffer.seek(0)
 
