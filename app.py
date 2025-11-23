@@ -477,7 +477,7 @@ def build_page3_texts(
 def build_planet_block(core: dict) -> dict:
     """
     core = {
-        "sun":   {"lon":..., "name_ja":...},
+        "sun":   {"lon":..., "sign_jp":...},
         "moon":  {...},
         "venus": {...},
         "mars":  {...},
@@ -486,7 +486,8 @@ def build_planet_block(core: dict) -> dict:
     """
     def fmt(label_ja: str, d) -> str:
         if isinstance(d, dict):
-            name = d.get("name_ja") or d.get("label") or ""
+            # 兼容多种命名：name_ja / sign_jp / label
+            name = d.get("name_ja") or d.get("sign_jp") or d.get("label") or ""
             lon = d.get("lon")
         else:
             name = str(d) if d is not None else ""
@@ -517,144 +518,6 @@ def build_planet_block(core: dict) -> dict:
         },
     }
 
-
-def draw_page3_basic_and_synastry(
-    c,
-    male_name: str,
-    female_name: str,
-    male_core: dict,
-    female_core: dict,
-    compat_score: int,
-    compat_summary: str,
-    sun_text: str,
-    moon_text: str,
-    asc_text: str,
-):
-    draw_full_bg(c, "page_basic.jpg")
-
-    chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
-    chart_img = ImageReader(chart_path)
-
-    chart_size = 180
-    left_x = 90
-    left_y = 520
-    right_x = PAGE_WIDTH - chart_size - 90
-    right_y = left_y
-
-    left_cx = left_x + chart_size / 2
-    left_cy = left_y + chart_size / 2
-    right_cx = right_x + chart_size / 2
-    right_cy = right_y + chart_size / 2
-
-    c.drawImage(
-        chart_img,
-        left_x,
-        left_y,
-        width=chart_size,
-        height=chart_size,
-        mask="auto",
-    )
-    c.drawImage(
-        chart_img,
-        right_x,
-        right_y,
-        width=chart_size,
-        height=chart_size,
-        mask="auto",
-    )
-
-    male_planets = build_planet_block(male_core)
-    female_planets = build_planet_block(female_core)
-
-    icon_files = {
-        "sun": "icon_sun.png",
-        "moon": "icon_moon.png",
-        "venus": "icon_venus.png",
-        "mars": "icon_mars.png",
-        "asc": "icon_asc.png",
-    }
-
-    male_color = (0.15, 0.45, 0.9)
-    female_color = (0.9, 0.35, 0.65)
-
-    for key, info in male_planets.items():
-        draw_planet_icon(
-            c,
-            left_cx,
-            left_cy,
-            chart_size,
-            info["deg"],
-            male_color,
-            icon_files[key],
-        )
-
-    for key, info in female_planets.items():
-        draw_planet_icon(
-            c,
-            right_cx,
-            right_cy,
-            chart_size,
-            info["deg"],
-            female_color,
-            icon_files[key],
-        )
-
-    c.setFont(JP_SERIF, 14)
-    c.setFillColorRGB(0.2, 0.2, 0.2)
-    c.drawCentredString(left_cx, left_y - 25, f"{male_name} さん")
-    c.drawCentredString(right_cx, right_y - 25, f"{female_name} さん")
-
-    c.setFont(JP_SERIF, 8.5)
-    male_lines = [info["label"] for info in male_planets.values()]
-    for i, line in enumerate(male_lines):
-        y = left_y - 45 - i * 11
-        c.drawString(left_cx - 30, y, line)
-
-    female_lines = [info["label"] for info in female_planets.values()]
-    for i, line in enumerate(female_lines):
-        y = right_y - 45 - i * 11
-        c.drawString(right_cx - 30, y, line)
-
-    text_x = 130
-    wrap_width = 360
-    body_font = JP_SERIF
-    body_size = 12
-    line_height = 18
-
-    c.setFont(JP_SANS, 12)
-    c.setFillColorRGB(0.2, 0.2, 0.2)
-    c.drawString(text_x, 350, "ふたりの相性バランス：")
-
-    draw_wrapped_block_limited(
-        c,
-        compat_summary,
-        text_x,
-        350 - line_height * 1.4,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-        max_lines=2,
-    )
-
-    y_analysis = 220
-    c.setFont(body_font, body_size)
-    for block_text in (sun_text, moon_text, asc_text):
-        y_analysis = draw_wrapped_block_limited(
-            c,
-            block_text,
-            text_x,
-            y_analysis,
-            wrap_width,
-            body_font,
-            body_size,
-            line_height,
-            max_lines=3,
-        )
-        y_analysis -= line_height
-
-    draw_page_number(c, 3)
-    c.showPage()
 
 
 # ------------------------------------------------------------------
