@@ -336,7 +336,7 @@ def draw_page_number(c, page_num: int):
 # ==============================================================
 
 # ------------------------------------------------------------------
-# Page3：星座元素 → 相性总结文本（不再使用评分）
+# Page3 用：相性テキスト + 太陽・月・ASC のテキスト + 星盤描画
 # ------------------------------------------------------------------
 
 # 12星座 → 4元素
@@ -355,131 +355,163 @@ SIGN_ELEMENT = {
     "魚座":   "water",
 }
 
-# 元素组合 → 二人の相性まとめ（最多 2 文）
+# 元素の組み合わせごとの相性まとめ（2文以内）
 PAIR_SUMMARY_TEXT = {
     ("fire", "fire"):
         "情熱と勢いで惹かれ合う、華やかなペアです。"
-        "お互いが主役になりやすいため、ときどきペースを落として相手の気持ちを聞けると長続きします。",
-
+        "お互いが主役になりやすいので、ときどきペースを落として相手の気持ちを聞けると長続きします。",
     ("fire", "earth"):
-        "情熱と安定感でバランスを取れるペアです。"
-        "勢いだけで進まず、現実的な計画を共有すると関係が育ちます。",
-
+        "片方の情熱と片方の安定感が、良いバランスを生み出すペアです。"
+        "勢いだけで突っ走らず、現実的な計画を一緒に立てることで関係が育ちやすくなります。",
     ("fire", "air"):
-        "ノリと発想で刺激し合うペアです。"
-        "その場の勢いだけで決めず、未来のビジョンを共有すると安心感が高まります。",
-
+        "ノリとアイデアで世界を広げていける、刺激的なペアです。"
+        "その場の勢いで決めすぎず、ときどき未来のビジョンをすり合わせると安心感も高まります。",
     ("fire", "water"):
-        "情熱と感受性が混ざるドラマチックなペアです。"
-        "感情がぶつかりやすいぶん、相手のペースを尊重すると深い信頼につながります。",
-
+        "情熱と感受性が混ざり合う、ドラマチックなペアです。"
+        "感情がぶつかりやすいぶん、相手のペースを尊重してあげると深い信頼につながります。",
     ("earth", "fire"):
-        "堅実さと行動力で現実を動かせるペアです。",
+        "堅実さと行動力で、現実をしっかり動かしていけるペアです。"
+        "慎重さとチャレンジ精神の両方を大事にすると、長期的なパートナーシップになりやすいタイプです。",
     ("earth", "earth"):
-        "生活リズムが似やすく、安心感の高いペアです。",
-
+        "価値観や生活リズムが似やすい、安心感の高いペアです。"
+        "安定を大切にしつつ、ときどき小さな変化や楽しみを共有するとマンネリを防げます。",
     ("earth", "air"):
-        "片方が現実を支え、片方が視野を広げる補完ペアです。",
-
+        "片方が現実を支え、片方が視野を広げる、補い合いのペアです。"
+        "考え方の違いを否定せず、「役割分担」として受け止めると心地よい距離感が育ちます。",
     ("earth", "water"):
-        "現実感と優しさで落ち着く関係を作るペアです。",
-
+        "現実感と優しさで、ほっとできる居場所をつくれるペアです。"
+        "感情を我慢しすぎず、素直な気持ちを言葉にすることで、さらに信頼が深まっていきます。",
     ("air", "fire"):
-        "会話と行動力で世界を広げる冒険型ペアです。",
-
+        "会話と行動力で世界をどんどん広げていける、冒険タイプのペアです。"
+        "テンションの差が出たときは、相手のモードを確認してから動くとすれ違いが減ります。",
     ("air", "earth"):
-        "アイデアと現実性のバランスが良いペアです。",
-
+        "アイデアと現実性を組み合わせて、着実に形にできるペアです。"
+        "理屈と感覚の両方を尊重しながら話し合うことで、安定と自由のバランスが整っていきます。",
     ("air", "air"):
-        "テンポが似て心地よいペアです。",
-
+        "価値観や会話のテンポが似やすく、一緒にいて気楽なペアです。"
+        "話すだけで終わらず、小さな約束を実行していくと信頼感がより強くなります。",
     ("air", "water"):
-        "理性と言葉・感性と気持ちで支え合うペアです。",
-
+        "片方が言葉で整理し、片方が気持ちで寄り添う、心のサポート力の高いペアです。"
+        "感情と理性のギャップを責め合わず、「お互いの強み」として活かすと絆が深まります。",
     ("water", "fire"):
-        "感情の深さと情熱が混ざる印象的なペアです。",
-
+        "感情の深さと情熱が混ざり合う、印象的なペアです。"
+        "ムードに流されすぎず、安心できるルールやペースを共有すると長く続きやすくなります。",
     ("water", "earth"):
-        "優しさと安定感で落ち着いた関係を育てるペアです。",
-
+        "優しさと安定感で、落ち着いた関係を育てていけるペアです。"
+        "気遣いで我慢しすぎず、ときどき本音を打ち明けることで心の距離がさらに縮まります。",
     ("water", "air"):
-        "感性と知性が刺激し合う化学反応ペアです。",
-
+        "感性と知性がお互いを刺激し合う、化学反応タイプのペアです。"
+        "感じ方の違いを説明し合う時間をつくると、誤解が減って支え合いやすくなります。",
     ("water", "water"):
-        "感情の波を分かち合える共感力の高いペアです。",
+        "感情の波を分かち合える、共感力の高いペアです。"
+        "ふたりとも疲れているときは、言葉より休息を優先するなど、セルフケアを共有できると安心感が続きます。",
 }
 
+def build_pair_summary_from_sun(your_sun_ja: str, partner_sun_ja: str) -> str:
+    em = SIGN_ELEMENT.get(your_sun_ja)
+    ep = SIGN_ELEMENT.get(partner_sun_ja)
+    if em is None or ep is None:
+        return (
+            "お互いの違いを通して、新しい価値観を学び合えるペアです。"
+            "少しずつ歩調を合わせていくことで、安心できる関係が育っていきます。"
+        )
+    base = PAIR_SUMMARY_TEXT.get((em, ep))
+    if base is None:
+        return (
+            "お互いの個性を活かしながら、ほどよい距離感で支え合えるペアです。"
+            "違いを否定せず、興味を持って聞き合うことで信頼が深まります。"
+        )
+    return base
 
-def build_pair_summary_from_sun(your_sun, partner_sun):
-    e1 = SIGN_ELEMENT.get(your_sun)
-    e2 = SIGN_ELEMENT.get(partner_sun)
+def build_page3_texts(
+    your_name: str,
+    partner_name: str,
+    your_core: dict,
+    partner_core: dict,
+):
+    def get_sign_name(core: dict, key: str) -> str:
+        v = core.get(key)
+        if isinstance(v, dict):
+            return (
+                v.get("name_ja")
+                or v.get("sign_jp")
+                or v.get("label")
+                or ""
+            )
+        return str(v) if v is not None else ""
 
-    if e1 and e2:
-        return PAIR_SUMMARY_TEXT.get((e1, e2)) or \
-            "お互いの個性を尊重しながら心地よい関係を育てられるペアです。"
-    else:
-        return "お互いの違いが新しい価値観を広げるきっかけになるペアです。"
+    your_sun = get_sign_name(your_core, "sun")
+    partner_sun = get_sign_name(partner_core, "sun")
 
-
-# ------------------------------------------------------------------
-# Page3：基本ホロスコープ + 相性まとめ（无评分）
-# ------------------------------------------------------------------
-def build_page3_texts(your_name, partner_name, your_core, partner_core):
-
-    your_sun = your_core["sun"]["sign_jp"]
-    partner_sun = partner_core["sun"]["sign_jp"]
-
-    compat_summary = build_pair_summary_from_sun(your_sun, partner_sun)
+    compat_text = build_pair_summary_from_sun(your_sun, partner_sun)
 
     sun_text = (
         f"太陽星座の組み合わせから見ると、"
-        f"{your_name}さんと{partner_name}さんは、"
-        "お互いの価値観に自然な共通点があり、関係がまとまりやすい傾向があります。"
+        f"{your_name}さんと{partner_name}さんは、お互いの個性を通じて成長していけるペアです。"
+        "価値観の共通点と違いの両方が、関係のアクセントになっていきます。"
     )
 
     moon_text = (
-        "月は「安心感」や素の自分を表します。"
-        "感情のペースが違っても、丁寧に気持ちを共有することで、"
-        "安心感がさらに育まれます。"
+        "月は、ふたりが一緒にいるときの「安心感」や素の自分を表します。"
+        "感情のペースが少し違っても、丁寧に言葉にして伝えることで、"
+        "居心地のよさがぐっと高まっていきます。"
     )
 
     asc_text = (
-        "ASC（第一印象）は、人と出会った瞬間のフィーリングを示します。"
-        "少しずつ素の自分を見せ合うことで、自然な心地よさが生まれます。"
+        "ASC（第一印象）の相性は、出会ったときのフィーリングや、"
+        "外から見たふたりの雰囲気を示します。"
+        "少しずつ素の自分を見せ合うことが、長く続く関係のカギになります。"
     )
 
-    return compat_summary, sun_text, moon_text, asc_text
+    return compat_text, sun_text, moon_text, asc_text
 
-
-# ------------------------------------------------------------------
-# 星盘数据结构（使用真实度数）
-# ------------------------------------------------------------------
-def build_planet_block(core):
-    def fmt(label_ja, d):
-        return f"{label_ja}：{d['sign_jp']}"
+# 星盤データ構造（実際の度数を使う）
+def build_planet_block(core: dict) -> dict:
+    def fmt(label_ja: str, d) -> str:
+        if isinstance(d, dict):
+            name = (
+                d.get("name_ja")
+                or d.get("sign_jp")
+                or d.get("label")
+                or ""
+            )
+        else:
+            name = str(d) if d is not None else ""
+        return f"{label_ja}：{name}"
 
     return {
-        "sun": {"deg": core["sun"]["lon"], "label": fmt("太陽", core["sun"])},
-        "moon": {"deg": core["moon"]["lon"], "label": fmt("月", core["moon"])},
-        "venus": {"deg": core["venus"]["lon"], "label": fmt("金星", core["venus"])},
-        "mars": {"deg": core["mars"]["lon"], "label": fmt("火星", core["mars"])},
-        "asc": {"deg": core["asc"]["lon"], "label": fmt("ASC", core["asc"])},
+        "sun": {
+            "deg": core["sun"]["lon"],
+            "label": fmt("太陽", core["sun"]),
+        },
+        "moon": {
+            "deg": core["moon"]["lon"],
+            "label": fmt("月", core["moon"]),
+        },
+        "venus": {
+            "deg": core["venus"]["lon"],
+            "label": fmt("金星", core["venus"]),
+        },
+        "mars": {
+            "deg": core["mars"]["lon"],
+            "label": fmt("火星", core["mars"]),
+        },
+        "asc": {
+            "deg": core["asc"]["lon"],
+            "label": fmt("ASC", core["asc"]),
+        },
     }
 
-
-# ------------------------------------------------------------------
-# Page3 星盘绘制
-# ------------------------------------------------------------------
 def draw_page3_basic_and_synastry(
     c,
-    your_name,
-    partner_name,
-    your_core,
-    partner_core,
-    compat_summary,
-    sun_text,
-    moon_text,
-    asc_text,
+    your_name: str,
+    partner_name: str,
+    your_core: dict,
+    partner_core: dict,
+    compat_text: str,
+    sun_text: str,
+    moon_text: str,
+    asc_text: str,
 ):
     draw_full_bg(c, "page_basic.jpg")
 
@@ -497,9 +529,10 @@ def draw_page3_basic_and_synastry(
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    # 星盘底图
-    c.drawImage(chart_img, left_x, left_y, width=chart_size, height=chart_size, mask="auto")
-    c.drawImage(chart_img, right_x, right_y, width=chart_size, height=chart_size, mask="auto")
+    c.drawImage(chart_img, left_x, left_y,
+                width=chart_size, height=chart_size, mask="auto")
+    c.drawImage(chart_img, right_x, right_y,
+                width=chart_size, height=chart_size, mask="auto")
 
     your_planets = build_planet_block(your_core)
     partner_planets = build_planet_block(partner_core)
@@ -516,10 +549,26 @@ def draw_page3_basic_and_synastry(
     partner_color = (0.9, 0.35, 0.65)
 
     for key, info in your_planets.items():
-        draw_planet_icon(c, left_cx, left_cy, chart_size, info["deg"], your_color, icon_files[key])
+        draw_planet_icon(
+            c,
+            left_cx,
+            left_cy,
+            chart_size,
+            info["deg"],
+            your_color,
+            icon_files[key],
+        )
 
     for key, info in partner_planets.items():
-        draw_planet_icon(c, right_cx, right_cy, chart_size, info["deg"], partner_color, icon_files[key])
+        draw_planet_icon(
+            c,
+            right_cx,
+            right_cy,
+            chart_size,
+            info["deg"],
+            partner_color,
+            icon_files[key],
+        )
 
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
@@ -527,24 +576,53 @@ def draw_page3_basic_and_synastry(
     c.drawCentredString(right_cx, right_y - 25, f"{partner_name} さん")
 
     c.setFont(JP_SERIF, 8.5)
-    for i, line in enumerate([p["label"] for p in your_planets.values()]):
-        c.drawString(left_x, left_y - 45 - i * 12, line)
-    for i, line in enumerate([p["label"] for p in partner_planets.values()]):
-        c.drawString(right_x, right_y - 45 - i * 12, line)
+    your_lines = [info["label"] for info in your_planets.values()]
+    for i, line in enumerate(your_lines):
+        y = left_y - 45 - i * 11
+        c.drawString(left_cx - 30, y, line)
 
-    # 相性まとめ
+    partner_lines = [info["label"] for info in partner_planets.values()]
+    for i, line in enumerate(partner_lines):
+        y = right_y - 45 - i * 11
+        c.drawString(right_cx - 30, y, line)
+
+    text_x = 130
+    wrap_width = 360
+    body_font = JP_SERIF
+    body_size = 12
+    line_height = 18
+
     c.setFont(JP_SANS, 12)
-    c.drawString(130, 350, "ふたりの相性バランス：")
+    c.setFillColorRGB(0.2, 0.2, 0.2)
+    c.drawString(text_x, 350, "ふたりの相性バランス：")
+
     draw_wrapped_block_limited(
-        c, compat_summary, 130, 330, 360, JP_SERIF, 12, 18, max_lines=2
+        c,
+        compat_text,
+        text_x,
+        350 - line_height * 1.4,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=2,
     )
 
     y_analysis = 220
+    c.setFont(body_font, body_size)
     for block_text in (sun_text, moon_text, asc_text):
         y_analysis = draw_wrapped_block_limited(
-            c, block_text, 130, y_analysis, 360, JP_SERIF, 12, 18, max_lines=3
+            c,
+            block_text,
+            text_x,
+            y_analysis,
+            wrap_width,
+            body_font,
+            body_size,
+            line_height,
+            max_lines=3,
         )
-        y_analysis -= 18
+        y_analysis -= line_height
 
     draw_page_number(c, 3)
     c.showPage()
