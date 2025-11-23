@@ -873,10 +873,12 @@ def generate_report():
     # =======================
     # PAGE 3：相性まとめ
     # =======================
-    your_sun = your_core["sun"]["sign_jp"]
-    partner_sun = partner_core["sun"]["sign_jp"]
-
-    compat_text = build_pair_summary_from_sun(your_sun, partner_sun)
+    compat_text, sun_text, moon_text, asc_text = build_page3_texts(
+        your_name,
+        partner_name,
+        your_core,
+        partner_core,
+    )
 
     draw_page3_basic_and_synastry(
         c,
@@ -885,6 +887,9 @@ def generate_report():
         your_core,
         partner_core,
         compat_text,
+        sun_text,
+        moon_text,
+        asc_text,
     )
 
     # =======================
