@@ -479,28 +479,38 @@ def build_planet_block(core: dict) -> dict:
             name = str(d) if d is not None else ""
         return f"{label_ja}：{name}"
 
+    def deg_from(core_obj) -> float:
+        """core_obj['lon'] 可能是 float，也可能是 (float, ...) tuple，这里统一取第 0 个并转成 float。"""
+        if isinstance(core_obj, dict):
+            v = core_obj.get("lon")
+        else:
+            v = core_obj
+        if isinstance(v, (tuple, list)):
+            v = v[0]
+        return float(v)
+
     return {
         "sun": {
-            "deg": core["sun"]["lon"],
+            "deg": deg_from(core["sun"]),
             "label": fmt("太陽", core["sun"]),
         },
         "moon": {
-            "deg": core["moon"]["lon"],
+            "deg": deg_from(core["moon"]),
             "label": fmt("月", core["moon"]),
         },
         "venus": {
-            "deg": core["venus"]["lon"],
+            "deg": deg_from(core["venus"]),
             "label": fmt("金星", core["venus"]),
         },
         "mars": {
-            "deg": core["mars"]["lon"],
+            "deg": deg_from(core["mars"]),
             "label": fmt("火星", core["mars"]),
         },
         "asc": {
-            "deg": core["asc"]["lon"],
+            "deg": deg_from(core["asc"]),
             "label": fmt("ASC", core["asc"]),
         },
-    }
+
 
 def draw_page3_basic_and_synastry(
     c,
