@@ -1211,18 +1211,44 @@ def compute_core_from_birth(dob_str, time_str, place_name):
     houses, ascmc = swe.houses(jd, lat, lon)
     asc_lon = ascmc[0]
 
-    return {
-        "sun_deg": sun_lon,
-        "moon_deg": moon_lon,
-        "asc_deg": asc_lon,
-        "venus_deg": venus_lon,
-        "mars_deg": mars_lon,
-        "sun_sign_jp": lon_to_sign(sun_lon),
-        "moon_sign_jp": lon_to_sign(moon_lon),
-        "asc_sign_jp": lon_to_sign(asc_lon),
-        "venus_sign_jp": lon_to_sign(venus_lon),
-        "mars_sign_jp": lon_to_sign(mars_lon),
+    # ---- 7. 组装返回结构：兼容旧代码 + 新字段 ----
+    core = {
+        "sun": {
+            "lon": sun_lon,
+            "sign_jp": lon_to_sign(sun_lon),
+        },
+        "moon": {
+            "lon": moon_lon,
+            "sign_jp": lon_to_sign(moon_lon),
+        },
+        "venus": {
+            "lon": venus_lon,
+            "sign_jp": lon_to_sign(venus_lon),
+        },
+        "mars": {
+            "lon": mars_lon,
+            "sign_jp": lon_to_sign(mars_lon),
+        },
+        "asc": {
+            "lon": asc_lon,
+            "sign_jp": lon_to_sign(asc_lon),
+        },
     }
+
+    # 扁平别名字段（给其它地方用，保留兼容）
+    core["sun_deg"] = sun_lon
+    core["moon_deg"] = moon_lon
+    core["venus_deg"] = venus_lon
+    core["mars_deg"] = mars_lon
+    core["asc_deg"] = asc_lon
+
+    core["sun_sign_jp"] = core["sun"]["sign_jp"]
+    core["moon_sign_jp"] = core["moon"]["sign_jp"]
+    core["venus_sign_jp"] = core["venus"]["sign_jp"]
+    core["mars_sign_jp"] = core["mars"]["sign_jp"]
+    core["asc_sign_jp"] = core["asc"]["sign_jp"]
+
+    return core
 
 
 
