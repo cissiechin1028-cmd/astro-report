@@ -31,6 +31,10 @@ HAS_SWISSEPH = True
 # ------------------------------------------------------------------
 app = Flask(__name__, static_url_path='', static_folder='public')
 
+
+# ------------------------------------------------------------------
+# 占星符号数组 + lon → 星座函数（必须在 compute 之前）
+# ------------------------------------------------------------------
 ZODIAC_SIGNS = [
     "牡羊座","牡牛座","双子座","巨蟹座",
     "獅子座","乙女座","天秤座","蠍座",
@@ -41,20 +45,48 @@ def lon_to_sign(lon):
     idx = int(lon // 30) % 12
     return ZODIAC_SIGNS[idx]
 
+
+# ------------------------------------------------------------------
+# 计算星座位置（必须在路由之前）
+# ------------------------------------------------------------------
+def compute_astrology_positions(year, month, day, hour, minute, lat, lon):
+    decimal_hour = hour + minute / 60
+    jd = swe.julday(year, month, day, decimal_hour)
+
+    sun_lon   = swe.calc_ut(jd, swe.SUN)[0]
+    moon_lon  = swe.calc_ut(jd, swe.MOON)[0]
+    venus_lon = swe.calc_ut(jd, swe.VENUS)[0]
+    mars_lon  = swe.calc_ut(jd, swe.MARS)[0]
+
+    houses, ascmc = swe.houses(jd, lat, lon)
+    asc_lon = ascmc[0]
+
+    return {
+        "sun": lon_to_sign(sun_lon),
+        "moon": lon_to_sign(moon_lon),
+        "venus": lon_to_sign(venus_lon),
+        "mars": lon_to_sign(mars_lon),
+        "asc": lon_to_sign(asc_lon),
+    }
+
+
+# ------------------------------------------------------------------
+# 基础目录设置（放在占星逻辑之后）
+# ------------------------------------------------------------------
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
 EPHE_DIR = os.path.join(BASE_DIR, "ephe")
 
-# 如果有安装 Swiss Ephemeris，就设置星历文件目录
+# 设置 Swiss Ephemeris 星历路径
 if 'HAS_SWISSEPH' in globals() and HAS_SWISSEPH:
     try:
         swe.set_ephe_path(EPHE_DIR)
     except Exception:
-        # 即使设置失败，也不要让整个服务崩掉
         HAS_SWISSEPH = False
 
 
 PAGE_WIDTH, PAGE_HEIGHT = A4
+
 
 # ------------------------------------------------------------------
 # 字体设置
