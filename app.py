@@ -9,9 +9,20 @@ import os
 import datetime
 import math
 
+# ==== Swiss Ephemeris 设置（必须在使用前执行） ====
+import swisseph as swe
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+EPHE_PATH = os.path.join(BASE_DIR, "ephe")
+
+# 设置 ephe 路径，使 swisseph 能找到 sepl/semo/seas 文件
+swe.set_ephe_path(EPHE_PATH)
+# ====================================================
+
+
 
 # ------ Swiss Ephemeris 尝试导入（不需要 ephe 目录） ------
-HAS_SWISSEPH = False
+HAS_SWISSEPH = True
 
 
 
