@@ -31,6 +31,16 @@ HAS_SWISSEPH = True
 # ------------------------------------------------------------------
 app = Flask(__name__, static_url_path='', static_folder='public')
 
+ZODIAC_SIGNS = [
+    "牡羊座","牡牛座","双子座","巨蟹座",
+    "獅子座","乙女座","天秤座","蠍座",
+    "射手座","山羊座","水瓶座","魚座",
+]
+
+def lon_to_sign(lon):
+    idx = int(lon // 30) % 12
+    return ZODIAC_SIGNS[idx]
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(BASE_DIR, "public", "assets")
 EPHE_DIR = os.path.join(BASE_DIR, "ephe")
