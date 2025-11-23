@@ -1057,21 +1057,20 @@ def compute_core_from_birth(dob_str, time_str, place_name):
 def generate_report():
     ...
 
-    # ---- 1. 读取参数 ----
+        # ---- 1. 读取参数 ----
     your_name = (
         request.args.get("your_name")
-        or request.args.get("male_name")
         or request.args.get("name")
         or ""
     )
 
     partner_name = (
         request.args.get("partner_name")
-        or request.args.get("female_name")
         or request.args.get("partner")
         or ""
     )
 
+    # 内部变量名先保持，用来区分“自己 / 对方”
     male_name = your_name
     female_name = partner_name
 
@@ -1080,36 +1079,31 @@ def generate_report():
 
     your_dob = (
         request.args.get("your_dob")
-        or request.args.get("male_dob")
         or request.args.get("dob")
         or "1990-01-01"
     )
     your_time = (
         request.args.get("your_time")
-        or request.args.get("male_time")
         or "12:00"
     )
     your_place = (
         request.args.get("your_place")
-        or request.args.get("male_place")
         or "Tokyo"
     )
 
     partner_dob = (
         request.args.get("partner_dob")
-        or request.args.get("female_dob")
         or "1990-01-01"
     )
     partner_time = (
         request.args.get("partner_time")
-        or request.args.get("female_time")
         or "12:00"
     )
     partner_place = (
         request.args.get("partner_place")
-        or request.args.get("female_place")
         or "Tokyo"
     )
+
 
     # ---- 2. 计算双方核心星盘（真实度数近似）----
     male_core = compute_core_from_birth(your_dob, your_time, your_place)
