@@ -41,7 +41,13 @@ ZODIAC_SIGNS = [
     "射手座","山羊座","水瓶座","魚座",
 ]
 
+
 def lon_to_sign(lon):
+    # swisseph.calc_ut 可能整包传进来 → 先拆出第 0 个
+    if isinstance(lon, (tuple, list)):
+        lon = lon[0]
+
+    lon = float(lon)
     idx = int(lon // 30) % 12
     return ZODIAC_SIGNS[idx]
 
