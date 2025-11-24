@@ -510,6 +510,7 @@ def build_planet_block(core: dict) -> dict:
             "deg": deg_from(core["asc"]),
             "label": fmt("ASC", core["asc"]),
         },
+    }   # ←← 就是这个括号，你的文件里少了它
 
 
 def draw_page3_basic_and_synastry(
