@@ -8,6 +8,8 @@ import io
 import os
 import datetime
 import math
+from astrology_texts import SUN_PAIR_TEXTS, MOON_PAIR_TEXTS, ASC_PAIR_TEXTS
+
 
 # ==== Swiss Ephemeris 设置 ====
 import swisseph as swe
