@@ -1005,11 +1005,13 @@ def generate_report():
     date_display = get_display_date(raw_date)
 
     your_dob = request.args.get("your_dob") or "1990-01-01"
-    your_time = request.args.get("your_time") or "12:00"
+    raw_your_time = request.args.get("your_time") or "12:00"
+    your_time = normalize_time_label(raw_your_time)
     your_place = request.args.get("your_place") or "Tokyo"
 
     partner_dob = request.args.get("partner_dob") or "1990-01-01"
-    partner_time = request.args.get("partner_time") or "12:00"
+    raw_partner_time = request.args.get("partner_time") or "12:00"
+    partner_time = normalize_time_label(raw_partner_time)
     partner_place = request.args.get("partner_place") or "Tokyo"
 
     # ---- 2. 计算双方核心星盘 ----
