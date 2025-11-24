@@ -45,3 +45,59 @@ PAGE3_CORE_TEXTS = {
         "現実的に支え合えるため、生活面でも相性の良さを実感しやすい関係です。"
     ),
 }
+
+# =========================
+# Page3 用 变量模板（正式版）
+# =========================
+
+# 关系的基调（総合印象 / 基本テーマ）
+CORE_PAIR_OVERVIEW = {
+    "fire_fire": "",
+    "fire_earth": "",
+    "fire_air": "",
+    "fire_water": "",
+    "earth_earth": "",
+    "earth_air": "",
+    "earth_water": "",
+    "air_air": "",
+    "air_water": "",
+    "water_water": "",
+}
+
+# 太陽 × 太陽（本質 / 価値観）
+SUN_PAIR_TEXTS = {
+    "fire_fire": "",
+    "fire_earth": "",
+    "fire_air": "",
+    "fire_water": "",
+    "earth_earth": "",
+    "earth_air": "",
+    "earth_water": "",
+    "air_air": "",
+    "air_water": "",
+    "water_water": "",
+}
+
+# 月 × 月（感情テンポ）
+MOON_PAIR_TEXTS = {
+    "fire_fire": "",
+    "fire_earth": "",
+    "fire_air": "",
+    "fire_water": "",
+    "earth_earth": "",
+    "earth_air": "",
+    "earth_water": "",
+    "air_air": "",
+    "air_water": "",
+    "water_water": "",
+}
+
+# ASC × ASC（第一印象 / 外向特質）
+ASC_PAIR_TEXTS = {
+    "extro_extro": "",
+    "extro_stable": "",
+    "extro_soft": "",
+    "stable_stable": "",
+    "stable_soft": "",
+    "soft_soft": "",
+}
