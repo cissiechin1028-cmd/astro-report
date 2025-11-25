@@ -442,30 +442,82 @@ def build_page3_texts(
             )
         return str(v) if v is not None else ""
 
-    your_sun = get_sign_name(your_core, "sun")
-    partner_sun = get_sign_name(partner_core, "sun")
-
+    # 元の太陽組み合わせサマリー（既存ロジックそのまま）
+    your_sun = your_core.get("sun_sign_jp") or get_sign_name(your_core, "sun")
+    partner_sun = partner_core.get("sun_sign_jp") or get_sign_name(partner_core, "sun")
     compat_text = build_pair_summary_from_sun(your_sun, partner_sun)
 
-    sun_text = (
-        f"太陽星座の組み合わせから見ると、"
-        f"{your_name}さんと{partner_name}さんは、お互いの個性を通じて成長していけるペアです。"
-        "価値観の共通点と違いの両方が、関係のアクセントになっていきます。"
-    )
+    # 星座 → 4元素に変換
+    def sign_to_element(sign_jp: str) -> str:
+        if not sign_jp:
+            return ""
+        s = str(sign_jp)
+        if ("牡羊" in s) or ("獅子" in s) or ("射手" in s):
+            return "fire"
+        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
+            return "earth"
+        if ("双子" in s) or ("天秤" in s) or ("水瓶" in s):
+            return "air"
+        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
+            return "water"
+        return ""
 
-    moon_text = (
-        "月は、ふたりが一緒にいるときの「安心感」や素の自分を表します。"
-        "感情のペースが少し違っても、丁寧に言葉にして伝えることで、"
-        "居心地のよさがぐっと高まっていきます。"
-    )
+    # 4元素ペア → fire_earth 形式のキーに変換
+    def make_element_pair_key(e1: str, e2: str) -> str:
+        if not e1 or not e2:
+            return ""
+        if e1 == e2:
+            return f"{e1}_{e2}"
+        order = {"fire": 0, "earth": 1, "air": 2, "water": 3}
+        a, b = sorted([e1, e2], key=lambda x: order.get(x, 99))
+        return f"{a}_{b}"
 
-    asc_text = (
-        "ASC（第一印象）の相性は、出会ったときのフィーリングや、"
-        "外から見たふたりの雰囲気を示します。"
-        "少しずつ素の自分を見せ合うことが、長く続く関係のカギになります。"
-    )
+    # ASC 星座 → 3タイプ（extro / stable / soft）
+    def asc_to_group(sign_jp: str) -> str:
+        if not sign_jp:
+            return "stable"
+        s = str(sign_jp)
+        # 外向・動きのある印象
+        if ("牡羊" in s) or ("双子" in s) or ("獅子" in s) or ("天秤" in s) or ("射手" in s) or ("水瓶" in s):
+            return "extro"
+        # 落ち着き・現実感
+        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
+            return "stable"
+        # やわらかさ・共感
+        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
+            return "soft"
+        return "stable"
+
+    # ASC グループペア → extro_soft 形式キー
+    def make_asc_pair_key(g1: str, g2: str) -> str:
+        if not g1 or not g2:
+            return ""
+        if g1 == g2:
+            return f"{g1}_{g2}"
+        order = {"extro": 0, "stable": 1, "soft": 2}
+        a, b = sorted([g1, g2], key=lambda x: order.get(x, 99))
+        return f"{a}_{b}"
+
+    # 太陽・月・ASC からキーを作成
+    your_sun_el = sign_to_element(your_core.get("sun_sign_jp") or get_sign_name(your_core, "sun"))
+    partner_sun_el = sign_to_element(partner_core.get("sun_sign_jp") or get_sign_name(partner_core, "sun"))
+    sun_key = make_element_pair_key(your_sun_el, partner_sun_el)
+
+    your_moon_el = sign_to_element(your_core.get("moon_sign_jp") or get_sign_name(your_core, "moon"))
+    partner_moon_el = sign_to_element(partner_core.get("moon_sign_jp") or get_sign_name(partner_core, "moon"))
+    moon_key = make_element_pair_key(your_moon_el, partner_moon_el)
+
+    your_asc_group = asc_to_group(your_core.get("asc_sign_jp") or get_sign_name(your_core, "asc"))
+    partner_asc_group = asc_to_group(partner_core.get("asc_sign_jp") or get_sign_name(partner_core, "asc"))
+    asc_key = make_asc_pair_key(your_asc_group, partner_asc_group)
+
+    # Page3 用テキスト
+    sun_text = SUN_PAIR_TEXTS.get(sun_key, "")
+    moon_text = MOON_PAIR_TEXTS.get(moon_key, "")
+    asc_text = ASC_PAIR_TEXTS.get(asc_key, "")
 
     return compat_text, sun_text, moon_text, asc_text
+
 
 # 星盤データ構造（実際の度数を使う）
 def build_planet_block(core: dict) -> dict:
