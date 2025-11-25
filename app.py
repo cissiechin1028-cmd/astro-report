@@ -175,8 +175,12 @@ PAGE_WIDTH, PAGE_HEIGHT = A4
 # ------------------------------------------------------------------
 JP_SANS = "HeiseiKakuGo-W5"
 JP_SERIF = "HeiseiMin-W3"
+
 pdfmetrics.registerFont(UnicodeCIDFont(JP_SANS))
 pdfmetrics.registerFont(UnicodeCIDFont(JP_SERIF))
+
+# ★ 新增这一行，让 JP_SANS_BOLD 指向同一个字体（看起来就当作粗体用）
+JP_SANS_BOLD = JP_SANS
 
 
 # ------------------------------------------------------------------
