@@ -594,11 +594,25 @@ def draw_page3_basic_and_synastry(
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    c.drawImage(chart_img, left_x, left_y,
-                width=chart_size, height=chart_size, mask="auto")
-    c.drawImage(chart_img, right_x, right_y,
-                width=chart_size, height=chart_size, mask="auto")
+    # 星盤画像
+    c.drawImage(
+        chart_img,
+        left_x,
+        left_y,
+        width=chart_size,
+        height=chart_size,
+        mask="auto",
+    )
+    c.drawImage(
+        chart_img,
+        right_x,
+        right_y,
+        width=chart_size,
+        height=chart_size,
+        mask="auto",
+    )
 
+    # 惑星配置
     your_planets = build_planet_block(your_core)
     partner_planets = build_planet_block(partner_core)
 
@@ -635,11 +649,13 @@ def draw_page3_basic_and_synastry(
             icon_files[key],
         )
 
+    # 名前
     c.setFont(JP_SERIF, 14)
     c.setFillColorRGB(0.2, 0.2, 0.2)
     c.drawCentredString(left_cx, left_y - 25, f"{your_name} さん")
     c.drawCentredString(right_cx, right_y - 25, f"{partner_name} さん")
 
+    # 惑星ラベル
     c.setFont(JP_SERIF, 8.5)
     your_lines = [info["label"] for info in your_planets.values()]
     for i, line in enumerate(your_lines):
@@ -651,15 +667,17 @@ def draw_page3_basic_and_synastry(
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
 
+    # テキスト共通設定
     text_x = 130
     wrap_width = 360
     body_font = JP_SERIF
     body_size = 12
     line_height = 18
 
-    c.setFont(JP_SANS, 12)
+    # ① 全体バランスブロック
+    c.setFont(JP_SANS, 13)
     c.setFillColorRGB(0.2, 0.2, 0.2)
-    c.drawString(text_x, 350, "ふたりの相性バランス：")
+    c.drawString(text_x, 350, "◆ ふたりの相性バランス")
 
     draw_wrapped_block_limited(
         c,
@@ -673,24 +691,63 @@ def draw_page3_basic_and_synastry(
         max_lines=2,
     )
 
-    y_analysis = 220
+    # ② 太陽・月から見る基本傾向
+    y_analysis = 250
+    c.setFont(JP_SANS, 13)
+    c.drawString(text_x, y_analysis, "◆ 太陽・月から見る基本傾向")
+
     c.setFont(body_font, body_size)
-    for block_text in (sun_text, moon_text, asc_text):
-        y_analysis = draw_wrapped_block_limited(
-            c,
-            block_text,
-            text_x,
-            y_analysis,
-            wrap_width,
-            body_font,
-            body_size,
-            line_height,
-            max_lines=3,
-        )
-        y_analysis -= line_height
+    y_analysis = draw_wrapped_block_limited(
+        c,
+        sun_text,
+        text_x,
+        y_analysis - line_height * 1.2,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=3,
+    )
+    y_analysis -= line_height
+
+    # ③ 月星座どうしの感受性
+    c.setFont(JP_SANS, 13)
+    c.drawString(text_x, y_analysis, "◆ 月星座どうしの感受性")
+
+    c.setFont(body_font, body_size)
+    y_analysis = draw_wrapped_block_limited(
+        c,
+        moon_text,
+        text_x,
+        y_analysis - line_height * 1.2,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=3,
+    )
+    y_analysis -= line_height
+
+    # ④ ASC（第一印象）の相性
+    c.setFont(JP_SANS, 13)
+    c.drawString(text_x, y_analysis, "◆ ASC（第一印象）の相性")
+
+    c.setFont(body_font, body_size)
+    draw_wrapped_block_limited(
+        c,
+        asc_text,
+        text_x,
+        y_analysis - line_height * 1.2,
+        wrap_width,
+        body_font,
+        body_size,
+        line_height,
+        max_lines=3,
+    )
 
     draw_page_number(c, 3)
     c.showPage()
+
 
 # ------------------------------------------------------------------
 # Page4〜7 用：文案生成函数（先用固定文案占位，后面你再换成 AI 版本）
