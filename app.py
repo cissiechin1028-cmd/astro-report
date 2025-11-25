@@ -675,8 +675,8 @@ def draw_page3_basic_and_synastry(
         c.drawString(right_cx - 30, y, line)
 
     # ===== Page3 下部テキスト（タイトルなし・本文だけ） =====
-    text_x = 140
-    wrap_width = 420
+    text_x = 125
+    wrap_width = 400
     body_font = JP_SERIF
     body_size = 12      # 正文字号固定 12pt
     line_height = 18
@@ -710,7 +710,7 @@ def draw_page3_basic_and_synastry(
             line_height,
             max_lines=3,
         )
-        y -= line_height * 1.8  # ← 区块间距比以前大一点
+        y -= line_height * 1.5  # ← 区块间距比以前大一点
 
     draw_page_number(c, 3)
     c.showPage()
