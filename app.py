@@ -582,8 +582,10 @@ def draw_page3_basic_and_synastry(
     moon_text: str,
     asc_text: str,
 ):
+    # 背景
     draw_full_bg(c, "page_basic.jpg")
 
+    # 星盤ベース画像
     chart_path = os.path.join(ASSETS_DIR, "chart_base.png")
     chart_img = ImageReader(chart_path)
 
@@ -598,7 +600,7 @@ def draw_page3_basic_and_synastry(
     right_cx = right_x + chart_size / 2
     right_cy = right_y + chart_size / 2
 
-    # 星盤画像
+    # 左右の星盤
     c.drawImage(
         chart_img,
         left_x,
@@ -616,7 +618,7 @@ def draw_page3_basic_and_synastry(
         mask="auto",
     )
 
-    # 惑星配置
+    # 惑星度数・ラベル
     your_planets = build_planet_block(your_core)
     partner_planets = build_planet_block(partner_core)
 
@@ -631,6 +633,7 @@ def draw_page3_basic_and_synastry(
     your_color = (0.15, 0.45, 0.9)
     partner_color = (0.9, 0.35, 0.65)
 
+    # 惑星アイコン描画
     for key, info in your_planets.items():
         draw_planet_icon(
             c,
@@ -671,90 +674,75 @@ def draw_page3_basic_and_synastry(
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
 
-    # テキスト共通設定
-        # ==== Page3 文字排版（新版） ====
-
-    text_x = 100          # 整体往左一点
-    wrap_width = 395      # 文宽放大一点
+    # ===== 下部テキストエリア（タイトルなし・本文のみ） =====
+    text_x = 95           # 少し左に寄せる
+    wrap_width = 380
     body_font = JP_SERIF
-    body_size = 12
-    line_height = 18
+    body_size = 11
+    line_height = 16
 
-    # ▼ 整页整体上移（比原版高约 40px）
-    base_y = 390
+    c.setFillColorRGB(0.2, 0.2, 0.2)
+    y = 335  # 全体を少し上へ
 
-    # ◆ ふたりの相性バランス（标题）
-    c.setFont(JP_SANS_BOLD, 14)          # 更大、更粗
-    c.setFillColorRGB(0.20, 0.20, 0.20)
-    c.drawString(text_x, base_y, "◆ ふたりの相性バランス")
-
-    # 相性バランスの本文（最多 2 行）
-    draw_wrapped_block_limited(
+    # 1. ふたりの相性バランス（compat_text）
+    c.setFont(body_font, body_size)
+    y = draw_wrapped_block_limited(
         c,
         compat_text,
         text_x,
-        base_y - line_height * 1.4,
+        y,
         wrap_width,
         body_font,
         body_size,
         line_height,
-        max_lines=2,
+        max_lines=3,
     )
+    y -= line_height * 0.8
 
-    # ===== 以下 3 个部分每个都带小标题 =====
-
-    y_ptr = base_y - 90    # 第一段与第二段之间空白加大一点
-
-    # ◆ 太陽（基本傾向）
-    c.setFont(JP_SANS_BOLD, 14)
-    c.drawString(text_x, y_ptr, "◆ 太陽（基本傾向）")
-
-    y_ptr = draw_wrapped_block_limited(
+    # 2. 太陽（基本傾向）
+    y = draw_wrapped_block_limited(
         c,
         sun_text,
         text_x,
-        y_ptr - line_height * 1.4,
+        y,
         wrap_width,
         body_font,
         body_size,
         line_height,
-        max_lines=3,
-    ) - 26  # 区块间距
+        max_lines=4,
+    )
+    y -= line_height * 0.8
 
-    # ◆ 月（感受性）
-    c.setFont(JP_SANS_BOLD, 14)
-    c.drawString(text_x, y_ptr, "◆ 月（感受性）")
-
-    y_ptr = draw_wrapped_block_limited(
+    # 3. 月（気持ちのリズム）
+    y = draw_wrapped_block_limited(
         c,
         moon_text,
         text_x,
-        y_ptr - line_height * 1.4,
+        y,
         wrap_width,
         body_font,
         body_size,
         line_height,
-        max_lines=3,
-    ) - 26
+        max_lines=4,
+    )
+    y -= line_height * 0.8
 
-    # ◆ ASC（第一印象）
-    c.setFont(JP_SANS_BOLD, 14)
-    c.drawString(text_x, y_ptr, "◆ ASC（第一印象）")
-
-    draw_wrapped_block_limited(
+    # 4. ASC（外から見える雰囲気）
+    y = draw_wrapped_block_limited(
         c,
         asc_text,
         text_x,
-        y_ptr - line_height * 1.4,
+        y,
         wrap_width,
         body_font,
         body_size,
         line_height,
-        max_lines=3,
+        max_lines=4,
     )
 
     draw_page_number(c, 3)
     c.showPage()
+
 
 
 # ------------------------------------------------------------------
