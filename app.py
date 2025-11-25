@@ -675,7 +675,7 @@ def draw_page3_basic_and_synastry(
         c.drawString(right_cx - 30, y, line)
 
     # ===== Page3 下部テキスト（タイトルなし・本文だけ） =====
-    text_x = 125
+    text_x = 120
     wrap_width = 400
     body_font = JP_SERIF
     body_size = 12      # 正文字号固定 12pt
@@ -696,7 +696,7 @@ def draw_page3_basic_and_synastry(
     )
 
     # ---------- 第2〜4ブロック：太陽 / 月 / ASC（第1块の下にまとめて配置） ----------
-    y = 250  # ← 后三块的起点：整体往下拉开一点距离
+    y = 240  # ← 后三块的起点：整体往下拉开一点距离
 
     for block_text in (sun_text, moon_text, asc_text):
         y = draw_wrapped_block_limited(
@@ -710,7 +710,7 @@ def draw_page3_basic_and_synastry(
             line_height,
             max_lines=3,
         )
-        y -= line_height * 1.5  # ← 区块间距比以前大一点
+        y -= line_height * 1.4  # ← 区块间距比以前大一点
 
     draw_page_number(c, 3)
     c.showPage()
