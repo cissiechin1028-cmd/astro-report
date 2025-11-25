@@ -872,23 +872,15 @@ def draw_page4_communication(
     values_text, values_summary,
 ):
 
-    # ★★★ 你要的长文在这里写进去（只改这三段）★★★
-    talk_text = (
-        "【第一段・长文版】"
-        "这里写你要的更丰富内容。"
-        "写多少都可以，会自动换行，不会截断。"
-    )
+    talk_text = PAGE4_CORE_PAIR_TEXTS.get(core_key, "")
+    talk_summary = PAGE4_CORE_PAIR_SUMMARY.get(core_key, "")
 
-    problem_text = (
-        "【第二段・长文版】"
-        "照样在这里写长文，长度随意。"
-    )
+    problem_text = VENUS_PAIR_TEXTS.get(venus_key, "")
+    problem_summary = VENUS_PAIR_SUMMARY.get(venus_key, "")
 
-    values_text = (
-        "【第三段・长文版】"
-        "依然是任意长度。"
-    )
-    # ★★★ 到这里结束 ★★★
+    values_text = MOON_VENUS_TEXTS.get(moon_venus_key, "")
+    values_summary = PAGE4_VALUES_SUMMARY.get(values_key, "")
+
 
     draw_full_bg(c, "page_communication.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
