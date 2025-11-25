@@ -674,18 +674,18 @@ def draw_page3_basic_and_synastry(
         y = right_y - 45 - i * 11
         c.drawString(right_cx - 30, y, line)
 
-    # ===== 下部テキストエリア（タイトルなし・本文のみ） =====
-    text_x = 95           # 少し左に寄せる
-    wrap_width = 380
+    # ===== Page3 下部テキスト（タイトルなし・本文だけ） =====
+    text_x = 120
+    wrap_width = 360
     body_font = JP_SERIF
-    body_size = 11
-    line_height = 16
+    body_size = 12      # ← 正文字号固定 12pt
+    line_height = 18
 
-    c.setFillColorRGB(0.2, 0.2, 0.2)
-    y = 335  # 全体を少し上へ
+    # 見出しスペースは背景側で確保するので、
+    # ここでは少し下から書き始める
+    y = 305  # ← 这个高度基本就是你现在截图里的位置
 
-    # 1. ふたりの相性バランス（compat_text）
-    c.setFont(body_font, body_size)
+    # ふたりの相性バランス（タイトルは背景側）
     y = draw_wrapped_block_limited(
         c,
         compat_text,
@@ -697,48 +697,23 @@ def draw_page3_basic_and_synastry(
         line_height,
         max_lines=3,
     )
-    y -= line_height * 0.8
+    y -= line_height  # 段落の余白
 
-    # 2. 太陽（基本傾向）
-    y = draw_wrapped_block_limited(
-        c,
-        sun_text,
-        text_x,
-        y,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-        max_lines=4,
-    )
-    y -= line_height * 0.8
+    # 太陽・月・ASC の分析（同じくタイトルは背景）
+    for block_text in (sun_text, moon_text, asc_text):
+        y = draw_wrapped_block_limited(
+            c,
+            block_text,
+            text_x,
+            y,
+            wrap_width,
+            body_font,
+            body_size,
+            line_height,
+            max_lines=3,
+        )
+        y -= line_height  # 各ブロックの間に余白
 
-    # 3. 月（気持ちのリズム）
-    y = draw_wrapped_block_limited(
-        c,
-        moon_text,
-        text_x,
-        y,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-        max_lines=4,
-    )
-    y -= line_height * 0.8
-
-    # 4. ASC（外から見える雰囲気）
-    y = draw_wrapped_block_limited(
-        c,
-        asc_text,
-        text_x,
-        y,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-        max_lines=4,
-    )
 
     draw_page_number(c, 3)
     c.showPage()
