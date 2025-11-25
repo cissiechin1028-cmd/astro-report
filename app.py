@@ -871,91 +871,48 @@ def draw_page4_communication(
     problem_text, problem_summary,
     values_text, values_summary,
 ):
-    # Page4 背景
+
+    # ★★★ 你要的长文在这里写进去（只改这三段）★★★
+    talk_text = (
+        "【第一段・长文版】"
+        "这里写你要的更丰富内容。"
+        "写多少都可以，会自动换行，不会截断。"
+    )
+
+    problem_text = (
+        "【第二段・长文版】"
+        "照样在这里写长文，长度随意。"
+    )
+
+    values_text = (
+        "【第三段・长文版】"
+        "依然是任意长度。"
+    )
+    # ★★★ 到这里结束 ★★★
+
     draw_full_bg(c, "page_communication.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # 版面参数（你指定的）
-    x = 120          # 左余白
-    w = 400          # 行宽（两端留白少一点）
+    x = 130
+    w = 400
     font = JP_SERIF
     size = 12
-    lh = 17          # ≒ 12pt × 1.4
+    lh = 18
 
-    # ① 話し方とテンポ
-    y1 = 630
-    y1 = draw_wrapped_block(
-        c,
-        talk_text,
-        x,
-        y1,
-        w,
-        font,
-        size,
-        lh,
-    )
+    y1 = 625
+    y1 = draw_wrapped_block(c, talk_text, x, y1, w, font, size, lh)
     y1 -= lh
-    draw_wrapped_block_limited(
-        c,
-        talk_summary,
-        x,
-        y1,
-        w,
-        font,
-        size,
-        lh,
-        max_lines=1,
-    )
+    draw_wrapped_block_limited(c, talk_summary, x, y1, w, font, size, lh, max_lines=1)
 
-    # ② 問題への向き合い方
-    y2 = 440
-    y2 = draw_wrapped_block(
-        c,
-        problem_text,
-        x,
-        y2,
-        w,
-        font,
-        size,
-        lh,
-    )
+    y2 = 430
+    y2 = draw_wrapped_block(c, problem_text, x, y2, w, font, size, lh)
     y2 -= lh
-    draw_wrapped_block_limited(
-        c,
-        problem_summary,
-        x,
-        y2,
-        w,
-        font,
-        size,
-        lh,
-        max_lines=1,
-    )
+    draw_wrapped_block_limited(c, problem_summary, x, y2, w, font, size, lh, max_lines=1)
 
-    # ③ 価値観のズレ
-    y3 = 250
-    y3 = draw_wrapped_block(
-        c,
-        values_text,
-        x,
-        y3,
-        w,
-        font,
-        size,
-        lh,
-    )
+    y3 = 235
+    y3 = draw_wrapped_block(c, values_text, x, y3, w, font, size, lh)
     y3 -= lh
-    draw_wrapped_block_limited(
-        c,
-        values_summary,
-        x,
-        y3,
-        w,
-        font,
-        size,
-        lh,
-        max_lines=1,
-    )
+    draw_wrapped_block_limited(c, values_summary, x, y3, w, font, size, lh, max_lines=1)
 
     draw_page_number(c, 4)
     c.showPage()
