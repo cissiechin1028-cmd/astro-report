@@ -678,28 +678,26 @@ def draw_page3_basic_and_synastry(
     text_x = 120
     wrap_width = 360
     body_font = JP_SERIF
-    body_size = 12      # ← 正文字号固定 12pt
+    body_size = 12      # 正文字号固定 12pt
     line_height = 18
 
-    # 見出しスペースは背景側で確保するので、
-    # ここでは少し下から書き始める
-    y = 305  # ← 这个高度基本就是你现在截图里的位置
-
-    # ふたりの相性バランス（タイトルは背景側）
+    # ---------- 第1ブロック：ふたりの相性バランス（少し上に） ----------
+    y_first = 330  # ← 第1块整体往上移，高一点
     y = draw_wrapped_block_limited(
         c,
         compat_text,
         text_x,
-        y,
+        y_first,
         wrap_width,
         body_font,
         body_size,
         line_height,
         max_lines=3,
     )
-    y -= line_height  # 段落の余白
 
-    # 太陽・月・ASC の分析（同じくタイトルは背景）
+    # ---------- 第2〜4ブロック：太陽 / 月 / ASC（第1块の下にまとめて配置） ----------
+    y = 250  # ← 后三块的起点：整体往下拉开一点距离
+
     for block_text in (sun_text, moon_text, asc_text):
         y = draw_wrapped_block_limited(
             c,
@@ -712,8 +710,7 @@ def draw_page3_basic_and_synastry(
             line_height,
             max_lines=3,
         )
-        y -= line_height  # 各ブロックの間に余白
-
+        y -= line_height * 1.5  # ← 区块间距比以前大一点
 
     draw_page_number(c, 3)
     c.showPage()
