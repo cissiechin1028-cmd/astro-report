@@ -867,96 +867,98 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
 # ------------------------------------------------------------------
 def draw_page4_communication(
     c,
-    core_pair_text,        # ① 感情の方向性
-    venus_pair_text,       # ② 親密さの好み（金星×金星）
-    moon_venus_text,       # ③ 月×金星（感情＋愛情の細部）
-    warm_text,             # ④ 暖かいポイント
-    gap_text,              # ④ すれ違いポイント
+    talk_text, talk_summary,
+    problem_text, problem_summary,
+    values_text, values_summary,
 ):
+    # Page4 背景
     draw_full_bg(c, "page_communication.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    text_x = 120
-    wrap_width = 400
-    body_font = JP_SERIF
-    body_size = 11
-    line_height = body_size * 1.4
+    # 版面参数（你指定的）
+    x = 120          # 左余白
+    w = 400          # 行宽（两端留白少一点）
+    font = JP_SERIF
+    size = 12
+    lh = 17          # ≒ 12pt × 1.4
 
-    # 起始位置（太高/太低改这里）
-    y = 520
-
-    # ===== ① 感情の方向性 =====
-    y = draw_wrapped_block_limited(
+    # ① 話し方とテンポ
+    y1 = 630
+    y1 = draw_wrapped_block(
         c,
-        core_pair_text,
-        text_x,
-        y,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-        max_lines=4,
+        talk_text,
+        x,
+        y1,
+        w,
+        font,
+        size,
+        lh,
     )
-    y -= line_height
-
-    # ===== ② 親密さの好み（金星×金星） =====
-    y = draw_wrapped_block_limited(
+    y1 -= lh
+    draw_wrapped_block_limited(
         c,
-        venus_pair_text,
-        text_x,
-        y,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-        max_lines=4,
+        talk_summary,
+        x,
+        y1,
+        w,
+        font,
+        size,
+        lh,
+        max_lines=1,
     )
-    y -= line_height
 
-    # ===== ③ 月 × 金星 =====
-    y = draw_wrapped_block_limited(
+    # ② 問題への向き合い方
+    y2 = 440
+    y2 = draw_wrapped_block(
         c,
-        moon_venus_text,
-        text_x,
-        y,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-        max_lines=4,
+        problem_text,
+        x,
+        y2,
+        w,
+        font,
+        size,
+        lh,
     )
-    y -= line_height
-
-    # ===== ④ 暖かいポイント =====
-    y = draw_wrapped_block_limited(
+    y2 -= lh
+    draw_wrapped_block_limited(
         c,
-        warm_text,
-        text_x,
-        y,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-        max_lines=3,
+        problem_summary,
+        x,
+        y2,
+        w,
+        font,
+        size,
+        lh,
+        max_lines=1,
     )
-    y -= line_height
 
-    # ===== ④ すれ違いポイント =====
-    y = draw_wrapped_block_limited(
+    # ③ 価値観のズレ
+    y3 = 250
+    y3 = draw_wrapped_block(
         c,
-        gap_text,
-        text_x,
-        y,
-        wrap_width,
-        body_font,
-        body_size,
-        line_height,
-        max_lines=3,
+        values_text,
+        x,
+        y3,
+        w,
+        font,
+        size,
+        lh,
+    )
+    y3 -= lh
+    draw_wrapped_block_limited(
+        c,
+        values_summary,
+        x,
+        y3,
+        w,
+        font,
+        size,
+        lh,
+        max_lines=1,
     )
 
     draw_page_number(c, 4)
     c.showPage()
-
 
 
 # ------------------------------------------------------------------
