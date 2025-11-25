@@ -880,40 +880,40 @@ def draw_page4_communication(
     problem_text, problem_summary,
     values_text, values_summary,
 ):
-
-    talk_text = PAGE4_CORE_PAIR_TEXTS.get(core_key, "")
-    talk_summary = PAGE4_CORE_PAIR_SUMMARY.get(core_key, "")
-
-    problem_text = VENUS_PAIR_TEXTS.get(venus_key, "")
-    problem_summary = VENUS_PAIR_SUMMARY.get(venus_key, "")
-
-    values_text = MOON_VENUS_TEXTS.get(moon_venus_key, "")
-    values_summary = PAGE4_VALUES_SUMMARY.get(values_key, "")
-
-
+    # 背景
     draw_full_bg(c, "page_communication.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    x = 130
-    w = 400
+    # 共通レイアウト設定
+    x = 120          # 左余白
+    w = 400          # 横幅（少し広げる）
     font = JP_SERIF
     size = 12
-    lh = 18
+    lh = 17          # 行間（1.4倍くらい）
 
-    y1 = 625
+    # ①「感情の方向性」ブロック
+    y1 = 640
     y1 = draw_wrapped_block(c, talk_text, x, y1, w, font, size, lh)
     y1 -= lh
-    draw_wrapped_block_limited(c, talk_summary, x, y1, w, font, size, lh, max_lines=1)
+    draw_wrapped_block_limited(
+        c, talk_summary, x, y1, w, font, size, lh, max_lines=2
+    )
 
-    y2 = 430
+    # ②「すれ違いやすいポイント」ブロック
+    y2 = 435
     y2 = draw_wrapped_block(c, problem_text, x, y2, w, font, size, lh)
     y2 -= lh
-    draw_wrapped_block_limited(c, problem_summary, x, y2, w, font, size, lh, max_lines=1)
+    draw_wrapped_block_limited(
+        c, problem_summary, x, y2, w, font, size, lh, max_lines=2
+    )
 
-    y3 = 235
+    # ③「価値観と対話スタイル」ブロック
+    y3 = 230
     y3 = draw_wrapped_block(c, values_text, x, y3, w, font, size, lh)
     y3 -= lh
-    draw_wrapped_block_limited(c, values_summary, x, y3, w, font, size, lh, max_lines=1)
+    draw_wrapped_block_limited(
+        c, values_summary, x, y3, w, font, size, lh, max_lines=2
+    )
 
     draw_page_number(c, 4)
     c.showPage()
