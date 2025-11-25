@@ -564,7 +564,7 @@ def build_planet_block(core: dict) -> dict:
             "deg": deg_from(core["asc"]),
             "label": fmt("ASC", core["asc"]),
         },
-    }   # ←← 就是这个括号，你的文件里少了它
+    }  
 
 
 def draw_page3_basic_and_synastry(
@@ -668,22 +668,28 @@ def draw_page3_basic_and_synastry(
         c.drawString(right_cx - 30, y, line)
 
     # テキスト共通設定
-    text_x = 130
-    wrap_width = 360
+        # ==== Page3 文字排版（新版） ====
+
+    text_x = 100          # 整体往左一点
+    wrap_width = 395      # 文宽放大一点
     body_font = JP_SERIF
     body_size = 12
     line_height = 18
 
-    # ① 全体バランスブロック
-    c.setFont(JP_SANS, 13)
-    c.setFillColorRGB(0.2, 0.2, 0.2)
-    c.drawString(text_x, 350, "◆ ふたりの相性バランス")
+    # ▼ 整页整体上移（比原版高约 40px）
+    base_y = 390
 
+    # ◆ ふたりの相性バランス（标题）
+    c.setFont(JP_SANS_BOLD, 14)          # 更大、更粗
+    c.setFillColorRGB(0.20, 0.20, 0.20)
+    c.drawString(text_x, base_y, "◆ ふたりの相性バランス")
+
+    # 相性バランスの本文（最多 2 行）
     draw_wrapped_block_limited(
         c,
         compat_text,
         text_x,
-        350 - line_height * 1.4,
+        base_y - line_height * 1.4,
         wrap_width,
         body_font,
         body_size,
@@ -691,53 +697,51 @@ def draw_page3_basic_and_synastry(
         max_lines=2,
     )
 
-    # ② 太陽・月から見る基本傾向
-    y_analysis = 250
-    c.setFont(JP_SANS, 13)
-    c.drawString(text_x, y_analysis, "◆ 太陽・月から見る基本傾向")
+    # ===== 以下 3 个部分每个都带小标题 =====
 
-    c.setFont(body_font, body_size)
-    y_analysis = draw_wrapped_block_limited(
+    y_ptr = base_y - 90    # 第一段与第二段之间空白加大一点
+
+    # ◆ 太陽（基本傾向）
+    c.setFont(JP_SANS_BOLD, 14)
+    c.drawString(text_x, y_ptr, "◆ 太陽（基本傾向）")
+
+    y_ptr = draw_wrapped_block_limited(
         c,
         sun_text,
         text_x,
-        y_analysis - line_height * 1.2,
+        y_ptr - line_height * 1.4,
         wrap_width,
         body_font,
         body_size,
         line_height,
         max_lines=3,
-    )
-    y_analysis -= line_height
+    ) - 26  # 区块间距
 
-    # ③ 月星座どうしの感受性
-    c.setFont(JP_SANS, 13)
-    c.drawString(text_x, y_analysis, "◆ 月星座どうしの感受性")
+    # ◆ 月（感受性）
+    c.setFont(JP_SANS_BOLD, 14)
+    c.drawString(text_x, y_ptr, "◆ 月（感受性）")
 
-    c.setFont(body_font, body_size)
-    y_analysis = draw_wrapped_block_limited(
+    y_ptr = draw_wrapped_block_limited(
         c,
         moon_text,
         text_x,
-        y_analysis - line_height * 1.2,
+        y_ptr - line_height * 1.4,
         wrap_width,
         body_font,
         body_size,
         line_height,
         max_lines=3,
-    )
-    y_analysis -= line_height
+    ) - 26
 
-    # ④ ASC（第一印象）の相性
-    c.setFont(JP_SANS, 13)
-    c.drawString(text_x, y_analysis, "◆ ASC（第一印象）の相性")
+    # ◆ ASC（第一印象）
+    c.setFont(JP_SANS_BOLD, 14)
+    c.drawString(text_x, y_ptr, "◆ ASC（第一印象）")
 
-    c.setFont(body_font, body_size)
     draw_wrapped_block_limited(
         c,
         asc_text,
         text_x,
-        y_analysis - line_height * 1.2,
+        y_ptr - line_height * 1.4,
         wrap_width,
         body_font,
         body_size,
