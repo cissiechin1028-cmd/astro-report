@@ -675,14 +675,14 @@ def draw_page3_basic_and_synastry(
         c.drawString(right_cx - 30, y, line)
 
     # ===== Page3 下部テキスト（タイトルなし・本文だけ） =====
-    text_x = 120
-    wrap_width = 360
+    text_x = 140
+    wrap_width = 420
     body_font = JP_SERIF
     body_size = 12      # 正文字号固定 12pt
     line_height = 18
 
     # ---------- 第1ブロック：ふたりの相性バランス（少し上に） ----------
-    y_first = 330  # ← 第1块整体往上移，高一点
+    y_first = 350  # ← 第1块整体往上移，高一点
     y = draw_wrapped_block_limited(
         c,
         compat_text,
@@ -710,7 +710,7 @@ def draw_page3_basic_and_synastry(
             line_height,
             max_lines=3,
         )
-        y -= line_height * 1.5  # ← 区块间距比以前大一点
+        y -= line_height * 1.8  # ← 区块间距比以前大一点
 
     draw_page_number(c, 3)
     c.showPage()
