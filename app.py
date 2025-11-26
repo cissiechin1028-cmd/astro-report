@@ -1053,30 +1053,36 @@ def draw_page4_communication(
 
     # 共通レイアウト設定
     x = 120          # 左余白
-    w = 400          # 横幅（少し広げる）
+    w = 400          # 横幅
     font = JP_SERIF
     size = 12
-    lh = 17          # 行間（1.4倍くらい）
+    lh = 17          # 行間
 
-    # ①「感情の方向性」ブロック
+    # ①「会話の方向性」ブロック（本文 最大8行）
     y1 = 640
-    y1 = draw_wrapped_block(c, talk_text, x, y1, w, font, size, lh)
+    y1 = draw_wrapped_block_limited(
+        c, talk_text, x, y1, w, font, size, lh, max_lines=8
+    )
     y1 -= lh
     draw_wrapped_block_limited(
         c, talk_summary, x, y1, w, font, size, lh, max_lines=2
     )
 
-    # ②「すれ違いやすいポイント」ブロック
+    # ②「暖かいポイント / すれ違いポイント」ブロック（本文 最大8行）
     y2 = 435
-    y2 = draw_wrapped_block(c, problem_text, x, y2, w, font, size, lh)
+    y2 = draw_wrapped_block_limited(
+        c, problem_text, x, y2, w, font, size, lh, max_lines=8
+    )
     y2 -= lh
     draw_wrapped_block_limited(
         c, problem_summary, x, y2, w, font, size, lh, max_lines=2
     )
 
-    # ③「価値観と対話スタイル」ブロック
+    # ③「価値観・対話スタイル」ブロック（本文 最大8行）
     y3 = 230
-    y3 = draw_wrapped_block(c, values_text, x, y3, w, font, size, lh)
+    y3 = draw_wrapped_block_limited(
+        c, values_text, x, y3, w, font, size, lh, max_lines=8
+    )
     y3 -= lh
     draw_wrapped_block_limited(
         c, values_summary, x, y3, w, font, size, lh, max_lines=2
@@ -1104,20 +1110,35 @@ def draw_page5_points(
     size = 12
     lh = 18
 
+    # ① 良い点ブロック：本文 最大6行 + 要約2行
     y1 = 625
-    y1 = draw_wrapped_block(c, good_text, x, y1, w, font, size, lh)
+    y1 = draw_wrapped_block_limited(
+        c, good_text, x, y1, w, font, size, lh, max_lines=6
+    )
     y1 -= lh
-    draw_wrapped_block_limited(c, good_summary, x, y1, w, font, size, lh, max_lines=1)
+    draw_wrapped_block_limited(
+        c, good_summary, x, y1, w, font, size, lh, max_lines=2
+    )
 
+    # ② すれ違いやすい点ブロック：本文 最大6行 + 要約2行
     y2 = 434
-    y2 = draw_wrapped_block(c, gap_text, x, y2, w, font, size, lh)
+    y2 = draw_wrapped_block_limited(
+        c, gap_text, x, y2, w, font, size, lh, max_lines=6
+    )
     y2 -= lh
-    draw_wrapped_block_limited(c, gap_summary, x, y2, w, font, size, lh, max_lines=1)
+    draw_wrapped_block_limited(
+        c, gap_summary, x, y2, w, font, size, lh, max_lines=2
+    )
 
+    # ③ 伸ばせる点ブロック：本文 最大6行 + 要約2行
     y3 = 236
-    y3 = draw_wrapped_block(c, hint_text, x, y3, w, font, size, lh)
+    y3 = draw_wrapped_block_limited(
+        c, hint_text, x, y3, w, font, size, lh, max_lines=6
+    )
     y3 -= lh
-    draw_wrapped_block_limited(c, hint_summary, x, y3, w, font, size, lh, max_lines=1)
+    draw_wrapped_block_limited(
+        c, hint_summary, x, y3, w, font, size, lh, max_lines=2
+    )
 
     draw_page_number(c, 5)
     c.showPage()
