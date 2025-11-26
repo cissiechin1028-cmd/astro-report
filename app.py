@@ -1183,11 +1183,10 @@ def build_page6_texts(your_name, partner_name, your_core, partner_core):
 
 
 def build_page7_texts(your_name, partner_name, your_core, partner_core):
-    """日常アドバイスページ用テキスト（完全動的版）"""
+    """日常アドバイスページ用テキスト（Page3〜6と同じ思想：文は長めに持っておいて、描画側で行数制御）"""
 
-    # ---- 共通ヘルパー：core から星座名を安全に取り出す ----
+    # ---------- 共通ヘルパー ----------
     def get_sign(core: dict, key: str) -> str:
-        """sun / moon / venus / mars / asc などから sign_jp を取る"""
         flat = core.get(f"{key}_sign_jp")
         if flat:
             return str(flat)
@@ -1201,7 +1200,6 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
             )
         return str(v) if v is not None else ""
 
-    # 12星座 → 4元素
     def sign_to_element(sign_jp: str) -> str:
         if not sign_jp:
             return ""
@@ -1216,7 +1214,6 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
             return "water"
         return ""
 
-    # ASC → extro / stable / soft
     def asc_to_group(sign_jp: str) -> str:
         if not sign_jp:
             return "stable"
@@ -1229,7 +1226,20 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
             return "soft"
         return "stable"
 
-    # ---- 1) 関係のメインテーマ（RELATION_THEME_TEXTS） ----
+    def speed_group(e: str) -> str:
+        if e in ("fire", "air"):
+            return "fast"
+        if e in ("earth", "water"):
+            return "slow"
+        return ""
+
+    def first_sentence(text: str) -> str:
+        parts = split_sentences_jp(text)
+        if parts:
+            return parts[0]
+        return text
+
+    # ---------- 1) 関係テーマ（RELATION_THEME_TEXTS） ----------
     your_sun = get_sign(your_core, "sun")
     partner_sun = get_sign(partner_core, "sun")
 
@@ -1237,13 +1247,13 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
     partner_sun_el = sign_to_element(partner_sun)
 
     if your_sun_el and partner_sun_el and your_sun_el == partner_sun_el:
-        rel_el = your_sun_el                     # fire / earth / air / water
+        rel_el = your_sun_el
     else:
         rel_el = "mixed"
 
     theme_text = RELATION_THEME_TEXTS.get(rel_el, RELATION_THEME_TEXTS.get("mixed", ""))
 
-    # ---- 2) 起こりやすい課題（RELATION_CHALLENGE_TEXTS） ----
+    # ---------- 2) 課題ポイント（RELATION_CHALLENGE_TEXTS） ----------
     your_moon_el = sign_to_element(get_sign(your_core, "moon"))
     partner_moon_el = sign_to_element(get_sign(partner_core, "moon"))
     your_venus_el = sign_to_element(get_sign(your_core, "venus"))
@@ -1253,18 +1263,9 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
     your_asc_group = asc_to_group(get_sign(your_core, "asc"))
     partner_asc_group = asc_to_group(get_sign(partner_core, "asc"))
 
-    # 行動スピード fast / slow
-    def speed_group(e: str) -> str:
-        if e in ("fire", "air"):
-            return "fast"
-        if e in ("earth", "water"):
-            return "slow"
-        return ""
-
     sy = speed_group(your_mars_el)
     sp = speed_group(partner_mars_el)
 
-    # 優先的に speed → emotion → value → communication → soft
     if sy and sp and sy != sp:
         challenge_key = "speed_gap"
     elif your_moon_el and partner_moon_el and your_moon_el != partner_moon_el:
@@ -1281,64 +1282,51 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
         RELATION_CHALLENGE_TEXTS.get("soft_challenge", "")
     )
 
-    # ---- 3) 長く続くためのキーワード（RELATION_KEYWORD_TEXTS） ----
+    # ---------- 3) 長く続けるためのキーワード（RELATION_KEYWORD_TEXTS） ----------
+    # ここは必ず既存 key のどれかに落とす
     if rel_el == "earth":
         keyword_key = "trust"
     elif rel_el == "air":
         keyword_key = "respect"
     elif rel_el == "fire":
-        # 行動が強め＋スピード差が出やすいのでバランス or 成長
-        keyword_key = "balance" if challenge_key == "speed_gap" else "growth"
+        keyword_key = "balance"
     elif rel_el == "water":
         keyword_key = "emotion"
     else:
-        keyword_key = "growth"
+        keyword_key = "space"
 
-    keyword_text = RELATION_KEYWORD_TEXTS.get(
-        keyword_key,
-        RELATION_KEYWORD_TEXTS.get("growth", "")
+    keyword_text = (
+        RELATION_KEYWORD_TEXTS.get(keyword_key)
+        or RELATION_KEYWORD_TEXTS.get("trust", "")
     )
 
-    # ---- 4) 第7頁レイアウト用に 4 行の advice_rows を組み立て ----
+    # ---------- 4) ページ上部 4 行分（ここでは全文を持つ） ----------
     advice_rows = [
-        (
-            "ふたりのテーマを感じるとき",
-            theme_text,
-        ),
-        (
-            "すれ違いが起こりやすいとき",
-            challenge_text,
-        ),
-        (
-            "長く続けるためのキーワード",
-            keyword_text,
-        ),
+        ("ふたりのテーマを感じるとき", theme_text),
+        ("すれ違いが起こりやすいとき", challenge_text),
+        ("長く続けるためのキーワード",   keyword_text),
         (
             "迷ったり、不安になったとき",
             (
                 f"{your_name} さんと {partner_name} さんの関係は、"
                 "完璧である必要はありません。"
                 "今日できる小さな一歩だけを意識して、"
-                "ときどきこの関係のテーマとキーワードを思い出してみてください。"
+                "ときどきこのページのテーマとキーワードを思い出してみてください。"
             ),
         ),
     ]
 
-    # ---- 5) ページ下部のまとめテキスト ----
-    # challenge_text の最初の一文だけ軽く抜き出す（なければそのまま）
-    first_sentence = challenge_text.split("。")[0] if challenge_text else ""
-
+    # ---------- 5) ページ下部のまとめ（短め） ----------
     footer_text = (
         f"{your_name} さんと {partner_name} さんのペアには、"
-        f"{theme_text}"
-        " その流れの中で、"
-        f"{first_sentence}。"
-        f"{keyword_text}"
-        " 完璧さではなく、日々の小さな対話と優しさが、"
-        "ふたりだけの物語をゆっくりと育てていきます。"
+        f"{first_sentence(theme_text)}"
+        f"{first_sentence(keyword_text)}"
+        " 完璧さよりも、日々の小さな対話と優しさを重ねていくことが、"
+        "ふたりだけの物語をゆっくり育てていく力になります。"
     )
 
     return advice_rows, footer_text
+
 
 
 
@@ -1552,6 +1540,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
 
     header_y = 680
 
+    # ---- ヘッダー ----
     c.setFont(JP_SANS, size + 2)
     c.drawString(table_x, header_y, "ふたりのシーン")
     c.drawString(table_x + col1_w + gap, header_y, "うまくいくコツ")
@@ -1560,19 +1549,47 @@ def draw_page7_advice(c, advice_rows, footer_text):
     c.setLineWidth(0.4)
     c.line(table_x, header_y - 8, table_x + table_w, header_y - 8)
 
+    # ---- 各ブロック用にあらかじめ裁断 ----
+    # 右側の「うまくいくコツ」は 1ブロック 最大6行 × 4ブロック想定
+    trimmed_rows = []
+    for scene_text, tip_text in advice_rows:
+        tip_box = trim_text_for_box(tip_text, max_lines=6, chars_per_line=22)
+        trimmed_rows.append((scene_text, tip_box))
+
+    advice_rows = trimmed_rows
+
+    # 一番下のまとめは 最大4行くらいに
+    footer_text_box = trim_text_for_box(footer_text, max_lines=4, chars_per_line=28)
+
+    # ---- 本文描画 ----
     y = header_y - lh * 1.8
     c.setFont(font, size)
 
     for scene_text, tip_text in advice_rows:
         row_top = y
-        sy = draw_wrapped_block(c, scene_text, table_x, row_top, col1_w, font, size, lh)
-        ty = draw_wrapped_block(c, tip_text, table_x + col1_w + gap, row_top, col2_w, font, size, lh)
+
+        # 左：シーン名 → 最大2行あれば十分
+        sy = draw_wrapped_block_limited(
+            c, scene_text, table_x, row_top, col1_w,
+            font, size, lh, max_lines=2
+        )
+
+        # 右：アドバイス本文 → 最大6行
+        ty = draw_wrapped_block_limited(
+            c, tip_text, table_x + col1_w + gap, row_top, col2_w,
+            font, size, lh, max_lines=6
+        )
+
         bottom = min(sy, ty)
         c.line(table_x, bottom + 4, table_x + table_w, bottom + 4)
         y = bottom - lh
 
+    # ---- 下部まとめ ----
     summary_y = y - lh
-    draw_wrapped_block(c, footer_text, table_x, summary_y, table_w, font, size, lh)
+    draw_wrapped_block_limited(
+        c, footer_text_box, table_x, summary_y, table_w,
+        font, size, lh, max_lines=4,
+    )
 
     draw_page_number(c, 7)
     c.showPage()
