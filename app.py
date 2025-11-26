@@ -1318,12 +1318,16 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
 
     # ---------- 5) ページ下部のまとめ（短め） ----------
     footer_text = (
-        f"{your_name} さんと {partner_name} さんのペアには、"
-        f"{first_sentence(theme_text)}"
-        f"{first_sentence(keyword_text)}"
-        " 完璧さよりも、日々の小さな対話と優しさを重ねていくことが、"
-        "ふたりだけの物語をゆっくり育てていく力になります。"
+    f"{your_name} さんと {partner_name} さんのペアには、"
+    f"{first_sentence(theme_text)}"
+    f"{first_sentence(keyword_text)}"
+    " ふたりが出会ったこと自体が、小さな奇跡のような巡り合わせです。"
+    " 完璧さよりも、日々の小さな対話と優しさを重ねていくことが、"
+    "迷ったときにも戻ってこられる、安心できる土台になっていきます。"
+    " ときどきこのページのテーマとキーワードを思い出しながら、"
+    "ふたりだけの物語を、自分たちのペースで育てていってください。"
     )
+
 
     return advice_rows, footer_text
 
@@ -1559,7 +1563,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
     advice_rows = trimmed_rows
 
     # 一番下のまとめは 最大4行くらいに
-    footer_text_box = trim_text_for_box(footer_text, max_lines=4, chars_per_line=28)
+    footer_text_box = trim_text_for_box(footer_text, max_lines=6, chars_per_line=30)
 
     # ---- 本文描画 ----
     y = header_y - lh * 1.8
@@ -1588,7 +1592,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
     summary_y = y - lh
     draw_wrapped_block_limited(
         c, footer_text_box, table_x, summary_y, table_w,
-        font, size, lh, max_lines=4,
+        font, size, lh, max_lines=6,
     )
 
     draw_page_number(c, 7)
