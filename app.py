@@ -1068,38 +1068,163 @@ def build_page6_texts(your_name, partner_name, your_core, partner_core):
 
 
 def build_page7_texts(your_name, partner_name, your_core, partner_core):
-    """日常アドバイスページ用テキスト"""
+    """日常アドバイスページ用テキスト（完全動的版）"""
+
+    # ---- 共通ヘルパー：core から星座名を安全に取り出す ----
+    def get_sign(core: dict, key: str) -> str:
+        """sun / moon / venus / mars / asc などから sign_jp を取る"""
+        flat = core.get(f"{key}_sign_jp")
+        if flat:
+            return str(flat)
+        v = core.get(key)
+        if isinstance(v, dict):
+            return (
+                v.get("sign_jp")
+                or v.get("name_ja")
+                or v.get("label")
+                or ""
+            )
+        return str(v) if v is not None else ""
+
+    # 12星座 → 4元素
+    def sign_to_element(sign_jp: str) -> str:
+        if not sign_jp:
+            return ""
+        s = str(sign_jp)
+        if ("牡羊" in s) or ("獅子" in s) or ("射手" in s):
+            return "fire"
+        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
+            return "earth"
+        if ("双子" in s) or ("天秤" in s) or ("水瓶" in s):
+            return "air"
+        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
+            return "water"
+        return ""
+
+    # ASC → extro / stable / soft
+    def asc_to_group(sign_jp: str) -> str:
+        if not sign_jp:
+            return "stable"
+        s = str(sign_jp)
+        if ("牡羊" in s) or ("双子" in s) or ("獅子" in s) or ("天秤" in s) or ("射手" in s) or ("水瓶" in s):
+            return "extro"
+        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
+            return "stable"
+        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
+            return "soft"
+        return "stable"
+
+    # ---- 1) 関係のメインテーマ（RELATION_THEME_TEXTS） ----
+    your_sun = get_sign(your_core, "sun")
+    partner_sun = get_sign(partner_core, "sun")
+
+    your_sun_el = sign_to_element(your_sun)
+    partner_sun_el = sign_to_element(partner_sun)
+
+    if your_sun_el and partner_sun_el and your_sun_el == partner_sun_el:
+        rel_el = your_sun_el                     # fire / earth / air / water
+    else:
+        rel_el = "mixed"
+
+    theme_text = RELATION_THEME_TEXTS.get(rel_el, RELATION_THEME_TEXTS.get("mixed", ""))
+
+    # ---- 2) 起こりやすい課題（RELATION_CHALLENGE_TEXTS） ----
+    your_moon_el = sign_to_element(get_sign(your_core, "moon"))
+    partner_moon_el = sign_to_element(get_sign(partner_core, "moon"))
+    your_venus_el = sign_to_element(get_sign(your_core, "venus"))
+    partner_venus_el = sign_to_element(get_sign(partner_core, "venus"))
+    your_mars_el = sign_to_element(get_sign(your_core, "mars"))
+    partner_mars_el = sign_to_element(get_sign(partner_core, "mars"))
+    your_asc_group = asc_to_group(get_sign(your_core, "asc"))
+    partner_asc_group = asc_to_group(get_sign(partner_core, "asc"))
+
+    # 行動スピード fast / slow
+    def speed_group(e: str) -> str:
+        if e in ("fire", "air"):
+            return "fast"
+        if e in ("earth", "water"):
+            return "slow"
+        return ""
+
+    sy = speed_group(your_mars_el)
+    sp = speed_group(partner_mars_el)
+
+    # 優先的に speed → emotion → value → communication → soft
+    if sy and sp and sy != sp:
+        challenge_key = "speed_gap"
+    elif your_moon_el and partner_moon_el and your_moon_el != partner_moon_el:
+        challenge_key = "emotion_gap"
+    elif your_venus_el and partner_venus_el and your_venus_el != partner_venus_el:
+        challenge_key = "value_gap"
+    elif your_asc_group != partner_asc_group:
+        challenge_key = "communication_gap"
+    else:
+        challenge_key = "soft_challenge"
+
+    challenge_text = RELATION_CHALLENGE_TEXTS.get(
+        challenge_key,
+        RELATION_CHALLENGE_TEXTS.get("soft_challenge", "")
+    )
+
+    # ---- 3) 長く続くためのキーワード（RELATION_KEYWORD_TEXTS） ----
+    if rel_el == "earth":
+        keyword_key = "trust"
+    elif rel_el == "air":
+        keyword_key = "respect"
+    elif rel_el == "fire":
+        # 行動が強め＋スピード差が出やすいのでバランス or 成長
+        keyword_key = "balance" if challenge_key == "speed_gap" else "growth"
+    elif rel_el == "water":
+        keyword_key = "emotion"
+    else:
+        keyword_key = "growth"
+
+    keyword_text = RELATION_KEYWORD_TEXTS.get(
+        keyword_key,
+        RELATION_KEYWORD_TEXTS.get("growth", "")
+    )
+
+    # ---- 4) 第7頁レイアウト用に 4 行の advice_rows を組み立て ----
     advice_rows = [
         (
-            "忙しくてゆっくり話せない日の夜",
-            "「今日はおつかれさま」の一言とスタンプだけでも送り合うと、"
-            "お互いの存在をちゃんと感じられます。",
+            "ふたりのテーマを感じるとき",
+            theme_text,
         ),
         (
-            "意見が食い違ったとき",
-            "どちらが正しいかではなく、「相手はなぜそう感じたのか？」を"
-            "一度だけ聞いてみると、意外な優しさに気づけることがあります。",
+            "すれ違いが起こりやすいとき",
+            challenge_text,
         ),
         (
-            "相手の機嫌がよくなさそうなとき",
-            "無理に理由を聞き出そうとせず、「何かできることある？」と"
-            "一言そっと添えるだけで十分です。",
+            "長く続けるためのキーワード",
+            keyword_text,
         ),
         (
-            "ふたりで過ごす休日",
-            "特別なイベントでなくても、好きなカフェや散歩コースなど、"
-            "“ふたりの定番コース” をつくっておくと絆が安定していきます。",
+            "迷ったり、不安になったとき",
+            (
+                f"{your_name} さんと {partner_name} さんの関係は、"
+                "完璧である必要はありません。"
+                "今日できる小さな一歩だけを意識して、"
+                "ときどきこの関係のテーマとキーワードを思い出してみてください。"
+            ),
         ),
     ]
 
+    # ---- 5) ページ下部のまとめテキスト ----
+    # challenge_text の最初の一文だけ軽く抜き出す（なければそのまま）
+    first_sentence = challenge_text.split("。")[0] if challenge_text else ""
+
     footer_text = (
-        "完璧なカップルである必要はありません。"
-        "ときどき迷ったり、不安になったりしながらも、"
-        "それでも相手を大切にしたいと思い続けること——"
-        "その積み重ねが、ふたりだけの物語をつくっていきます。"
+        f"{your_name} さんと {partner_name} さんのペアには、"
+        f"{theme_text}"
+        " その流れの中で、"
+        f"{first_sentence}。"
+        f"{keyword_text}"
+        " 完璧さではなく、日々の小さな対話と優しさが、"
+        "ふたりだけの物語をゆっくりと育てていきます。"
     )
 
     return advice_rows, footer_text
+
 
 
 # ==============================================================
