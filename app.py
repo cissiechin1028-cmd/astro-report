@@ -16,8 +16,10 @@ from astrology_texts import (
     VENUS_PAIR_TEXTS,
     MOON_VENUS_TEXTS,
     PAGE4_HIGHLIGHTS,
+    PAGE4_TALK_INTRO,
+    PAGE4_PROBLEM_INTRO,
+    PAGE4_VALUES_INTRO,
 )
-
 
 
 # ==== Swiss Ephemeris 设置 ====
