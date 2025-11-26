@@ -1934,15 +1934,13 @@ def generate_report():
     draw_page7_advice(c, advice_rows, footer_text)
 
     # =======================
-    # PAGE 8：まとめ
+    # PAGE 8：まとめ（動的版）
     # =======================
-    summary_text = (
-        f"{your_name} さんと {partner_name} さんの関係には、"
-        "安心感と自然な前進力が同時に流れています。"
-        "日々の小さな言葉や共有が、これからの未来をより豊かにしていきます。"
+    summary_text = build_page8_texts(
+    your_name, partner_name, your_core, partner_core
     )
-
     draw_page8_summary(c, summary_text)
+
 
     # =======================
     # 完成
