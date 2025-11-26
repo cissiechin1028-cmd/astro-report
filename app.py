@@ -733,34 +733,123 @@ def draw_page3_basic_and_synastry(
 # ------------------------------------------------------------------
 
 def build_page4_texts(your_name, partner_name, your_core, partner_core):
-    """コミュニケーションページ用テキスト"""
+    """コミュニケーションページ用テキスト（完全動的版）
+
+    Page4 タイトル：
+    ① 会話の方向性
+    ② 暖かいポイント / すれ違いポイント
+    ③ 価値観・対話スタイル
+    """
+
+    # --- 共通ヘルパー：星座名 → 4元素 / サイン取得 ---
+    def get_sign(core: dict, key: str) -> str:
+        """core から sign_jp を安全に取り出す（なければ name_ja / label を見る）"""
+        # 先にフラットフィールド（sun_sign_jp など）を優先
+        flat = core.get(f"{key}_sign_jp")
+        if flat:
+            return str(flat)
+        v = core.get(key)
+        if isinstance(v, dict):
+            return (
+                v.get("sign_jp")
+                or v.get("name_ja")
+                or v.get("label")
+                or ""
+            )
+        return str(v) if v is not None else ""
+
+    def sign_to_element(sign_jp: str) -> str:
+        if not sign_jp:
+            return ""
+        s = str(sign_jp)
+        if ("牡羊" in s) or ("獅子" in s) or ("射手" in s):
+            return "fire"
+        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
+            return "earth"
+        if ("双子" in s) or ("天秤" in s) or ("水瓶" in s):
+            return "air"
+        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
+            return "water"
+        return ""
+
+    def make_element_pair_key(e1: str, e2: str) -> str:
+        """fire_earth / air_air みたいなキーを作る"""
+        if not e1 or not e2:
+            return ""
+        if e1 == e2:
+            return f"{e1}_{e2}"
+        order = {"fire": 0, "earth": 1, "air": 2, "water": 3}
+        a, b = sorted([e1, e2], key=lambda x: order.get(x, 99))
+        return f"{a}_{b}"
+
+    # --- 1) 感情の方向性：太陽の 4元素ペアをベースに ---
+    your_sun_el = sign_to_element(get_sign(your_core, "sun"))
+    partner_sun_el = sign_to_element(get_sign(partner_core, "sun"))
+    core_pair_key = make_element_pair_key(your_sun_el, partner_sun_el)
+    core_pair_text = PAGE4_CORE_PAIR_TEXTS.get(core_pair_key, "")
+
+    # --- 2) 親密さの好み：金星 × 金星 の 4元素ペア ---
+    your_venus_el = sign_to_element(get_sign(your_core, "venus"))
+    partner_venus_el = sign_to_element(get_sign(partner_core, "venus"))
+    venus_pair_key = make_element_pair_key(your_venus_el, partner_venus_el)
+    venus_pair_text = VENUS_PAIR_TEXTS.get(venus_pair_key, "")
+
+    # --- 3) 月 × 金星（感情テンポ × 愛情スタイル）---
+    your_moon_el = sign_to_element(get_sign(your_core, "moon"))
+    partner_moon_el = sign_to_element(get_sign(partner_core, "moon"))
+
+    # 両方の Moon / Venus が同じ元素ならその元素、それ以外は mixed として扱う
+    moon_venus_key = "mixed"
+    for el in ("fire", "earth", "air", "water"):
+        if (
+            your_moon_el == el
+            and partner_moon_el == el
+            and your_venus_el == el
+            and partner_venus_el == el
+        ):
+            moon_venus_key = f"{el}_{el}"
+            break
+
+    moon_venus_text = MOON_VENUS_TEXTS.get(moon_venus_key, "")
+
+    # =========================
+    # ① 会話の方向性（イントロ + core_pair + venus_pair）
+    # =========================
     talk_text = (
-        f"{your_name} さんと {partner_name} さんは、"
-        "会話のテンポや大事にしているポイントが少し違っても、"
-        "丁寧に言葉を選ぶことで気持ちが伝わりやすくなるペアです。"
+        PAGE4_TALK_INTRO
+        + core_pair_text
+        + venus_pair_text
     )
-    talk_summary = "言葉にすることをあきらめないほど、理解が深まるふたり。"
+    # ※ サマリーは短いキーワードとして固定フレーズでも OK（本文は完全に動的）
+    talk_summary = "会話のテンポや感情表現の癖を知るほど、分かり合いやすくなるふたり。"
 
+    # =========================
+    # ② 暖かいポイント / すれ違いポイント
+    #    （すれ違いのイントロ + gap_point）
+    # =========================
     problem_text = (
-        "すれ違いが起こりやすいのは、どちらか一方が気をつかいすぎて、"
-        "本音を飲み込んでしまったときです。"
-        "「こんなこと言っていいのかな」と迷ったら、"
-        "まずはやわらかい言い方で気持ちを共有してみるのがおすすめです。"
+        PAGE4_PROBLEM_INTRO
+        + PAGE4_HIGHLIGHTS.get("gap_point", "")
     )
-    problem_summary = "我慢しすぎず、小さな本音から共有していくと◎"
+    problem_summary = "我慢や遠慮をため込まず、小さな違和感のうちに言葉にしていくのがカギ。"
 
+    # =========================
+    # ③ 価値観・対話スタイル
+    #    （価値観イントロ + moon×venus + warm_point）
+    # =========================
     values_text = (
-        "ふたりは価値観の共通点も違いも、どちらも持っている組み合わせです。"
-        "だからこそ、相手の考え方を否定せずに「そういう見方もあるんだね」と"
-        "一度受け止めてみることで、新しいバランスが生まれてきます。"
+        PAGE4_VALUES_INTRO
+        + moon_venus_text
+        + PAGE4_HIGHLIGHTS.get("warm_point", "")
     )
-    values_summary = "価値観の違いは、“選択肢を増やしてくれる材料” になる。"
+    values_summary = "価値観や感じ方の違いを通して、お互いの世界を広げていけるパートナーシップ。"
 
     return (
         talk_text, talk_summary,
         problem_text, problem_summary,
         values_text, values_summary,
     )
+
 
 
 def build_page5_texts(your_name, partner_name, your_core, partner_core):
