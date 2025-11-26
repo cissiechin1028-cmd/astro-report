@@ -1239,7 +1239,7 @@ def draw_page6_support(
     future_text, future_summary,  # ③ これからの伸ばし方・成長ポイント
 ):
     # 背景
-    draw_full_bg(c, "page_support.jpg")   # ← ここは今使っている画像名そのまま
+    draw_full_bg(c, "page_trend.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
     # 共通レイアウト
