@@ -295,6 +295,71 @@ def draw_wrapped_block(c, text, x, y_start, wrap_width,
 
     return y
 
+def split_sentences_jp(text: str):
+    """日文テキストを「。」「！」「？」などでざっくり文単位に分割"""
+    if not text:
+        return []
+    sentences = []
+    buf = []
+    for ch in text:
+        buf.append(ch)
+        if ch in "。！？!?":
+            s = "".join(buf).strip()
+            if s:
+                sentences.append(s)
+            buf = []
+    if buf:
+        s = "".join(buf).strip()
+        if s:
+            sentences.append(s)
+    return sentences
+
+
+def trim_text_for_box(text: str, max_lines: int, chars_per_line: int) -> str:
+    """
+    「最大行数 × 1行あたりの目安文字数」で収まるようにテキストを前から切り出す。
+    ・文単位でできるだけきれいに区切る
+    ・どうしても1文が長すぎる場合は、その文を途中まで切る
+    """
+    if not text:
+        return ""
+
+    max_chars = max_lines * chars_per_line
+
+    # そもそも全体が収まるならそのまま返す
+    if len(text) <= max_chars:
+        return text
+
+    sentences = split_sentences_jp(text)
+    if not sentences:
+        # 文分割できなかった場合は生テキストを強制的に切る
+        return text[:max_chars]
+
+    result_parts = []
+    total = 0
+
+    for s in sentences:
+        s_len = len(s)
+        # まだ何も入ってない状態で1文が箱より大きい場合 → その文を途中で切る
+        if not result_parts and s_len > max_chars:
+            return s[:max_chars]
+
+        # すでに何文か入っていて、次を足すとはみ出す → ここで終了
+        if total + s_len > max_chars:
+            break
+
+        result_parts.append(s)
+        total += s_len
+
+        if total >= max_chars:
+            break
+
+    if not result_parts:
+        # 念のための保険
+        return text[:max_chars]
+
+    return "".join(result_parts)
+
 
 # ------------------------------------------------------------------
 # 行数限制版：最多画 max_lines 行
