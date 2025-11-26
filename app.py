@@ -1033,34 +1033,146 @@ def build_page5_texts(your_name, partner_name, your_core, partner_core):
 
 
 def build_page6_texts(your_name, partner_name, your_core, partner_core):
-    """関係の方向性と今後ページ用テキスト"""
-    theme_text = (
+    """関係の方向性と今後ページ用テキスト（完全動的版）"""
+
+    # ---------- 共通ヘルパー ----------
+    def get_sign(core: dict, key: str) -> str:
+        """core から sign_jp を安全に取り出す（なければ name_ja / label を見る）"""
+        flat = core.get(f"{key}_sign_jp")
+        if flat:
+            return str(flat)
+        v = core.get(key)
+        if isinstance(v, dict):
+            return (
+                v.get("sign_jp")
+                or v.get("name_ja")
+                or v.get("label")
+                or ""
+            )
+        return str(v) if v is not None else ""
+
+    def sign_to_element(sign_jp: str) -> str:
+        if not sign_jp:
+            return ""
+        s = str(sign_jp)
+        if ("牡羊" in s) or ("獅子" in s) or ("射手" in s):
+            return "fire"
+        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
+            return "earth"
+        if ("双子" in s) or ("天秤" in s) or ("水瓶" in s):
+            return "air"
+        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
+            return "water"
+        return ""
+
+    def make_element_pair_key(e1: str, e2: str) -> str:
+        """fire_earth / air_air みたいなキーを作る（順番はソート）"""
+        if not e1 or not e2:
+            return ""
+        if e1 == e2:
+            return f"{e1}_{e2}"
+        order = {"fire": 0, "earth": 1, "air": 2, "water": 3}
+        a, b = sorted([e1, e2], key=lambda x: order.get(x, 99))
+        return f"{a}_{b}"
+
+    def same_group(e1: str, e2: str) -> bool:
+        """火＋風 / 地＋水 を同じグループとして見る簡易判定"""
+        if not e1 or not e2:
+            return False
+        if e1 == e2:
+            return True
+        group1 = {"fire", "air"}
+        group2 = {"earth", "water"}
+        if e1 in group1 and e2 in group1:
+            return True
+        if e1 in group2 and e2 in group2:
+            return True
+        return False
+
+    def first_sentence(text: str) -> str:
+        """日本語文を句点で区切って最初の一文だけ返す"""
+        parts = split_sentences_jp(text)
+        if parts:
+            return parts[0]
+        return text[:30]
+
+    # ---------- ここから実際のロジック ----------
+
+    # 金星 → 生活・価値観の相性
+    your_venus_el = sign_to_element(get_sign(your_core, "venus"))
+    partner_venus_el = sign_to_element(get_sign(partner_core, "venus"))
+    venus_key = make_element_pair_key(your_venus_el, partner_venus_el)
+
+    # 太陽 → 生活テンポ
+    your_sun_el = sign_to_element(get_sign(your_core, "sun"))
+    partner_sun_el = sign_to_element(get_sign(partner_core, "sun"))
+
+    # ---- デフォルト（今までの固定文） ----
+    default_theme_text = (
         "このペアのテーマは、「お互いの違いを通して世界を広げていくこと」です。"
         "似ている部分は安心感を、違う部分は新しい視点をもたらしてくれます。"
     )
-    theme_summary = "共通点は安心を、違いは成長をもたらす関係性。"
-
-    emotion_text = (
+    default_emotion_text = (
         "感情面では、どちらかが不安になったときに、"
         "もう一方が少し客観的な視点をくれる、そんな支え合い方をしやすいペアです。"
         "弱さを見せ合えるほど、心の距離は近づいていきます。"
     )
-    emotion_summary = "不安も弱さも分かち合うことで、絆はより深くなる。"
-
-    style_text = (
+    default_style_text = (
         "ふたりのペースは、必ずしも同じではありません。"
         "でもそれは悪いことではなく、「ゆっくり派」と「さっと動く派」が"
         "一緒にいることで、ほどよいスピードが生まれるイメージです。"
     )
-    style_summary = "違うペースだからこそ、バランスが取れていく。"
-
-    future_text = (
+    default_future_text = (
         "これからのふたりにとって大切なのは、"
         "将来のイメージをときどき言葉にして共有することです。"
         "すぐに決めなくても、「こんな未来もいいね」と話し合う時間そのものが、"
         "関係を前に進めてくれます。"
     )
-    future_summary = "未来のイメージを一緒に語る時間が、関係を少しずつ前へ運んでいく。"
+
+    # ---------- ① ペアのテーマ（金星×金星：VENUS_LIFESTYLE_TEXTS） ----------
+    theme_text = VENUS_LIFESTYLE_TEXTS.get(venus_key, default_theme_text)
+    theme_summary = first_sentence(theme_text)
+
+    # ---------- ② お金・価値観・安心感（LIFESTYLE_DETAIL_TEXTS） ----------
+    # お金の感覚：金星どうしが同グループなら match、それ以外は gap
+    money_key = "money_match" if same_group(your_venus_el, partner_venus_el) else "money_gap"
+    # 時間感覚：太陽どうしが同グループなら match、それ以外は gap
+    time_key = "time_match" if same_group(your_sun_el, partner_sun_el) else "time_gap"
+    # ライフスタイルのこだわり：ここも金星ベース
+    style_key = "style_match" if same_group(your_venus_el, partner_venus_el) else "style_gap"
+
+    money_text = LIFESTYLE_DETAIL_TEXTS.get(money_key, "")
+    time_text = LIFESTYLE_DETAIL_TEXTS.get(time_key, "")
+    style_detail_text = LIFESTYLE_DETAIL_TEXTS.get(style_key, "")
+
+    # 「支え方・安心感」ブロックのベースになる文章
+    emotion_text = money_text or default_emotion_text
+    emotion_summary = first_sentence(emotion_text)
+
+    # 「生活リズム・スタイル」の説明（後で care_text にまとめて入る）
+    combined_style_text = (time_text + style_detail_text).strip()
+    if not combined_style_text:
+        combined_style_text = default_style_text
+    style_text = combined_style_text
+    style_summary = first_sentence(time_text or style_detail_text or default_style_text)
+
+    # ---------- ③ これからの伸ばし方（SUN_VENUS_TEXTS） ----------
+    # 太陽×金星のマッチ度合いをざっくり 3 パターンに分類
+    def classify_sun_venus() -> str:
+        # 両ペアとも同グループ → match
+        if same_group(your_sun_el, partner_sun_el) and same_group(your_venus_el, partner_venus_el):
+            return "match"
+        # 片方だけでも「太陽と金星が同グループ」なら semi_match
+        if same_group(your_sun_el, your_venus_el) or same_group(partner_sun_el, partner_venus_el):
+            return "semi_match"
+        # それ以外は not_match
+        return "not_match"
+
+    sun_venus_key = classify_sun_venus()
+    future_text_raw = SUN_VENUS_TEXTS.get(sun_venus_key, default_future_text)
+
+    future_text = future_text_raw or default_future_text
+    future_summary = first_sentence(future_text)
 
     return (
         theme_text, theme_summary,
