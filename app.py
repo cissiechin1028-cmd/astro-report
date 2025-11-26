@@ -1542,7 +1542,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
     size = 11
     lh = 16
 
-    header_y = 680
+    header_y = 660
 
     # ---- ヘッダー ----
     c.setFont(JP_SANS, size + 2)
