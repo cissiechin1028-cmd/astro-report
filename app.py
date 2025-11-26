@@ -1123,30 +1123,43 @@ def draw_page4_communication(
     size = 12
     lh = 17          # 行間
 
-    # ①「会話の方向性」ブロック（本文 最大8行）
+    # ===== ここで「短/中/長」自動選択（実際は行数に合わせて切る）=====
+
+    # ① 会話の方向性 本文：最大8行想定 → 少し余裕を見て1行24文字くらい
+    talk_text_box = trim_text_for_box(talk_text, max_lines=8, chars_per_line=24)
+
+    # ② 暖かいポイント / すれ違いポイント 本文：最大8行
+    problem_text_box = trim_text_for_box(problem_text, max_lines=8, chars_per_line=24)
+
+    # ③ 価値観・対話スタイル 本文：最大8行
+    values_text_box = trim_text_for_box(values_text, max_lines=8, chars_per_line=24)
+
+    # ===== 実際の描画（本文 max_lines=8 / サマリ max_lines=2）=====
+
+    # ①「会話の方向性」ブロック
     y1 = 640
     y1 = draw_wrapped_block_limited(
-        c, talk_text, x, y1, w, font, size, lh, max_lines=8
+        c, talk_text_box, x, y1, w, font, size, lh, max_lines=8
     )
     y1 -= lh
     draw_wrapped_block_limited(
         c, talk_summary, x, y1, w, font, size, lh, max_lines=2
     )
 
-    # ②「暖かいポイント / すれ違いポイント」ブロック（本文 最大8行）
+    # ②「暖かいポイント / すれ違いポイント」ブロック
     y2 = 435
     y2 = draw_wrapped_block_limited(
-        c, problem_text, x, y2, w, font, size, lh, max_lines=8
+        c, problem_text_box, x, y2, w, font, size, lh, max_lines=8
     )
     y2 -= lh
     draw_wrapped_block_limited(
         c, problem_summary, x, y2, w, font, size, lh, max_lines=2
     )
 
-    # ③「価値観・対話スタイル」ブロック（本文 最大8行）
+    # ③「価値観・対話スタイル」ブロック
     y3 = 230
     y3 = draw_wrapped_block_limited(
-        c, values_text, x, y3, w, font, size, lh, max_lines=8
+        c, values_text_box, x, y3, w, font, size, lh, max_lines=8
     )
     y3 -= lh
     draw_wrapped_block_limited(
@@ -1175,30 +1188,36 @@ def draw_page5_points(
     size = 12
     lh = 18
 
-    # ① 良い点ブロック：本文 最大6行 + 要約2行
+    # ===== 行数に合わせて先にテキストを裁断 =====
+    # 第5頁は各ブロック：本文 最大6行 ＋ サマリ2行 を想定
+    good_text_box = trim_text_for_box(good_text, max_lines=6, chars_per_line=22)
+    gap_text_box = trim_text_for_box(gap_text, max_lines=6, chars_per_line=22)
+    hint_text_box = trim_text_for_box(hint_text, max_lines=6, chars_per_line=22)
+
+    # ① 良い点ブロック
     y1 = 625
     y1 = draw_wrapped_block_limited(
-        c, good_text, x, y1, w, font, size, lh, max_lines=6
+        c, good_text_box, x, y1, w, font, size, lh, max_lines=6
     )
     y1 -= lh
     draw_wrapped_block_limited(
         c, good_summary, x, y1, w, font, size, lh, max_lines=2
     )
 
-    # ② すれ違いやすい点ブロック：本文 最大6行 + 要約2行
+    # ② すれ違いやすい点ブロック
     y2 = 434
     y2 = draw_wrapped_block_limited(
-        c, gap_text, x, y2, w, font, size, lh, max_lines=6
+        c, gap_text_box, x, y2, w, font, size, lh, max_lines=6
     )
     y2 -= lh
     draw_wrapped_block_limited(
         c, gap_summary, x, y2, w, font, size, lh, max_lines=2
     )
 
-    # ③ 伸ばせる点ブロック：本文 最大6行 + 要約2行
+    # ③ 伸ばせる点ブロック
     y3 = 236
     y3 = draw_wrapped_block_limited(
-        c, hint_text, x, y3, w, font, size, lh, max_lines=6
+        c, hint_text_box, x, y3, w, font, size, lh, max_lines=6
     )
     y3 -= lh
     draw_wrapped_block_limited(
@@ -1207,6 +1226,7 @@ def draw_page5_points(
 
     draw_page_number(c, 5)
     c.showPage()
+
 
 
 # ------------------------------------------------------------------
