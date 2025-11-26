@@ -1232,7 +1232,7 @@ def draw_page5_points(
 # ------------------------------------------------------------------
 # Page6：関係の方向性と今後の傾向
 # ------------------------------------------------------------------
-def draw_page6_trend(
+def draw_page6_support(
     c,
     type_text, type_summary,      # ① 行動タイプ / エネルギーの方向性
     care_text, care_summary,      # ② 支え方・安心感
@@ -1287,6 +1287,7 @@ def draw_page6_trend(
 
     draw_page_number(c, 6)
     c.showPage()
+
 
 
 # ------------------------------------------------------------------
@@ -1485,23 +1486,22 @@ def generate_report():
         hint_text, hint_summary,
     )
 
-    # =======================
-    # PAGE 6：方向性と今後
-    # =======================
+    # =====================
+    # PAGE 6 : 方向性と今後
+    # =====================
     (
-        theme_text, theme_summary,
-        emotion_text, emotion_summary,
-        style_text, style_summary,
+        type_text, type_summary,
+        care_text, care_summary,
         future_text, future_summary,
     ) = build_page6_texts(your_name, partner_name, your_core, partner_core)
 
-    draw_page6_trend(
+    draw_page6_support(
         c,
-        theme_text, theme_summary,
-        emotion_text, emotion_summary,
-        style_text, style_summary,
-        future_text, future_summary,
+        type_text, type_summary,      # ① 行動タイプ / エネルギーの方向性
+        care_text, care_summary,      # ② 支え方・安心感
+        future_text, future_summary,  # ③ これからの伸ばし方・成長ポイント
     )
+
 
     # =======================
     # PAGE 7：アドバイス
