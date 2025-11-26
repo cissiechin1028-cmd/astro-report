@@ -1336,6 +1336,139 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
     return advice_rows, footer_text
 
 
+def build_page8_texts(your_name, partner_name, your_core, partner_core):
+    """最終ページ用の総まとめテキスト（完全動的版）"""
+
+    # ---------- 共通ヘルパー ----------
+    def get_sign(core: dict, key: str) -> str:
+        flat = core.get(f"{key}_sign_jp")
+        if flat:
+            return str(flat)
+        v = core.get(key)
+        if isinstance(v, dict):
+            return (
+                v.get("sign_jp")
+                or v.get("name_ja")
+                or v.get("label")
+                or ""
+            )
+        return str(v) if v is not None else ""
+
+    def sign_to_element(sign_jp: str) -> str:
+        if not sign_jp:
+            return ""
+        s = str(sign_jp)
+        if ("牡羊" in s) or ("獅子" in s) or ("射手" in s):
+            return "fire"
+        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
+            return "earth"
+        if ("双子" in s) or ("天秤" in s) or ("水瓶" in s):
+            return "air"
+        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
+            return "water"
+        return ""
+
+    def asc_to_group(sign_jp: str) -> str:
+        if not sign_jp:
+            return "stable"
+        s = str(sign_jp)
+        if ("牡羊" in s) or ("双子" in s) or ("獅子" in s) or ("天秤" in s) or ("射手" in s) or ("水瓶" in s):
+            return "extro"
+        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
+            return "stable"
+        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
+            return "soft"
+        return "stable"
+
+    def speed_group(e: str) -> str:
+        if e in ("fire", "air"):
+            return "fast"
+        if e in ("earth", "water"):
+            return "slow"
+        return ""
+
+    # ---------- 1) メインテーマ（PAGE8_SUMMARY_MAIN） ----------
+    your_sun_el = sign_to_element(get_sign(your_core, "sun"))
+    partner_sun_el = sign_to_element(get_sign(partner_core, "sun"))
+
+    if your_sun_el and partner_sun_el and your_sun_el == partner_sun_el:
+        rel_el = your_sun_el
+    else:
+        rel_el = "mixed"
+
+    main_text = PAGE8_SUMMARY_MAIN.get(rel_el, PAGE8_SUMMARY_MAIN.get("mixed", ""))
+
+    # ---------- 2) ハイライト（PAGE8_HIGHLIGHTS） ----------
+    your_moon_el = sign_to_element(get_sign(your_core, "moon"))
+    partner_moon_el = sign_to_element(get_sign(partner_core, "moon"))
+    your_venus_el = sign_to_element(get_sign(your_core, "venus"))
+    partner_venus_el = sign_to_element(get_sign(partner_core, "venus"))
+
+    # 感情・思考・現実面のどこが強いかをざっくりスコアで見る
+    emotional_score = sum(e == "water" for e in [your_moon_el, partner_moon_el, your_venus_el, partner_venus_el])
+    mental_score = sum(e == "air" for e in [your_sun_el, partner_sun_el, your_venus_el, partner_venus_el])
+    practical_score = sum(e == "earth" for e in [your_sun_el, partner_sun_el, your_venus_el, partner_venus_el])
+
+    best = max(emotional_score, mental_score, practical_score)
+    if best == 0:
+        highlight_key = "practical"
+    elif emotional_score == best:
+        highlight_key = "emotional"
+    elif mental_score == best:
+        highlight_key = "mental"
+    else:
+        highlight_key = "practical"
+
+    highlight_text = PAGE8_HIGHLIGHTS.get(highlight_key, "")
+
+    # ---------- 3) つまずきやすいポイント（PAGE8_PITFALLS） ----------
+    your_asc_group = asc_to_group(get_sign(your_core, "asc"))
+    partner_asc_group = asc_to_group(get_sign(partner_core, "asc"))
+    your_mars_el = sign_to_element(get_sign(your_core, "mars"))
+    partner_mars_el = sign_to_element(get_sign(partner_core, "mars"))
+
+    sy = speed_group(your_mars_el)
+    sp = speed_group(partner_mars_el)
+
+    if sy and sp and sy != sp:
+        pitfall_key = "tempo"
+    elif your_moon_el and partner_moon_el and your_moon_el != partner_moon_el:
+        pitfall_key = "emotion"
+    elif your_venus_el and partner_venus_el and your_venus_el != partner_venus_el:
+        pitfall_key = "value"
+    else:
+        pitfall_key = "tempo"
+
+    pitfall_text = PAGE8_PITFALLS.get(pitfall_key, "")
+
+    # ---------- 4) 最終アドバイス（PAGE8_FINAL_ADVICE） ----------
+    if rel_el == "earth":
+        advice_key = "trust"
+    elif rel_el == "air":
+        advice_key = "respect"
+    elif rel_el == "fire":
+        advice_key = "balance"
+    elif rel_el == "water":
+        advice_key = "warmth"
+    else:
+        advice_key = "growth"
+
+    advice_text = PAGE8_FINAL_ADVICE.get(advice_key, "")
+
+    # ---------- 5) 文章をひとつにつなげる ----------
+    summary_text = (
+        f"{your_name} さんと {partner_name} さんの関係をひとことで表すと、"
+        + main_text
+        + " そのうえで、ふたりが特に活かしていける強みとして、"
+        + highlight_text
+        + " 一方で、少し意識しておきたいポイントとしては、"
+        + pitfall_text
+        + " 最後に、長く続く関係にしていくためのキーワードとして、"
+        + advice_text
+        + " こうしたテーマを思い出しながら、ふたりだけの歩幅で物語を育てていってください。"
+    )
+
+    return summary_text
 
 
 # ==============================================================
@@ -1611,15 +1744,23 @@ def draw_page8_summary(c, summary_text):
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
     x = 120
-    y = 680
+    y = 660   # ← 整体稍微往下拉一点
     w = 350
     lh = 20
     size = 13
 
-    draw_wrapped_block(c, summary_text, x, y, w, JP_SERIF, size, lh)
+    # 1ページに収まるようにトリミング
+    summary_box = trim_text_for_box(summary_text, max_lines=22, chars_per_line=28)
+
+    draw_wrapped_block_limited(
+        c, summary_box, x, y, w,
+        JP_SERIF, size, lh,
+        max_lines=22,
+    )
 
     draw_page_number(c, 8)
     c.showPage()
+
 
 # ============================================================
 # 出生時間の文字（例: "08:00〜09:00"）を HH:MM に変換する小関数
