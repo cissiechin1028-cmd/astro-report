@@ -1232,41 +1232,58 @@ def draw_page5_points(
 # ------------------------------------------------------------------
 # Page6：関係の方向性と今後の傾向
 # ------------------------------------------------------------------
-def draw_page6_trend(
+def draw_page6_support(
     c,
-    theme_text, theme_summary,
-    emotion_text, emotion_summary,
-    style_text, style_summary,
-    future_text, future_summary,
+    type_text, type_summary,      # ① 行動タイプ / エネルギーの方向性
+    care_text, care_summary,      # ② 支え方・安心感
+    future_text, future_summary,  # ③ これからの伸ばし方・成長ポイント
 ):
-    draw_full_bg(c, "page_trend.jpg")
+    # 背景
+    draw_full_bg(c, "page_support.jpg")   # ← ここは今使っている画像名そのまま
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
+    # 共通レイアウト
     x = 130
     w = 360
     font = JP_SERIF
     size = 12
     lh = 18
 
-    y1 = 620
-    y1 = draw_wrapped_block(c, theme_text, x, y1, w, font, size, lh)
+    # ===== 先に「箱に収まる長さ」に自動トリムする =====
+    # 第6頁も：各ブロック 本文 最大6行（1行あたり22文字くらい目安）
+    type_text_box = trim_text_for_box(type_text,   max_lines=6, chars_per_line=22)
+    care_text_box = trim_text_for_box(care_text,   max_lines=6, chars_per_line=22)
+    future_text_box = trim_text_for_box(future_text, max_lines=6, chars_per_line=22)
+
+    # ===== ① 行動タイプ / エネルギーの方向性 =====
+    y1 = 625
+    y1 = draw_wrapped_block_limited(
+        c, type_text_box, x, y1, w, font, size, lh, max_lines=6
+    )
     y1 -= lh
-    draw_wrapped_block_limited(c, theme_summary, x, y1, w, font, size, lh, max_lines=1)
+    draw_wrapped_block_limited(
+        c, type_summary, x, y1, w, font, size, lh, max_lines=2
+    )
 
-    y2 = 460
-    y2 = draw_wrapped_block(c, emotion_text, x, y2, w, font, size, lh)
+    # ===== ② 支え方・安心感 =====
+    y2 = 434
+    y2 = draw_wrapped_block_limited(
+        c, care_text_box, x, y2, w, font, size, lh, max_lines=6
+    )
     y2 -= lh
-    draw_wrapped_block_limited(c, emotion_summary, x, y2, w, font, size, lh, max_lines=1)
+    draw_wrapped_block_limited(
+        c, care_summary, x, y2, w, font, size, lh, max_lines=2
+    )
 
-    y3 = 300
-    y3 = draw_wrapped_block(c, style_text, x, y3, w, font, size, lh)
+    # ===== ③ これからの伸ばし方・成長ポイント =====
+    y3 = 236
+    y3 = draw_wrapped_block_limited(
+        c, future_text_box, x, y3, w, font, size, lh, max_lines=6
+    )
     y3 -= lh
-    draw_wrapped_block_limited(c, style_summary, x, y3, w, font, size, lh, max_lines=1)
-
-    y4 = 145
-    y4 = draw_wrapped_block(c, future_text, x, y4, w, font, size, lh)
-    y4 -= lh
-    draw_wrapped_block_limited(c, future_summary, x, y4, w, font, size, lh, max_lines=1)
+    draw_wrapped_block_limited(
+        c, future_summary, x, y3, w, font, size, lh, max_lines=2
+    )
 
     draw_page_number(c, 6)
     c.showPage()
