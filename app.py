@@ -856,30 +856,103 @@ def build_page4_texts(your_name, partner_name, your_core, partner_core):
 
 
 def build_page5_texts(your_name, partner_name, your_core, partner_core):
-    """良い点・すれ違い・伸ばせる点ページ用テキスト"""
+    """良い点・すれ違い・伸ばせる点ページ用テキスト（動的版）"""
+
+    # ---- 0) 火星の星座 → エレメント ----
+    your_mars_sign = your_core.get("mars_sign_jp") or your_core.get("mars", {}).get("sign_jp")
+    partner_mars_sign = partner_core.get("mars_sign_jp") or partner_core.get("mars", {}).get("sign_jp")
+
+    your_el = SIGN_ELEMENT.get(your_mars_sign)
+    partner_el = SIGN_ELEMENT.get(partner_mars_sign)
+
+    def _pair_key(e1, e2):
+        """'fire_earth' みたいなキーを作る（順番をそろえる）"""
+        order = {"fire": 0, "earth": 1, "air": 2, "water": 3}
+        if e1 is None or e2 is None:
+            return None
+        if order[e1] > order[e2]:
+            e1, e2 = e2, e1
+        return f"{e1}_{e2}"
+
+    # ---- 1) 行動スタイル（火星 × 火星）----
+    mars_key = _pair_key(your_el, partner_el)
+    mars_text = MARS_PAIR_TEXTS.get(
+        mars_key,
+        "ふたりの行動スタイルには、違いもあれば似ている部分もあり、"
+        "そのバランスが関係を前に進める原動力になっていきます。"
+    )
+
+    # ---- 2) 衝突スタイル（反応の速さ）----
+    def _speed(e):
+        if e in ("fire", "air"):
+            return "fast"
+        if e in ("earth", "water"):
+            return "slow"
+        return None
+
+    sy = _speed(your_el)
+    sp = _speed(partner_el)
+    if sy and sp:
+        if sy == "fast" and sp == "fast":
+            conflict_key = "fast_fast"
+        elif sy == "slow" and sp == "slow":
+            conflict_key = "slow_slow"
+        else:
+            conflict_key = "fast_slow"
+    else:
+        conflict_key = None
+
+    conflict_text = CONFLICT_STYLE_TEXTS.get(
+        conflict_key,
+        "衝突が起きたときは、どちらが先に反応しやすいか、"
+        "どちらが時間をかけて整理するタイプかを意識すると、ぶつかり方が柔らかくなります。"
+    )
+
+    # ---- 3) 攻め役 / 受け止め役バランス ----
+    def _drive(e):
+        if e in ("fire", "earth"):
+            return "strong"
+        if e in ("air", "water"):
+            return "soft"
+        return None
+
+    dy = _drive(your_el)
+    dp = _drive(partner_el)
+    if dy and dp:
+        if dy == "strong" and dp == "strong":
+            drive_key = "strong_strong"
+        elif dy == "soft" and dp == "soft":
+            drive_key = "soft_soft"
+        else:
+            drive_key = "strong_soft"
+    else:
+        drive_key = None
+
+    drive_text = DRIVE_BALANCE_TEXTS.get(
+        drive_key,
+        "どちらか一方だけが頑張りすぎないように、役割やペースをときどき見直していくことが、"
+        "大きな負担を防ぐ鍵になります。"
+    )
+
+    # ---- 4) 3ブロックに組み立て ----
+    # good：行動スタイル + 攻め役 / 受け止め役
     good_text = (
-        "このペアのいちばんの良さは、ふたりが出会ったことで、"
-        "それぞれの世界が少しずつ広がっていくところです。"
-        "気づけば前よりも柔らかく、前向きな考え方になっている——"
-        "そんな影響を与え合いやすい関係性です。"
+        f"{your_name} さんと {partner_name} さんの行動スタイルは、"
+        f"{mars_text}{drive_text}"
     )
-    good_summary = "出会ったことで、お互いの世界が広がっていくふたり。"
+    good_summary = "行動力とバランス感覚が合わさり、前向きに進んでいけるペアです。"
 
-    gap_text = (
-        "すれ違いが起こるときは、どちらかが「してほしいこと」を"
-        "言葉にできていないケースが多そうです。"
-        "相手の行動を責める前に、自分の期待や不安を少しだけ具体的に伝えてみると、"
-        "誤解がほどけやすくなります。"
-    )
-    gap_summary = "「何をしてほしいか」を共有することで、すれ違いは減っていく。"
+    # gap：衝突スタイル
+    gap_text = conflict_text
+    gap_summary = "反応の速さや受け止め方の違いを言葉にすると、すれ違いはぐっと減っていきます。"
 
+    # hint：少しだけ共通ヒント（ここも固定文 + さっきのバランスにリンク）
     hint_text = (
-        "この関係をさらに育てていくヒントは、"
-        "ふたりだけの小さなルールや習慣を決めることです。"
-        "たとえば「週に一度はゆっくり話す時間をつくる」など、"
-        "ささやかな約束が安心感の土台になっていきます。"
+        f"{drive_text}"
+        " ときどき役割やペースを振り返りながら、「次はこうしてみよう」と共有していくことで、"
+        "無理なく続けられる関係づくりのヒントになります。"
     )
-    hint_summary = "ふたりだけの小さな習慣が、関係の安心感を支えてくれる。"
+    hint_summary = "衝突のあとに小さな振り返りを重ねるほど、ふたりのペースは自然とそろっていきます。"
 
     return (
         good_text, good_summary,
