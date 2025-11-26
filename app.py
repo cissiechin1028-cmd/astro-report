@@ -1232,7 +1232,7 @@ def draw_page5_points(
 # ------------------------------------------------------------------
 # Page6：関係の方向性と今後の傾向
 # ------------------------------------------------------------------
-def draw_page6_support(
+def draw_page6_trend(
     c,
     type_text, type_summary,      # ① 行動タイプ / エネルギーの方向性
     care_text, care_summary,      # ② 支え方・安心感
