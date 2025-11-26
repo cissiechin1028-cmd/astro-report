@@ -1486,20 +1486,32 @@ def generate_report():
         hint_text, hint_summary,
     )
 
-    # =====================
-    # PAGE 6 : 方向性と今後
-    # =====================
+    # ======================
+    # PAGE 6：方向性と今後
+    # ======================
     (
-        type_text, type_summary,
-        care_text, care_summary,
+        theme_text, theme_summary,
+        emotion_text, emotion_summary,
+        style_text, style_summary,
         future_text, future_summary,
     ) = build_page6_texts(your_name, partner_name, your_core, partner_core)
 
+    # --- 新レイアウト用にマッピング ---
+    # ① 行動タイプ / エネルギーの方向性 → 旧：テーマ部分
+    type_text = theme_text
+    type_summary = theme_summary
+
+    # ② 支え方・安心感 → 旧：感情＋スタイル部分をまとめて本文にする
+    care_text = emotion_text + " " + style_text
+    care_summary = emotion_summary  # サマリーはまず感情側だけ使う
+
+    # ③ これからの伸ばし方・成長ポイント → 旧：future をそのまま使う
+
     draw_page6_support(
         c,
-        type_text, type_summary,      # ① 行動タイプ / エネルギーの方向性
-        care_text, care_summary,      # ② 支え方・安心感
-        future_text, future_summary,  # ③ これからの伸ばし方・成長ポイント
+        type_text, type_summary,
+        care_text, care_summary,
+        future_text, future_summary,
     )
 
 
