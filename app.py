@@ -19,6 +19,9 @@ from astrology_texts import (
     PAGE4_TALK_INTRO,
     PAGE4_PROBLEM_INTRO,
     PAGE4_VALUES_INTRO,
+    MARS_PAIR_TEXTS,
+    CONFLICT_STYLE_TEXTS,
+    DRIVE_BALANCE_TEXTS,
 )
 
 
