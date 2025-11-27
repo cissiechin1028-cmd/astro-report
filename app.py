@@ -1629,41 +1629,43 @@ def draw_page6_support(
 def draw_page7_advice(c, advice_rows, footer_text):
     """
     Page7：関係のテーマとこれからのアドバイス
-    - 左：ふたりのシーン（最大 3 行）
-    - 右：うまくいくコツ（最大 8 行）← ここを広く＆小さめフォントで確保
-    - 下：短いまとめ（最大 4 行）
+    - 左：ふたりのシーン（最大3行）
+    - 右：うまくいくコツ（最大8行）
+    - 下：短いまとめ（最大4行）
     """
 
     draw_full_bg(c, "page_advice.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # レイアウト（右欄を広く・左余白を少しだけ詰める）
-    table_x = 110          # ← 元より少し左に
-    table_w = 430          # ← テーブル全体を広げる
-    col1_w = 135           # 左カラム
+    # ---- レイアウト（右カラムを広めにするが、文字の見た目は元のサイズに戻す）----
+    table_x = 110          # テーブルの左端
+    table_w = 430          # テーブル全体の幅
+    col1_w = 135           # 左カラム幅（ふたりのシーン）
     gap = 18
-    col2_w = table_w - col1_w - gap  # 右カラムをできるだけ広く
+    col2_w = table_w - col1_w - gap  # 右カラム幅（うまくいくコツ）
 
-    # フォントを 1pt 小さくして行間も少し詰める
     font = JP_SERIF
-    size = 10              # ← 11 → 10
-    lh = 15                # ← 16 → 15
+    size = 11             # ★ 元に近いサイズに戻す
+    lh = 18               # 行間
 
-    header_y = 650
-
-    # ---- 下のまとめテキスト：最大 4 行だけ使う ----
-    # ここで文字数を軽く整えておく（4行 × だいたい全角32字くらい）
+    # ---- 下のまとめテキスト：最大4行に圧縮しておく ----
     footer_text_box = trim_text_for_box(footer_text, max_lines=4, chars_per_line=32)
 
-    # ---- 行ごとのテーブル描画 ----
-    y = header_y
+    # ---- カラム見出し（ふたりのシーン／うまくいくコツ）----
+    header_y = 640
     c.setFont(font, size)
+    c.drawString(table_x, header_y, "ふたりのシーン")
+    c.drawString(table_x + col1_w + gap, header_y, "うまくいくコツ")
+    # 見出しの下にライン
+    c.line(table_x, header_y - 4, table_x + table_w, header_y - 4)
 
-    # rows は 4 行想定（ふたりのテーマ／すれ違い／長く続けるキーワード／迷ったとき）
+    # ---- 行ごとのテーブル描画 ----
+    y = header_y - lh  # 1行目の開始位置
+
     for scene_text, tip_text in advice_rows:
         row_top = y
 
-        # 左：シーン名 → 最大 3 行
+        # 左：シーン名 → 最大3行
         sy = draw_wrapped_block_limited(
             c,
             scene_text,
@@ -1676,9 +1678,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
             max_lines=3,
         )
 
-        # 右：うまくいくコツ → 最大 8 行
-        # 文字数＋列幅＋フォントサイズから計算しても、
-        # 今回用意しているどのパターンでも 8 行を超えないように文面を作ってある。
+        # 右：うまくいくコツ → 最大8行（ここを広く＋余裕ありにして「切れる」可能性を潰す）
         ty = draw_wrapped_block_limited(
             c,
             tip_text,
@@ -1688,10 +1688,9 @@ def draw_page7_advice(c, advice_rows, footer_text):
             font,
             size,
             lh,
-            max_lines=8,   # ← ここが一番大事：右欄の行数上限をしっかり確保
+            max_lines=8,
         )
 
-        # どちらか下まで行ったほうにあわせて次の行の起点を決める
         bottom = min(sy, ty)
 
         # 行の区切り線
@@ -1700,7 +1699,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
         # 次の行の開始位置
         y = bottom - lh
 
-    # ---- 下部まとめ（最大 4 行に収める）----
+    # ---- 下部まとめ（最大4行）----
     summary_y = y - lh
     draw_wrapped_block_limited(
         c,
