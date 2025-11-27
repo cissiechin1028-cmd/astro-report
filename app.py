@@ -1663,18 +1663,21 @@ def draw_page8_summary(c, summary_text):
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
     x = 120
-    y = 660   # ← 整体稍微往下拉一点
-    w = 350
+    y = 660
+    w = 420    # ← 宽度从 350 增加到 420
     lh = 20
     size = 13
 
-    # 1ページに収まるようにトリミング
-    summary_box = trim_text_for_box(summary_text, max_lines=22, chars_per_line=28)
+    summary_box = trim_text_for_box(
+        summary_text,
+        max_lines=14,
+        chars_per_line=30,   # ← 宽了以后每行字数也调到 30 左右
+    )
 
     draw_wrapped_block_limited(
         c, summary_box, x, y, w,
         JP_SERIF, size, lh,
-        max_lines=22,
+        max_lines=14,
     )
 
     draw_page_number(c, 8)
