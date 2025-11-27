@@ -1737,22 +1737,26 @@ def draw_page8_summary(c, summary_text):
     draw_full_bg(c, "page_summary.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    x = 120
-    y = 660
-    w = 420
-    lh = 20
-    size = 13
+    # 位置とレイアウト
+    x = 120        # 左余白
+    y = 660        # 最初の行の y
+    w = 420        # テキスト幅
+    lh = 19        # 行間（少しだけ詰める）
+    size = 12      # 文字サイズ
 
-    summary_box = trim_text_for_box(
-        summary_text,
-        max_lines=22,        # ← 行数上限を増やす
-        chars_per_line=32,   # ← 1行あたりの想定文字数も少しだけ増やす
-    )
-
+    # ★ Page8 は「段落構成」を優先したいので、
+    # ★ ここでは trim_text_for_box を使わず、
+    # ★ 改行をそのまま活かして描画する
     draw_wrapped_block_limited(
-        c, summary_box, x, y, w,
-        JP_SERIF, size, lh,
-        max_lines=22,
+        c,
+        summary_text,     # そのまま渡す（改行を保持）
+        x,
+        y,
+        w,
+        JP_SERIF,
+        size,
+        lh,
+        max_lines=30,     # A4 の高さ的に 30 行まで入る
     )
 
     draw_page_number(c, 8)
