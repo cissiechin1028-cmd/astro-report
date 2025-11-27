@@ -1610,16 +1610,16 @@ def draw_page7_advice(c, advice_rows, footer_text):
     c.line(table_x, header_y - 8, table_x + table_w, header_y - 8)
 
     # ---- 各ブロック用にあらかじめ裁断 ----
-    # 右側の「うまくいくコツ」は 1ブロック 最大6行 × 4ブロック想定
+    # ★★ 这里改成：最多 7 行，每行按 22 字估算
     trimmed_rows = []
     for scene_text, tip_text in advice_rows:
-        tip_box = trim_text_for_box(tip_text, max_lines=6, chars_per_line=22)
+        tip_box = trim_text_for_box(tip_text, max_lines=7, chars_per_line=22)
         trimmed_rows.append((scene_text, tip_box))
 
     advice_rows = trimmed_rows
 
-    # 一番下のまとめは 最大4行くらいに
-    footer_text_box = trim_text_for_box(footer_text, max_lines=6, chars_per_line=30)
+    # ★★ footer 也稍微压缩一点，最多 5 行
+    footer_text_box = trim_text_for_box(footer_text, max_lines=5, chars_per_line=30)
 
     # ---- 本文描画 ----
     y = header_y - lh * 1.8
@@ -1628,16 +1628,16 @@ def draw_page7_advice(c, advice_rows, footer_text):
     for scene_text, tip_text in advice_rows:
         row_top = y
 
-        # 左：シーン名 → 最大2行あれば十分
+        # 左：シーン名（最多2行）
         sy = draw_wrapped_block_limited(
             c, scene_text, table_x, row_top, col1_w,
             font, size, lh, max_lines=2
         )
 
-        # 右：アドバイス本文 → 最大6行
+        # 右：アドバイス本文（★★ 这里也改成最多 7 行）
         ty = draw_wrapped_block_limited(
             c, tip_text, table_x + col1_w + gap, row_top, col2_w,
-            font, size, lh, max_lines=6
+            font, size, lh, max_lines=7
         )
 
         bottom = min(sy, ty)
@@ -1648,7 +1648,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
     summary_y = y - lh
     draw_wrapped_block_limited(
         c, footer_text_box, table_x, summary_y, table_w,
-        font, size, lh, max_lines=6,
+        font, size, lh, max_lines=5,
     )
 
     draw_page_number(c, 7)
