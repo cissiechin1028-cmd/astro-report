@@ -1338,12 +1338,13 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
 
 def build_page8_texts(your_name, partner_name, your_core, partner_core):
     """
-    Page8：まとめ
-    上：レポートの説明 2 段落
-    下：ふたりの関係まとめ（エレメント別）
+    Page8：まとめ（精細動的版）
+    - 上：3段の「説明的な短文」（良い点 / 気をつけたい点 / これからのアドバイス）
+    - 下：ふたりの関係まとめ（エレメント別の長文）
+    - 背景画像に印刷されている「本レポートは〜」の注意書きはここでは描かない
     """
 
-    # --- 太陽星座 → 4元素（fire / earth / air / water）を判定する小ヘルパー ---
+    # --- 太陽星座 → 4元素を判定 ---
     def sign_to_element(sign_jp: str) -> str:
         if not sign_jp:
             return ""
@@ -1358,49 +1359,78 @@ def build_page8_texts(your_name, partner_name, your_core, partner_core):
             return "water"
         return ""
 
-    # --- ふたりの太陽エレメントを取得 ---
     your_sun_el = sign_to_element(your_core.get("sun_sign_jp"))
     partner_sun_el = sign_to_element(partner_core.get("sun_sign_jp"))
 
-    # 同じエレメントならそのまま、それ以外は "mixed"
     if not your_sun_el or not partner_sun_el:
-        main_key = "mixed"
+        rel_el = "mixed"
     elif your_sun_el == partner_sun_el:
-        main_key = your_sun_el
+        rel_el = your_sun_el
     else:
-        main_key = "mixed"
+        rel_el = "mixed"
 
-    # --- PAGE8_SUMMARY_MAIN からメインテキストを取得 ---
+    # --- 関係まとめ（最後に置く長文） ---
     base = PAGE8_SUMMARY_MAIN.get(
-        main_key,
+        rel_el,
         (
             "ふたりの関係には、穏やかさと前向きさが同時に流れています。"
             "日々の小さなやり取りや共有が、そのまま絆の強さにつながっていく相性です。"
         ),
     )
 
-    # 名前入りの一文に整形
     if base.startswith("ふたりの関係には、"):
         base_core = base.replace("ふたりの関係には、", "", 1)
         pair_summary = f"{your_name} さんと {partner_name} さんの関係には、{base_core}"
     else:
         pair_summary = f"{your_name} さんと {partner_name} さんの関係には、{base}"
 
-    # --- 上：説明文 2 段落 / 下：関係まとめ ---
-    notice1 = (
-        "本レポートは、西洋占星術の恋愛ホロスコープ解析と"
-        "心理傾向データをもとに作成した内容です。"
+    # --- 3つの短文（良い点 / つまずきやすい点 / これから） ---
+    highlight_key_map = {
+        "fire": "mental",
+        "earth": "practical",
+        "air": "mental",
+        "water": "emotional",
+        "mixed": "emotional",
+    }
+    pitfall_key_map = {
+        "fire": "tempo",
+        "earth": "value",
+        "air": "emotion",
+        "water": "emotion",
+        "mixed": "tempo",
+    }
+    final_key_map = {
+        "earth": "trust",
+        "air": "respect",
+        "fire": "growth",
+        "water": "warmth",
+        "mixed": "balance",
+    }
+
+    highlight_text = PAGE8_HIGHLIGHTS.get(
+        highlight_key_map.get(rel_el, "emotional"), ""
     )
-    notice2 = (
-        "占いの結果は運命を決めるものではなく、"
-        "おふたりがより深く理解し合い、穏やかで優しい気持ちで"
-        "愛を育むための小さな指針です。"
+    pitfall_text = PAGE8_PITFALLS.get(
+        pitfall_key_map.get(rel_el, "tempo"), ""
+    )
+    final_text = PAGE8_FINAL_ADVICE.get(
+        final_key_map.get(rel_el, "balance"), ""
     )
 
-    # 上から順に：説明1 → 説明2 → 空行 → ふたりのまとめ
-    summary_text = "\n".join([notice1, notice2, "", pair_summary.strip()])
-    return summary_text
+    blocks = []
 
+    if highlight_text:
+        blocks.append(highlight_text.strip())
+    if pitfall_text:
+        blocks.append(pitfall_text.strip())
+    if final_text:
+        blocks.append(final_text.strip())
+
+    # 一番下に「ふたりの関係まとめ」の長文
+    blocks.append(pair_summary.strip())
+
+    # 段落ごとに1行空ける
+    return "\n\n".join(blocks)
 
 # ==============================================================
 #                    第 4〜8 页：页面绘制函数
@@ -1671,7 +1701,6 @@ def draw_page7_advice(c, advice_rows, footer_text):
 # Page8：まとめ（最後のまとめ文章）
 # ------------------------------------------------------------------
 def draw_page8_summary(c, summary_text):
-    # 背景
     draw_full_bg(c, "page_summary.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
@@ -1681,8 +1710,8 @@ def draw_page8_summary(c, summary_text):
     line_height = 19
     font_size = 12
 
-    # ★ 不再用 trim_text_for_box，不再用 simpleSplit
-    # ★ 直接用已经存在的 draw_wrapped_block_limited
+    # Page8 は上半分だけに文字を出したいので、行数を制限
+    # draw_wrapped_block_limited は既に他ページで使っているユーティリティ
     draw_wrapped_block_limited(
         c,
         summary_text,
@@ -1692,7 +1721,7 @@ def draw_page8_summary(c, summary_text):
         JP_SERIF,
         font_size,
         line_height,
-        max_lines=24,   # 足够显示「説明2段落 + まとめ1段落」
+        max_lines=22,   # 上半分に収まる程度
     )
 
     draw_page_number(c, 8)
