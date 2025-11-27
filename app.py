@@ -1344,9 +1344,40 @@ def build_page8_texts(your_name, partner_name, your_core, partner_core):
     - 最後にレポート全体の説明文を付ける
     """
 
+    # ---------- 共通ヘルパー ----------
+    def get_sign(core: dict, key: str) -> str:
+        """core から sign_jp を安全に取り出す"""
+        flat = core.get(f"{key}_sign_jp")
+        if flat:
+            return str(flat)
+        v = core.get(key)
+        if isinstance(v, dict):
+            return (
+                v.get("sign_jp")
+                or v.get("name_ja")
+                or v.get("label")
+                or ""
+            )
+        return str(v) if v is not None else ""
+
+    def sign_to_element(sign_jp: str) -> str:
+        """日本語星座名 → fire/earth/air/water"""
+        if not sign_jp:
+            return ""
+        s = str(sign_jp)
+        if ("牡羊" in s) or ("獅子" in s) or ("射手" in s):
+            return "fire"
+        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
+            return "earth"
+        if ("双子" in s) or ("天秤" in s) or ("水瓶" in s):
+            return "air"
+        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
+            return "water"
+        return ""
+
     # --- 1) 太陽エレメントから main_key を決定 ---
-    your_sun_el = sign_to_element(your_core.get("sun_sign_jp"))
-    partner_sun_el = sign_to_element(partner_core.get("sun_sign_jp"))
+    your_sun_el = sign_to_element(get_sign(your_core, "sun"))
+    partner_sun_el = sign_to_element(get_sign(partner_core, "sun"))
 
     if not your_sun_el or not partner_sun_el:
         rel_el = "mixed"
@@ -1370,19 +1401,17 @@ def build_page8_texts(your_name, partner_name, your_core, partner_core):
     else:
         main_summary = f"{your_name} さんと {partner_name} さんの関係には、{base}"
 
-    # --- 3) ハイライト / ヒント / 未来アドバイスの key をざっくりマッピング ---
-    # エレメント別：どのタイプを強調するか
+    # --- 3) ハイライト / ヒント / 未来アドバイス の key 決定 ---
     highlight_key_map = {
-        "fire": "mental",      # 前向きさ & アイデアの動き
-        "earth": "practical",  # 現実感・生活の安定
-        "air": "mental",       # 会話・理解のしやすさ
-        "water": "emotional",  # 感情・共感の深さ
+        "fire": "mental",
+        "earth": "practical",
+        "air": "mental",
+        "water": "emotional",
         "mixed": "emotional",
     }
     highlight_key = highlight_key_map.get(rel_el, "emotional")
     highlight_text = PAGE8_HIGHLIGHTS.get(highlight_key, "")
 
-    # すれ違いポイント → 大きく「テンポ / 感情 / 価値観」のどこに出やすいか
     pitfall_key_map = {
         "fire": "tempo",
         "earth": "value",
@@ -1393,7 +1422,6 @@ def build_page8_texts(your_name, partner_name, your_core, partner_core):
     pitfall_key = pitfall_key_map.get(rel_el, "tempo")
     pitfall_text = PAGE8_PITFALLS.get(pitfall_key, "")
 
-    # 未来アドバイス：Page7 のキーワードに対応するイメージで割り振り
     final_key_map = {
         "earth": "trust",
         "air": "respect",
