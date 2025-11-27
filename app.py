@@ -1338,15 +1338,13 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
 
 def build_page8_texts(your_name, partner_name, your_core, partner_core):
     """
-    Page8：まとめ（精細動的版・B案）
-    - 太陽エレメントから関係の雰囲気を判定 → PAGE8_SUMMARY_MAIN
-    - ハイライト / ヒント / 未来アドバイス → PAGE8_HIGHLIGHTS / PAGE8_PITFALLS / PAGE8_FINAL_ADVICE
-    - 最後にレポート全体の説明文を付ける
+    Page8：まとめ（精細動的版・B案・修正版）
+    - 上半分：ふたりのハイライト / 長く続けるためのヒント / ふたりの未来へ / 最終まとめ
+    - 下の灰色ボックス：注意書き（本レポートは〜）※ここでは描かない
     """
 
     # ---------- 共通ヘルパー ----------
     def get_sign(core: dict, key: str) -> str:
-        """core から sign_jp を安全に取り出す"""
         flat = core.get(f"{key}_sign_jp")
         if flat:
             return str(flat)
@@ -1361,7 +1359,6 @@ def build_page8_texts(your_name, partner_name, your_core, partner_core):
         return str(v) if v is not None else ""
 
     def sign_to_element(sign_jp: str) -> str:
-        """日本語星座名 → fire/earth/air/water"""
         if not sign_jp:
             return ""
         s = str(sign_jp)
@@ -1386,7 +1383,7 @@ def build_page8_texts(your_name, partner_name, your_core, partner_core):
     else:
         rel_el = "mixed"
 
-    # --- 2) メインまとめ文（PAGE8_SUMMARY_MAIN） ---
+    # --- 2) メインまとめ文（最後に置きたい） ---
     base = PAGE8_SUMMARY_MAIN.get(
         rel_el,
         (
@@ -1432,34 +1429,23 @@ def build_page8_texts(your_name, partner_name, your_core, partner_core):
     final_key = final_key_map.get(rel_el, "balance")
     final_text = PAGE8_FINAL_ADVICE.get(final_key, "")
 
-    # --- 4) 全体をひとつのテキストにまとめる ---
+    # --- 4) 「上半分だけ」のテキストを組み立てる ---
     blocks = []
 
-    # ① 関係の総まとめ
-    blocks.append(main_summary.strip())
-
-    # ② ハイライト
+    # ① ふたりのハイライト
     if highlight_text:
         blocks.append("【ふたりのハイライト】\n" + highlight_text.strip())
 
-    # ③ 長く続くためのヒント
+    # ② 長く続けるためのヒント
     if pitfall_text:
         blocks.append("【長く続けるためのヒント】\n" + pitfall_text.strip())
 
-    # ④ ふたりの未来へ
+    # ③ ふたりの未来へ
     if final_text:
         blocks.append("【ふたりの未来へ】\n" + final_text.strip())
 
-    # ⑤ レポート全体の説明（固定文）
-    blocks.append(
-        "本レポートは、西洋占星術の恋愛ホロスコープ解析と"
-        "心理傾向データをもとに作成した内容です。"
-    )
-    blocks.append(
-        "占いの結果は運命を決めるものではなく、"
-        "おふたりがより深く理解し合い、穏やかで優しい気持ちで"
-        "愛を育むための小さな指針です。"
-    )
+    # ④ ページの最後に置きたい「ふたりの関係まとめ」
+    blocks.append(main_summary.strip())
 
     summary_text = "\n\n".join(blocks)
     return summary_text
@@ -1737,27 +1723,35 @@ def draw_page8_summary(c, summary_text):
     draw_full_bg(c, "page_summary.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # 位置とレイアウト
-    x = 120        # 左余白
-    y = 660        # 最初の行の y
-    w = 420        # テキスト幅
-    lh = 19        # 行間（少しだけ詰める）
-    size = 12      # 文字サイズ
+    font_name = JP_SERIF
+    font_size = 12
+    line_height = 19
+    text_width = 420
+    x = 120
+    y = 660
 
-    # ★ Page8 は「段落構成」を優先したいので、
-    # ★ ここでは trim_text_for_box を使わず、
-    # ★ 改行をそのまま活かして描画する
-    draw_wrapped_block_limited(
-        c,
-        summary_text,     # そのまま渡す（改行を保持）
-        x,
-        y,
-        w,
-        JP_SERIF,
-        size,
-        lh,
-        max_lines=30,     # A4 の高さ的に 30 行まで入る
-    )
+    c.setFont(font_name, font_size)
+    current_y = y
+
+    # 改行を維持したまま順番に描画
+    for paragraph in summary_text.split("\n"):
+        if paragraph.strip() == "":
+            current_y -= line_height
+            continue
+
+        lines = simpleSplit(paragraph, font_name, font_size, text_width)
+        for line in lines:
+            c.drawString(x, current_y, line)
+            current_y -= line_height
+            if current_y < 230:   # ← ここより下は灰色ボックス領域に残しておく
+                break
+
+        if current_y < 230:
+            break
+
+    # ここから下（灰色ボックス）は、元々の説明文を描く既存コードに任せる
+    # （もし説明文描画も draw_page8_summary の中にあるなら、
+    #  current_y を無視して固定座標に描画してOK）
 
     draw_page_number(c, 8)
     c.showPage()
