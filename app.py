@@ -1687,7 +1687,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
             max_lines=2,
         )
 
-        # 右：うまくいくコツ（6行まで・既存仕様のまま）
+        # 右：うまくいくコツ（7行まで・既存仕様のまま）
         ty = draw_wrapped_block_limited(
             c,
             tip_text,
@@ -1697,7 +1697,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
             body_font,
             body_size,
             lh,
-            max_lines=6,
+            max_lines=7,
         )
 
         bottom = min(sy, ty)
@@ -1718,7 +1718,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
         body_font,
         body_size,
         lh,
-        max_lines=6,
+        max_lines=5,
     )
 
     draw_page_number(c, 7)
