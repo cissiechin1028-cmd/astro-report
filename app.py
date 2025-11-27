@@ -1704,8 +1704,8 @@ def draw_page8_summary(c, summary_text):
     draw_full_bg(c, "page_summary.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    x = 120
-    y = 660
+    x = 100
+    y = 670
     w = 420
     line_height = 19
     font_size = 12
