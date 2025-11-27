@@ -1627,70 +1627,91 @@ def draw_page6_support(
 # Page7：日常アドバイス
 # ------------------------------------------------------------------
 def draw_page7_advice(c, advice_rows, footer_text):
+    """
+    Page7：関係のテーマとこれからのアドバイス
+    - 左：ふたりのシーン（最大 3 行）
+    - 右：うまくいくコツ（最大 8 行）← ここを広く＆小さめフォントで確保
+    - 下：短いまとめ（最大 4 行）
+    """
+
     draw_full_bg(c, "page_advice.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    table_x = 130
-    table_w = 360
-    col1_w = 140
-    gap = 20
-    col2_w = table_w - col1_w - gap
+    # レイアウト（右欄を広く・左余白を少しだけ詰める）
+    table_x = 110          # ← 元より少し左に
+    table_w = 430          # ← テーブル全体を広げる
+    col1_w = 135           # 左カラム
+    gap = 18
+    col2_w = table_w - col1_w - gap  # 右カラムをできるだけ広く
 
+    # フォントを 1pt 小さくして行間も少し詰める
     font = JP_SERIF
-    size = 11
-    lh = 16
+    size = 10              # ← 11 → 10
+    lh = 15                # ← 16 → 15
 
-    header_y = 660
+    header_y = 650
 
-    # ---- ヘッダー ----
-    c.setFont(JP_SANS, size + 2)
-    c.drawString(table_x, header_y, "ふたりのシーン")
-    c.drawString(table_x + col1_w + gap, header_y, "うまくいくコツ")
+    # ---- 下のまとめテキスト：最大 4 行だけ使う ----
+    # ここで文字数を軽く整えておく（4行 × だいたい全角32字くらい）
+    footer_text_box = trim_text_for_box(footer_text, max_lines=4, chars_per_line=32)
 
-    c.setStrokeColorRGB(0.9, 0.9, 0.9)
-    c.setLineWidth(0.4)
-    c.line(table_x, header_y - 8, table_x + table_w, header_y - 8)
-
-    # ---- 各ブロック用にあらかじめ裁断 ----
-    # ★★ 这里改成：最多 7 行，每行按 22 字估算
-    trimmed_rows = []
-    for scene_text, tip_text in advice_rows:
-        tip_box = trim_text_for_box(tip_text, max_lines=7, chars_per_line=22)
-        trimmed_rows.append((scene_text, tip_box))
-
-    advice_rows = trimmed_rows
-
-    # ★★ footer 也稍微压缩一点，最多 5 行
-    footer_text_box = trim_text_for_box(footer_text, max_lines=5, chars_per_line=30)
-
-    # ---- 本文描画 ----
-    y = header_y - lh * 1.8
+    # ---- 行ごとのテーブル描画 ----
+    y = header_y
     c.setFont(font, size)
 
+    # rows は 4 行想定（ふたりのテーマ／すれ違い／長く続けるキーワード／迷ったとき）
     for scene_text, tip_text in advice_rows:
         row_top = y
 
-        # 左：シーン名（最多2行）
+        # 左：シーン名 → 最大 3 行
         sy = draw_wrapped_block_limited(
-            c, scene_text, table_x, row_top, col1_w,
-            font, size, lh, max_lines=2
+            c,
+            scene_text,
+            table_x,
+            row_top,
+            col1_w,
+            font,
+            size,
+            lh,
+            max_lines=3,
         )
 
-        # 右：アドバイス本文（★★ 这里也改成最多 7 行）
+        # 右：うまくいくコツ → 最大 8 行
+        # 文字数＋列幅＋フォントサイズから計算しても、
+        # 今回用意しているどのパターンでも 8 行を超えないように文面を作ってある。
         ty = draw_wrapped_block_limited(
-            c, tip_text, table_x + col1_w + gap, row_top, col2_w,
-            font, size, lh, max_lines=7
+            c,
+            tip_text,
+            table_x + col1_w + gap,
+            row_top,
+            col2_w,
+            font,
+            size,
+            lh,
+            max_lines=8,   # ← ここが一番大事：右欄の行数上限をしっかり確保
         )
 
+        # どちらか下まで行ったほうにあわせて次の行の起点を決める
         bottom = min(sy, ty)
+
+        # 行の区切り線
         c.line(table_x, bottom + 4, table_x + table_w, bottom + 4)
+
+        # 次の行の開始位置
         y = bottom - lh
 
-    # ---- 下部まとめ ----
+    # ---- 下部まとめ（最大 4 行に収める）----
     summary_y = y - lh
     draw_wrapped_block_limited(
-        c, footer_text_box, table_x, summary_y, table_w,
-        font, size, lh, max_lines=5,
+        c,
+        footer_text_box,
+        table_x,
+        summary_y,
+        table_w,
+        font,
+        size,
+        lh,
+        max_lines=4,
     )
 
     draw_page_number(c, 7)
@@ -1704,7 +1725,7 @@ def draw_page8_summary(c, summary_text):
     draw_full_bg(c, "page_summary.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    x = 100
+    x = 90
     y = 670
     w = 420
     line_height = 19
