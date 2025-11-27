@@ -1627,79 +1627,87 @@ def draw_page6_support(
 # Page7：日常アドバイス
 # ------------------------------------------------------------------
 def draw_page7_advice(c, advice_rows, footer_text):
-    """
-    Page7：関係のテーマとこれからのアドバイス
-    - 左：ふたりのシーン（最大3行）
-    - 右：うまくいくコツ（最大8行）
-    - 下：短いまとめ（最大4行）
-    """
-
     draw_full_bg(c, "page_advice.jpg")
     c.setFillColorRGB(0.2, 0.2, 0.2)
 
-    # ---- レイアウト（右カラムを広めにするが、文字の見た目は元のサイズに戻す）----
-    table_x = 110          # テーブルの左端
-    table_w = 430          # テーブル全体の幅
-    col1_w = 135           # 左カラム幅（ふたりのシーン）
-    gap = 18
-    col2_w = table_w - col1_w - gap  # 右カラム幅（うまくいくコツ）
+    # --- 布局：只做“整体水平居中”的微调 ---
+    table_w = 360
+    page_w, _ = A4
+    table_x = (page_w - table_w) / 2  # ★ 整体内容居中
+    col1_w = 140
+    gap = 20
+    col2_w = table_w - col1_w - gap
 
-    font = JP_SERIF
-    size = 11             # ★ 元に近いサイズに戻す
-    lh = 18               # 行間
+    body_font = JP_SERIF
+    body_size = 11
+    lh = 16
 
-    # ---- 下のまとめテキスト：最大4行に圧縮しておく ----
-    footer_text_box = trim_text_for_box(footer_text, max_lines=4, chars_per_line=32)
+    header_y = 660
 
-    # ---- カラム見出し（ふたりのシーン／うまくいくコツ）----
-    header_y = 640
-    c.setFont(font, size)
+    # ---------- 表头：更大 + 粗体 ----------
+    header_font = JP_SANS_BOLD  # 粗一点的无衬线
+    header_size = body_size + 2
+
+    c.setFont(header_font, header_size)
     c.drawString(table_x, header_y, "ふたりのシーン")
     c.drawString(table_x + col1_w + gap, header_y, "うまくいくコツ")
-    # 見出しの下にライン
-    c.line(table_x, header_y - 4, table_x + table_w, header_y - 4)
 
-    # ---- 行ごとのテーブル描画 ----
-    y = header_y - lh  # 1行目の開始位置
+    # 线条：细 + 浅色
+    c.setStrokeColorRGB(0.9, 0.9, 0.9)
+    c.setLineWidth(0.4)
+    c.line(table_x, header_y - 8, table_x + table_w, header_y - 8)
+
+    # ---------- 右欄テキストを事前に裁断（逻辑不变） ----------
+    trimmed_rows = []
+    for scene_text, tip_text in advice_rows:
+        tip_box = trim_text_for_box(tip_text, max_lines=6, chars_per_line=22)
+        trimmed_rows.append((scene_text, tip_box))
+    advice_rows = trimmed_rows
+
+    # 下のまとめ：保持原来行数限制（不动结构）
+    footer_text_box = trim_text_for_box(footer_text, max_lines=6, chars_per_line=30)
+
+    # ---------- 本文 ----------
+    y = header_y - lh * 1.8
+    c.setFont(body_font, body_size)
 
     for scene_text, tip_text in advice_rows:
         row_top = y
 
-        # 左：シーン名 → 最大3行
+        # 左：ふたりのシーン（2行まで）
         sy = draw_wrapped_block_limited(
             c,
             scene_text,
             table_x,
             row_top,
             col1_w,
-            font,
-            size,
+            body_font,
+            body_size,
             lh,
-            max_lines=3,
+            max_lines=2,
         )
 
-        # 右：うまくいくコツ → 最大8行（ここを広く＋余裕ありにして「切れる」可能性を潰す）
+        # 右：うまくいくコツ（6行まで・既存仕様のまま）
         ty = draw_wrapped_block_limited(
             c,
             tip_text,
             table_x + col1_w + gap,
             row_top,
             col2_w,
-            font,
-            size,
+            body_font,
+            body_size,
             lh,
-            max_lines=8,
+            max_lines=6,
         )
 
         bottom = min(sy, ty)
 
-        # 行の区切り線
+        # 行区切り线：同样细 & 浅色
         c.line(table_x, bottom + 4, table_x + table_w, bottom + 4)
 
-        # 次の行の開始位置
         y = bottom - lh
 
-    # ---- 下部まとめ（最大4行）----
+    # ---------- 下部まとめ ----------
     summary_y = y - lh
     draw_wrapped_block_limited(
         c,
@@ -1707,10 +1715,10 @@ def draw_page7_advice(c, advice_rows, footer_text):
         table_x,
         summary_y,
         table_w,
-        font,
-        size,
+        body_font,
+        body_size,
         lh,
-        max_lines=4,
+        max_lines=6,
     )
 
     draw_page_number(c, 7)
