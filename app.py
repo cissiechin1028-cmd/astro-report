@@ -1337,38 +1337,55 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
 
 
 def build_page8_texts(your_name, partner_name, your_core, partner_core):
-    """Page8：まとめ用の1ページ分の短い動的テキスト"""
+    """
+    Page8：まとめ用の短めテキスト。
+    - 太陽のエレメントから全体の雰囲気を判断
+    - PAGE8_SUMMARY_MAIN だけを使って、1段落のまとめにする
+    """
 
-    # ---- 1. メインまとめ（優しくて短い） ----
+    # --- 太陽星座 → 4元素（fire / earth / air / water）を判定する小ヘルパー ---
+    def sign_to_element(sign_jp: str) -> str:
+        if not sign_jp:
+            return ""
+        s = str(sign_jp)
+        if ("牡羊" in s) or ("獅子" in s) or ("射手" in s):
+            return "fire"
+        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
+            return "earth"
+        if ("双子" in s) or ("天秤" in s) or ("水瓶" in s):
+            return "air"
+        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
+            return "water"
+        return ""
+
+    # --- ふたりの太陽エレメントを取得 ---
+    your_sun_el = sign_to_element(your_core.get("sun_sign_jp"))
+    partner_sun_el = sign_to_element(partner_core.get("sun_sign_jp"))
+
+    # 同じエレメントならそのまま、それ以外は "mixed"
+    if not your_sun_el or not partner_sun_el:
+        main_key = "mixed"
+    elif your_sun_el == partner_sun_el:
+        main_key = your_sun_el
+    else:
+        main_key = "mixed"
+
+    # --- PAGE8_SUMMARY_MAIN からメインテキストを取得 ---
     base = PAGE8_SUMMARY_MAIN.get(
-        (your_core["sun"], partner_core["sun"]),
-        "ふたりの関係には、穏やかさと前向きさが同時に流れています。"
+        main_key,
+        (
+            "ふたりの関係には、穏やかさと前向きさが同時に流れています。"
+            "日々の小さなやり取りや共有が、そのまま絆の強さにつながっていく相性です。"
+        ),
     )
 
-    # ---- 2. 良いポイント（1～2行程度） ----
-    highlight = PAGE8_HIGHLIGHTS.get(
-        (your_core["moon"], partner_core["moon"]),
-        "心の距離が自然と縮まりやすい関係です。"
-    )
-
-    # ---- 3. 気をつけたいこと（短め） ----
-    pitfall = PAGE8_PITFALLS.get(
-        (your_core["asc"], partner_core["asc"]),
-        "テンポや考え方の違いが、すれ違いの火種になることがあります。"
-    )
-
-    # ---- 4. 最後のアドバイス（一番短くてOK） ----
-    advice = PAGE8_FINAL_ADVICE.get(
-        (your_core["venus"], partner_core["venus"]),
-        "小さな優しさを積み重ねることで、絆はより強く育っていきます。"
-    )
-
-    # ---- 全部まとめて1つの段落に ----
-    summary = (
-        f"{your_name} さんと {partner_name} さんの関係には、{base} "
-        f"{highlight} そして、{pitfall} "
-        f"{advice}"
-    )
+    # 辞書の文章は「ふたりの関係には、〜」で始まるので、
+    # 名前入りの一文にきれいにつなげる
+    if base.startswith("ふたりの関係には、"):
+        base_core = base.replace("ふたりの関係には、", "", 1)
+        summary = f"{your_name} さんと {partner_name} さんの関係には、{base_core}"
+    else:
+        summary = f"{your_name} さんと {partner_name} さんの関係には、{base}"
 
     return summary
 
