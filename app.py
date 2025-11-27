@@ -1338,56 +1338,103 @@ def build_page7_texts(your_name, partner_name, your_core, partner_core):
 
 def build_page8_texts(your_name, partner_name, your_core, partner_core):
     """
-    Page8：まとめ用の短めテキスト。
-    - 太陽のエレメントから全体の雰囲気を判断
-    - PAGE8_SUMMARY_MAIN だけを使って、1段落のまとめにする
+    Page8：まとめ（精細動的版・B案）
+    - 太陽エレメントから関係の雰囲気を判定 → PAGE8_SUMMARY_MAIN
+    - ハイライト / ヒント / 未来アドバイス → PAGE8_HIGHLIGHTS / PAGE8_PITFALLS / PAGE8_FINAL_ADVICE
+    - 最後にレポート全体の説明文を付ける
     """
 
-    # --- 太陽星座 → 4元素（fire / earth / air / water）を判定する小ヘルパー ---
-    def sign_to_element(sign_jp: str) -> str:
-        if not sign_jp:
-            return ""
-        s = str(sign_jp)
-        if ("牡羊" in s) or ("獅子" in s) or ("射手" in s):
-            return "fire"
-        if ("牡牛" in s) or ("乙女" in s) or ("山羊" in s):
-            return "earth"
-        if ("双子" in s) or ("天秤" in s) or ("水瓶" in s):
-            return "air"
-        if ("蟹" in s) or ("蠍" in s) or ("魚" in s):
-            return "water"
-        return ""
-
-    # --- ふたりの太陽エレメントを取得 ---
+    # --- 1) 太陽エレメントから main_key を決定 ---
     your_sun_el = sign_to_element(your_core.get("sun_sign_jp"))
     partner_sun_el = sign_to_element(partner_core.get("sun_sign_jp"))
 
-    # 同じエレメントならそのまま、それ以外は "mixed"
     if not your_sun_el or not partner_sun_el:
-        main_key = "mixed"
+        rel_el = "mixed"
     elif your_sun_el == partner_sun_el:
-        main_key = your_sun_el
+        rel_el = your_sun_el
     else:
-        main_key = "mixed"
+        rel_el = "mixed"
 
-    # --- PAGE8_SUMMARY_MAIN からメインテキストを取得 ---
+    # --- 2) メインまとめ文（PAGE8_SUMMARY_MAIN） ---
     base = PAGE8_SUMMARY_MAIN.get(
-        main_key,
+        rel_el,
         (
             "ふたりの関係には、穏やかさと前向きさが同時に流れています。"
             "日々の小さなやり取りや共有が、そのまま絆の強さにつながっていく相性です。"
         ),
     )
 
-    # 辞書の文章は「ふたりの関係には、〜」で始まるので、
-    # 名前入りの一文にきれいにつなげる
     if base.startswith("ふたりの関係には、"):
         base_core = base.replace("ふたりの関係には、", "", 1)
-        summary = f"{your_name} さんと {partner_name} さんの関係には、{base_core}"
+        main_summary = f"{your_name} さんと {partner_name} さんの関係には、{base_core}"
     else:
-        summary = f"{your_name} さんと {partner_name} さんの関係には、{base}"
+        main_summary = f"{your_name} さんと {partner_name} さんの関係には、{base}"
 
-    return summary
+    # --- 3) ハイライト / ヒント / 未来アドバイスの key をざっくりマッピング ---
+    # エレメント別：どのタイプを強調するか
+    highlight_key_map = {
+        "fire": "mental",      # 前向きさ & アイデアの動き
+        "earth": "practical",  # 現実感・生活の安定
+        "air": "mental",       # 会話・理解のしやすさ
+        "water": "emotional",  # 感情・共感の深さ
+        "mixed": "emotional",
+    }
+    highlight_key = highlight_key_map.get(rel_el, "emotional")
+    highlight_text = PAGE8_HIGHLIGHTS.get(highlight_key, "")
+
+    # すれ違いポイント → 大きく「テンポ / 感情 / 価値観」のどこに出やすいか
+    pitfall_key_map = {
+        "fire": "tempo",
+        "earth": "value",
+        "air": "emotion",
+        "water": "emotion",
+        "mixed": "tempo",
+    }
+    pitfall_key = pitfall_key_map.get(rel_el, "tempo")
+    pitfall_text = PAGE8_PITFALLS.get(pitfall_key, "")
+
+    # 未来アドバイス：Page7 のキーワードに対応するイメージで割り振り
+    final_key_map = {
+        "earth": "trust",
+        "air": "respect",
+        "fire": "growth",
+        "water": "warmth",
+        "mixed": "balance",
+    }
+    final_key = final_key_map.get(rel_el, "balance")
+    final_text = PAGE8_FINAL_ADVICE.get(final_key, "")
+
+    # --- 4) 全体をひとつのテキストにまとめる ---
+    blocks = []
+
+    # ① 関係の総まとめ
+    blocks.append(main_summary.strip())
+
+    # ② ハイライト
+    if highlight_text:
+        blocks.append("【ふたりのハイライト】\n" + highlight_text.strip())
+
+    # ③ 長く続くためのヒント
+    if pitfall_text:
+        blocks.append("【長く続けるためのヒント】\n" + pitfall_text.strip())
+
+    # ④ ふたりの未来へ
+    if final_text:
+        blocks.append("【ふたりの未来へ】\n" + final_text.strip())
+
+    # ⑤ レポート全体の説明（固定文）
+    blocks.append(
+        "本レポートは、西洋占星術の恋愛ホロスコープ解析と"
+        "心理傾向データをもとに作成した内容です。"
+    )
+    blocks.append(
+        "占いの結果は運命を決めるものではなく、"
+        "おふたりがより深く理解し合い、穏やかで優しい気持ちで"
+        "愛を育むための小さな指針です。"
+    )
+
+    summary_text = "\n\n".join(blocks)
+    return summary_text
 
 
 # ==============================================================
@@ -1664,20 +1711,20 @@ def draw_page8_summary(c, summary_text):
 
     x = 120
     y = 660
-    w = 420    # ← 宽度从 350 增加到 420
+    w = 420
     lh = 20
     size = 13
 
     summary_box = trim_text_for_box(
         summary_text,
-        max_lines=14,
-        chars_per_line=30,   # ← 宽了以后每行字数也调到 30 左右
+        max_lines=22,        # ← 行数上限を増やす
+        chars_per_line=32,   # ← 1行あたりの想定文字数も少しだけ増やす
     )
 
     draw_wrapped_block_limited(
         c, summary_box, x, y, w,
         JP_SERIF, size, lh,
-        max_lines=14,
+        max_lines=22,
     )
 
     draw_page_number(c, 8)
