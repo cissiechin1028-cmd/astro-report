@@ -1722,9 +1722,9 @@ draw_wrapped_block_limited(
     max_lines=7,
 )
 
+draw_page_number(c, 7)
+c.showPage()
 
-    draw_page_number(c, 7)
-    c.showPage()
 
 
 # ------------------------------------------------------------------
