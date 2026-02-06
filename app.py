@@ -384,6 +384,7 @@ def draw_wrapped_block_limited(
     font_size,
     line_height,
     max_lines,
+    dry_run=False,   # ← 新增
 ):
     c.setFont(font_name, font_size)
     line = ""
@@ -392,30 +393,34 @@ def draw_wrapped_block_limited(
 
     for ch in text:
         if ch == "\n":
-            c.drawString(x, y, line)
+            if not dry_run:
+                c.drawString(x, y, line)
             line = ""
             y -= line_height
             lines += 1
             if lines >= max_lines:
-                return y
+                return lines if dry_run else y
             continue
 
         new_line = line + ch
         if pdfmetrics.stringWidth(new_line, font_name, font_size) <= wrap_width:
             line = new_line
         else:
-            c.drawString(x, y, line)
+            if not dry_run:
+                c.drawString(x, y, line)
             line = ch
             y -= line_height
             lines += 1
             if lines >= max_lines:
-                return y
+                return lines if dry_run else y
 
     if line and lines < max_lines:
-        c.drawString(x, y, line)
+        if not dry_run:
+            c.drawString(x, y, line)
         y -= line_height
+        lines += 1
 
-    return y
+    return lines if dry_run else y
 
 
 # ------------------------------------------------------------------
@@ -1707,8 +1712,32 @@ def draw_page7_advice(c, advice_rows, footer_text):
 
         y = bottom - lh
 
-         # ---------- 下部まとめ ----------
+           # ---------- 下部まとめ ----------
     summary_y = y - lh
+
+    font_size = body_size
+    min_font_size = 8
+    max_lines = 5
+
+    # 先试算（不画）
+    while font_size >= min_font_size:
+        used_lines = draw_wrapped_block_limited(
+            c,
+            footer_text_box,
+            table_x,
+            summary_y,
+            table_w,
+            body_font,
+            font_size,
+            font_size * 1.4,
+            max_lines,
+            dry_run=True,
+        )
+        if used_lines <= max_lines:
+            break
+        font_size -= 0.5
+
+    # 再真正绘制（只画一次）
     draw_wrapped_block_limited(
         c,
         footer_text_box,
@@ -1716,9 +1745,9 @@ def draw_page7_advice(c, advice_rows, footer_text):
         summary_y,
         table_w,
         body_font,
-        body_size,
-        lh,
-        max_lines=5,
+        font_size,
+        font_size * 1.4,
+        max_lines,
     )
 
     draw_page_number(c, 7)
