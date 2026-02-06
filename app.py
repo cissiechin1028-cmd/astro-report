@@ -384,7 +384,6 @@ def draw_wrapped_block_limited(
     font_size,
     line_height,
     max_lines,
-    dry_run=False,   # ✅ 新增这一行
 ):
     c.setFont(font_name, font_size)
     line = ""
@@ -393,34 +392,30 @@ def draw_wrapped_block_limited(
 
     for ch in text:
         if ch == "\n":
-            if not dry_run:
-                c.drawString(x, y, line)
+            c.drawString(x, y, line)
             line = ""
             y -= line_height
             lines += 1
             if lines >= max_lines:
-                return lines if dry_run else y
+                return y
             continue
 
         new_line = line + ch
         if pdfmetrics.stringWidth(new_line, font_name, font_size) <= wrap_width:
             line = new_line
         else:
-            if not dry_run:
-                c.drawString(x, y, line)
+            c.drawString(x, y, line)
             line = ch
             y -= line_height
             lines += 1
             if lines >= max_lines:
-                return lines if dry_run else y
+                return y
 
     if line and lines < max_lines:
-        if not dry_run:
-            c.drawString(x, y, line)
+        c.drawString(x, y, line)
         y -= line_height
-        lines += 1
 
-    return lines if dry_run else y
+    return y
 
 
 # ------------------------------------------------------------------
@@ -1712,7 +1707,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
 
         y = bottom - lh
 
-          # ---------- 下部まとめ ----------
+         # ---------- 下部まとめ ----------
     summary_y = y - lh
     draw_wrapped_block_limited(
         c,
@@ -1725,6 +1720,10 @@ def draw_page7_advice(c, advice_rows, footer_text):
         lh,
         max_lines=5,
     )
+
+    draw_page_number(c, 7)
+    c.showPage()
+
 
 
 # ------------------------------------------------------------------
