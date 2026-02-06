@@ -1707,23 +1707,23 @@ def draw_page7_advice(c, advice_rows, footer_text):
 
         y = bottom - lh
 
-# ---------- 下部まとめ ----------
-summary_y = y - lh
+    # ---------- 下部まとめ ----------
+    summary_y = y - lh
+    draw_wrapped_block_limited(
+        c,
+        footer_text_box,
+        table_x,
+        summary_y,
+        table_w,
+        body_font,
+        body_size,
+        lh,
+        max_lines=5,
+    )
 
-draw_wrapped_block_limited(
-    c,
-    footer_text_box,
-    table_x,
-    summary_y,
-    table_w,
-    body_font,
-    body_size,
-    lh,
-    max_lines=7,
-)
+    draw_page_number(c, 7)
+    c.showPage()
 
-draw_page_number(c, 7)
-c.showPage()
 
 
 
