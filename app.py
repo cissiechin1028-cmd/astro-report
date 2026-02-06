@@ -1718,7 +1718,7 @@ def draw_page7_advice(c, advice_rows, footer_text):
         body_font,
         body_size,
         lh,
-        max_lines=5,
+        max_lines=7,
     )
 
     draw_page_number(c, 7)
