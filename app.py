@@ -1707,19 +1707,59 @@ def draw_page7_advice(c, advice_rows, footer_text):
 
         y = bottom - lh
 
-    # ---------- 下部まとめ ----------
+        # ---------- 下部まとめ ----------
+    from reportlab.pdfbase import pdfmetrics
+
+    BOTTOM_Y = 70  # 页码上方安全线
+
     summary_y = y - lh
-    draw_wrapped_block_limited(
-        c,
-        footer_text_box,
-        table_x,
-        summary_y,
-        table_w,
-        body_font,
-        body_size,
-        lh,
-        max_lines=5,
-    )
+    available_height = summary_y - BOTTOM_Y
+
+    fs = body_size
+    cur_lh = lh
+
+    words = footer_text_box.split()
+    lines = []
+    current = ""
+
+    for w in words:
+        test = current + (" " if current else "") + w
+        if pdfmetrics.stringWidth(test, body_font, fs) <= table_w:
+            current = test
+        else:
+            lines.append(current)
+            current = w
+    if current:
+        lines.append(current)
+
+    while True:
+        needed_height = len(lines) * cur_lh
+        if needed_height <= available_height:
+            break
+
+        if cur_lh > lh * 0.8:
+            cur_lh *= 0.95
+            continue
+
+        if fs > body_size - 2:
+            fs -= 0.5
+            cur_lh = fs * 1.3
+            continue
+
+        break
+
+    c.setFont(body_font, fs)
+    text_obj = c.beginText(table_x, summary_y)
+    text_obj.setLeading(cur_lh)
+
+    for line in lines:
+        text_obj.textLine(line)
+
+    c.drawText(text_obj)
+
+    draw_page_number(c, 7)
+    c.showPage()
+
 
     draw_page_number(c, 7)
     c.showPage()
